@@ -52,8 +52,12 @@ export default function Page() {
       <dl className="legal">
         <Row label="Operator">
           <b>{LEGAL.name}</b>
-          <br />
-          {LEGAL.form}
+          {LEGAL.form ? (
+            <>
+              <br />
+              {LEGAL.form}
+            </>
+          ) : null}
         </Row>
         <Row label="Registered address">
           {LEGAL.addressLines.map((l) => (

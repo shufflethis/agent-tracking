@@ -52,15 +52,21 @@ export const checkUrl = (domain: string) => (CHECK_ORIGIN ? `${CHECK_ORIGIN}/che
  * the cloud's operator; a self-hoster must set their own, because the pages
  * are legal statements about whoever runs the server.
  */
+/** True when no entity is configured: the cloud's operator is printed. A self-hoster who sets LEGAL_NAME gets none of the cloud's other details by accident. */
+const cloudEntity = !trim(process.env.LEGAL_NAME);
+
 export const LEGAL = {
   name: trim(process.env.LEGAL_NAME) || "FINAL MASTER LLC",
-  form: trim(process.env.LEGAL_FORM) || "Limited Liability Company (Florida, USA)",
-  addressLines: (trim(process.env.LEGAL_ADDRESS) || "7901 4th St N Ste 300|St. Petersburg, FL 33702|USA").split("|").map((l) => l.trim()),
-  email: trim(process.env.LEGAL_EMAIL) || "hi@finalmaster.net",
-  website: trim(process.env.LEGAL_WEBSITE) || "https://finalmaster.net",
+  form: trim(process.env.LEGAL_FORM) || (cloudEntity ? "Limited Liability Company (Florida, USA)" : ""),
+  addressLines: (trim(process.env.LEGAL_ADDRESS) || (cloudEntity ? "7901 4th St N Ste 300|St. Petersburg, FL 33702|USA" : ""))
+    .split("|")
+    .map((l) => l.trim())
+    .filter(Boolean),
+  email: trim(process.env.LEGAL_EMAIL) || (cloudEntity ? "hi@finalmaster.net" : CONTACT_EMAIL),
+  website: trim(process.env.LEGAL_WEBSITE) || (cloudEntity ? "https://finalmaster.net" : SITE_ORIGIN),
   /** Where the server stands. Stated as a fact about the machine, not about the operator. */
   hostingCountry: trim(process.env.HOSTING_COUNTRY) || "Germany",
-  hostingProvider: trim(process.env.HOSTING_PROVIDER) || "NexoSystems IT-Solutions, Niederzier, Germany",
+  hostingProvider: trim(process.env.HOSTING_PROVIDER) || (cloudEntity ? "NexoSystems IT-Solutions, Niederzier, Germany" : "the hosting provider named in the privacy notice"),
   /** Article 27 GDPR representative in the EU, if one is appointed. Empty prints nothing. */
   euRepresentative: trim(process.env.LEGAL_EU_REPRESENTATIVE),
   /** Last revision of the legal texts, printed on each of them. */
