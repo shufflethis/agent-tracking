@@ -1701,3 +1701,49 @@ td.num {
     grid-template-columns: repeat(4, 1fr);
   }
 }
+
+/* Landing page sections: the headline and its lead sit centred over the
+   full-width grids beneath them, so a section reads as one block on desktop
+   and on a phone instead of a left column with cards hanging off it. Cards,
+   tables, code and the FAQ keep left-aligned text inside a centred column. */
+.section.centered > h2,
+.section.centered > .eyebrow,
+.section.centered > .dek,
+.section.centered > p.dek {
+  text-align: center;
+  margin-left: auto;
+  margin-right: auto;
+}
+.section.centered > .dek {
+  max-width: 68ch;
+}
+.section.centered > .grid2,
+.section.centered > .grid3,
+.section.centered > .grid4 {
+  text-align: left;
+}
+.section.centered > .code,
+.section.centered > pre {
+  text-align: left;
+  max-width: 860px;
+  margin-left: auto;
+  margin-right: auto;
+}
+.section.centered > .scanform,
+.section.centered > .callout,
+.section.centered > .faq,
+.section.centered > .tablewrap {
+  margin-left: auto;
+  margin-right: auto;
+}
+.section.centered > .faq {
+  max-width: 76ch;
+  text-align: left;
+}
+.section.centered > .callout {
+  text-align: left;
+}
+.section.centered > p:not(.dek) {
+  text-align: center;
+  justify-content: center;
+}

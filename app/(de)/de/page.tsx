@@ -77,7 +77,7 @@ export default function Page() {
       <Positioning lang="de" />
       <Positioning lang="de" part="faq" />
 
-      <section className="shell section">
+      <section className="shell section centered">
         <h2>Vier Ansichten, sonst nichts</h2>
         <p className="dek" style={{ maxWidth: "62ch" }}>
           Überblick, Agenten, Tools, Seiten. Jede beantwortet eine Frage, die du sonst raten müsstest. Die Screenshots
@@ -105,7 +105,7 @@ export default function Page() {
         </div>
       </section>
 
-      <section className="shell section">
+      <section className="shell section centered">
         <h2>Eine Zeile, dann auf den ersten Agenten warten</h2>
         <p className="dek" style={{ maxWidth: "62ch" }}>
           Site im Dashboard anlegen, diese Zeile auf jede Seite, auf Prüfen drücken. Tools, die du über{" "}
@@ -127,8 +127,8 @@ export default function Page() {
         </p>
       </section>
 
-      <section className="shell section">
-        <div className="callout mid" style={{ maxWidth: "var(--measure)" }}>
+      <section className="shell section centered">
+        <div className="callout mid" style={{ maxWidth: "var(--measure)", marginLeft: "auto", marginRight: "auto" }}>
           <span className="tag">Datenschutz von Anfang an</span>
           <p>
             Keine Cookies, nichts auf dem Endgerät der Besucher, keine gespeicherte Netzwerkadresse, und bei
@@ -140,7 +140,7 @@ export default function Page() {
         </div>
       </section>
 
-      <section className="shell section" id="plans">
+      <section className="shell section centered" id="plans">
         <h2>Cloud oder eigener Server</h2>
         <p className="dek" style={{ maxWidth: "62ch" }}>
           Das ganze Produkt ist Open Source unter AGPL-3.0: Snippet, Ingest, Dashboard, Log-Import, Cron-Jobs. Betreib es mit einer Compose-Datei auf deinem
@@ -178,7 +178,7 @@ export default function Page() {
         <pre className="code" style={{ marginTop: 22 }}>{SELF_HOST}</pre>
       </section>
 
-      <section className="shell section" id="pilot">
+      <section className="shell section centered" id="pilot">
         <h2>In der Pilotphase kostenlos</h2>
         <p className="dek" style={{ maxWidth: "62ch" }}>
           Agent Tracking ist neu, und der ehrliche Weg, etwas Neues zu bepreisen, ist, es erst laufen zu lassen. In
@@ -194,7 +194,7 @@ export default function Page() {
           Was wir dafür erbitten: Sag uns, was das Dashboard falsch hatte, welchen Agenten es übersehen hat, welche
           Zahl du nicht geglaubt hast. Dafür ist die Pilotphase da.
         </p>
-        <form className="scanform" action="/login" method="get" style={{ maxWidth: 560, marginTop: 22 }}>
+        <form className="scanform" action="/login" method="get" style={{ maxWidth: 560, marginTop: 22, marginLeft: "auto", marginRight: "auto" }}>
           <input type="hidden" name="lang" value="de" />
           <label htmlFor="domain-2" className="sr-only">Deine Domain</label>
           <input id="domain-2" type="text" name="domain" inputMode="url" autoComplete="url" placeholder="example.com" aria-describedby="pilot-terms" required />

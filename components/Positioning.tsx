@@ -42,7 +42,7 @@ export default function Positioning({ lang, part = "top" }: { lang: DashLang; pa
   };
   if (part === "faq") {
     return (
-      <section className="shell section" id="faq">
+      <section className="shell section centered" id="faq">
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema(c)) }} />
         <h2>{c.faqTitle}</h2>
         <p className="dek" style={{ maxWidth: "62ch" }}>
@@ -68,14 +68,14 @@ export default function Positioning({ lang, part = "top" }: { lang: DashLang; pa
   }
   return (
     <>
-      <section className="shell section" id="what">
+      <section className="shell section centered" id="what">
         <p className="eyebrow">{c.category}</p>
         <h2>{c.definitionTitle}</h2>
         <p className="dek" style={{ maxWidth: "70ch", fontSize: "var(--t-body-lg)", color: "var(--ink)" }}>{c.definition}</p>
         <p className="dek" style={{ maxWidth: "70ch" }}>{c.definitionMore}</p>
       </section>
 
-      <section className="shell section" id="not">
+      <section className="shell section centered" id="not">
         <h2>{c.notTitle}</h2>
         <p className="dek" style={{ maxWidth: "70ch" }}>{c.notDek}</p>
         <div className="grid3" style={{ marginTop: 22 }}>
@@ -89,7 +89,7 @@ export default function Positioning({ lang, part = "top" }: { lang: DashLang; pa
         </div>
       </section>
 
-      <section className="shell section" id="sees">
+      <section className="shell section centered" id="sees">
         <h2>{c.seesTitle}</h2>
         <p className="dek" style={{ maxWidth: "62ch" }}>{c.seesDek}</p>
         <div className="grid3" style={{ marginTop: 22 }}>
@@ -114,19 +114,19 @@ export default function Positioning({ lang, part = "top" }: { lang: DashLang; pa
         </div>
       </section>
 
-      <section className="shell section" id="win">
+      <section className="shell section centered" id="win">
         <h2>{c.fightTitle}</h2>
         <p className="dek" style={{ maxWidth: "70ch" }}>{c.fightDek}</p>
         <Cards rows={c.fight} cols={4} />
       </section>
 
-      <section className="shell section" id="who">
+      <section className="shell section centered" id="who">
         <h2>{c.whoTitle}</h2>
         <p className="dek" style={{ maxWidth: "70ch" }}>{c.whoDek}</p>
         <Cards rows={c.who} cols={4} />
       </section>
 
-      <section className="shell section" id="ask">
+      <section className="shell section centered" id="ask">
         <h2>{c.useTitle}</h2>
         <p className="dek" style={{ maxWidth: "70ch" }}>{c.useDek}</p>
         <Cards rows={c.use} cols={4} />
@@ -142,7 +142,7 @@ export default function Positioning({ lang, part = "top" }: { lang: DashLang; pa
         </div>
       </section>
 
-      <section className="shell section" id="why">
+      <section className="shell section centered" id="why">
         <h2>{c.whyTitle}</h2>
         <p className="dek" style={{ maxWidth: "70ch" }}>{c.whyDek}</p>
         <div className="tablewrap" style={{ marginTop: 22 }}>
@@ -174,7 +174,7 @@ export default function Positioning({ lang, part = "top" }: { lang: DashLang; pa
         <p className="dek" style={{ maxWidth: "62ch", marginTop: 14, fontSize: 14 }}>{c.compareNote}</p>
       </section>
 
-      <section className="shell section" id="europe">
+      <section className="shell section centered" id="europe">
         <h2>{c.euTitle}</h2>
         <p className="dek" style={{ maxWidth: "70ch" }}>{c.euDek}</p>
         <div className="grid2" style={{ gap: 18, marginTop: 22 }}>
@@ -188,7 +188,7 @@ export default function Positioning({ lang, part = "top" }: { lang: DashLang; pa
         </div>
       </section>
 
-      <section className="shell section" id="value">
+      <section className="shell section centered" id="value">
         <h2>{c.valueTitle}</h2>
         <p className="dek" style={{ maxWidth: "62ch" }}>{c.valueDek}</p>
         <div className="grid3" style={{ marginTop: 22 }}>
