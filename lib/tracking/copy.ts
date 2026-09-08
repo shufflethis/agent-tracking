@@ -56,6 +56,11 @@ const en = {
     numbers: (interactions: string, days: number, views: string) => `${interactions} agent interactions in ${days} days, beside ${views} page views in total.`,
     statsPageSame: "The public stats page says the same.",
     publishToShare: "Publish a stats page to share it.",
+    topAgents: "Top agents",
+    topPages: "Top pages",
+    allAgents: "All agents",
+    allPages: "All pages",
+    noneYet: "Nothing yet. The first agent shows up here when it arrives.",
   },
   agents: {
     title: "Agents",
@@ -242,6 +247,11 @@ const de: DashCopy = {
     numbers: (interactions, days, views) => `${interactions} Agenten-Interaktionen in ${days} Tagen, neben ${views} Seitenaufrufen insgesamt.`,
     statsPageSame: "Die öffentliche Statistikseite zeigt dasselbe.",
     publishToShare: "Statistikseite veröffentlichen, um sie zu teilen.",
+    topAgents: "Top-Agenten",
+    topPages: "Top-Seiten",
+    allAgents: "Alle Agenten",
+    allPages: "Alle Seiten",
+    noneYet: "Noch nichts. Der erste Agent erscheint hier, sobald er kommt.",
   },
   agents: {
     title: "Agenten",

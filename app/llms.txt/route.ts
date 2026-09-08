@@ -1,4 +1,5 @@
 import { GITHUB_URL, SITE_HOST, SITE_ORIGIN } from "@/lib/site";
+import { guides } from "@/lib/guides";
 
 export const dynamic = "force-dynamic";
 
@@ -17,6 +18,10 @@ The name is shared with other things. Agent Tracking is not LLM observability or
 - [How it works and how to install it](${SITE_ORIGIN}/docs): the snippet, verification, the four views, the stats API and the MCP tool.
 - [Demo page](${SITE_ORIGIN}/demo): two WebMCP tools you can call and watch appear in a dashboard.
 - [Source code](${GITHUB_URL}): the whole product, including the ingest, the dashboard and the cron jobs.
+
+## Guides, one question each
+
+${guides("en").map((g) => `- [${g.question}](${SITE_ORIGIN}/guides/${g.slug}): ${g.summary}`).join("\n")}
 
 ## For agents with an API token
 

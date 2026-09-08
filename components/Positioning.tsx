@@ -47,6 +47,7 @@ export default function Positioning({ lang, part = "top" }: { lang: DashLang; pa
         <h2>{c.faqTitle}</h2>
         <p className="dek" style={{ maxWidth: "62ch" }}>
           {c.faqDek} <Link href={docs}>{lang === "de" ? "Zur Dokumentation" : "Read the documentation"}</Link>.{" "}
+          <Link href={lang === "de" ? "/de/guides" : "/guides"}>{lang === "de" ? "Guides mit einer Frage je Seite" : "Guides, one question each"}</Link>.{" "}
           <a href={GITHUB_URL} rel="noopener">
             {lang === "de" ? "Quellcode auf GitHub" : "Source on GitHub"}
           </a>

@@ -91,6 +91,43 @@ export default async function Page({ params }: Params) {
         </div>
       </section>
       <section className="shell section" style={{ paddingTop: 0 }}>
+        <div className="grid2" style={{ gap: 18 }}>
+          <div className="card" style={{ padding: 28 }}>
+            <p className="smallcaps" style={{ marginBottom: 12 }}>Agents, 30 days</p>
+            {dash.agents.length === 0 ? (
+              <p style={{ color: "var(--muted)", margin: 0 }}>No agent seen yet.</p>
+            ) : (
+              <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 6 }}>
+                {dash.agents.slice(0, 8).map((a) => (
+                  <li key={a.id + a.kind} style={{ position: "relative", display: "flex", justifyContent: "space-between", gap: 12, padding: "7px 10px", fontSize: 14, borderRadius: 6, overflow: "hidden" }}>
+                    <span aria-hidden="true" style={{ position: "absolute", inset: 0, width: `${Math.max(2, Math.round(a.share * 100))}%`, background: "var(--cyan-12)", borderRadius: 6 }} />
+                    <span style={{ position: "relative" }}>
+                      {a.label} <span style={{ color: "var(--muted)", fontSize: 12 }}>{a.kind === "fetch" ? "fetch" : "referral"}</span>
+                    </span>
+                    <span style={{ position: "relative", fontFamily: "var(--mono)", color: "var(--ink-2)" }}>{a.count.toLocaleString("en-GB")}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+          <div className="card" style={{ padding: 28 }}>
+            <p className="smallcaps" style={{ marginBottom: 12 }}>Pages agents took, 30 days</p>
+            {dash.pages.length === 0 ? (
+              <p style={{ color: "var(--muted)", margin: 0 }}>No page fetched by an agent yet.</p>
+            ) : (
+              <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 6 }}>
+                {dash.pages.slice(0, 8).map((p) => (
+                  <li key={p.path} style={{ display: "flex", justifyContent: "space-between", gap: 12, padding: "7px 10px", fontSize: 14 }}>
+                    <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.path}</span>
+                    <span style={{ fontFamily: "var(--mono)", color: "var(--ink-2)" }}>{(p.fetches + p.calls).toLocaleString("en-GB")}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+      </section>
+      <section className="shell section" style={{ paddingTop: 0 }}>
         <div className="card" style={{ padding: 28, maxWidth: 840 }}>
           <h2 style={{ fontSize: 22, marginBottom: 14 }}>Share</h2>
           <ShareBar

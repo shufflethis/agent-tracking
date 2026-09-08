@@ -21,6 +21,33 @@ type Params = { params: Promise<{ domain: string }> };
  * Overview: the four counts per day over the plan's window, capped at 30 for
  * the chart so a year's worth of days does not become a comb.
  */
+/** A short ranked list with a bar behind each row, the way an overview should read at a glance. */
+function TopList({ title, all, href, empty, rows }: { title: string; all: string; href: string; empty: string; rows: { label: string; value: string; share: number }[] }) {
+  return (
+    <div className="card" style={{ padding: 26 }}>
+      <p className="smallcaps" style={{ marginBottom: 12, display: "flex", justifyContent: "space-between" }}>
+        <span>{title}</span>
+        <Link href={href} style={{ textTransform: "none", letterSpacing: 0 }}>
+          {all}
+        </Link>
+      </p>
+      {rows.length === 0 ? (
+        <p style={{ color: "var(--muted)", margin: 0, fontSize: 14 }}>{empty}</p>
+      ) : (
+        <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 6 }}>
+          {rows.map((r) => (
+            <li key={r.label} style={{ position: "relative", display: "flex", justifyContent: "space-between", gap: 12, padding: "7px 10px", fontSize: 14, borderRadius: 6, overflow: "hidden" }}>
+              <span aria-hidden="true" style={{ position: "absolute", inset: 0, width: `${Math.max(2, Math.round(r.share * 100))}%`, background: "var(--cyan-12)", borderRadius: 6 }} />
+              <span style={{ position: "relative", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.label}</span>
+              <span style={{ position: "relative", fontFamily: "var(--mono)", color: "var(--ink-2)" }}>{r.value}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 export default async function Page({ params }: Params) {
   const { domain } = await params;
   const { account, site } = await requireSite(decodeURIComponent(domain));
@@ -70,6 +97,13 @@ export default async function Page({ params }: Params) {
               </span>
             ))}
           </p>
+        </div>
+      </section>
+
+      <section className="shell section" style={{ paddingTop: 0 }}>
+        <div className="grid2" style={{ gap: 18 }}>
+          <TopList title={c.topAgents} all={c.allAgents} href={`/app/${encodeURIComponent(site.domain)}/agents`} empty={c.noneYet} rows={dash.agents.slice(0, 6).map((a) => ({ label: a.label, value: a.count.toLocaleString(nl), share: a.share }))} />
+          <TopList title={c.topPages} all={c.allPages} href={`/app/${encodeURIComponent(site.domain)}/pages`} empty={c.noneYet} rows={dash.pages.slice(0, 6).map((p) => ({ label: p.path, value: (p.fetches + p.calls).toLocaleString(nl), share: dash.pages[0] ? (p.fetches + p.calls) / (dash.pages[0].fetches + dash.pages[0].calls) : 0 }))} />
         </div>
       </section>
 

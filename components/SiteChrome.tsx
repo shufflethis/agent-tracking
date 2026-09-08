@@ -2,7 +2,7 @@ import Link from "next/link";
 import LangSwitch from "@/components/LangSwitch";
 import Wordmark from "@/components/Wordmark";
 import { href, t, type Locale } from "@/lib/i18n";
-import { CHECK_ORIGIN, GITHUB_URL } from "@/lib/site";
+import { CHECK_ORIGIN, GITHUB_URL, SITE_HOST } from "@/lib/site";
 
 /**
  * Header and footer for one locale, rendered on the server. The mobile menu
@@ -15,8 +15,9 @@ export default function SiteChrome({ locale, children }: { locale: Locale; child
 
   const NAV = [
     { href: L("/docs"), label: d.nav.docs },
+    { href: L("/guides"), label: d.nav.guides },
+    { href: `/stats/${SITE_HOST}`, label: d.nav.live },
     { href: "/demo", label: d.nav.demo },
-    { href: `${L("/")}#plans`, label: d.nav.pricing },
   ];
 
   return (
@@ -86,10 +87,16 @@ export default function SiteChrome({ locale, children }: { locale: Locale; child
                   <Link href="/demo">{d.foot.demo}</Link>
                 </li>
                 <li>
-                  <Link href={`${L("/")}#plans`}>{d.foot.pricing}</Link>
+                  <Link href={`${L("/docs")}#api`}>{d.foot.api}</Link>
                 </li>
                 <li>
-                  <Link href={`${L("/docs")}#api`}>{d.foot.api}</Link>
+                  <Link href={L("/guides")}>{d.foot.guides}</Link>
+                </li>
+                <li>
+                  <Link href={`/stats/${SITE_HOST}`}>{d.foot.live}</Link>
+                </li>
+                <li>
+                  <Link href={`${L("/")}#plans`}>{d.foot.pricing}</Link>
                 </li>
                 <li>
                   <Link href="/login">{d.foot.login}</Link>

@@ -49,6 +49,7 @@ export const HTML_LANG: Record<Locale, string> = { en: "en", de: "de" };
 export const PATH_LOCALES: Record<string, readonly Locale[]> = {
   "/": ["en", "de"],
   "/docs": ["en", "de"],
+  "/guides": ["en", "de"],
   "/imprint": ["en", "de"],
   "/privacy": ["en", "de"],
   "/terms": ["en", "de"],
@@ -86,7 +87,7 @@ export function alternatesForLocale(path: string, locale: Locale) {
 }
 
 type Dict = {
-  nav: { docs: string; demo: string; pricing: string; login: string; dashboard: string };
+  nav: { docs: string; guides: string; demo: string; live: string; pricing: string; login: string; dashboard: string };
   menu: string;
   langLabel: string;
   foot: {
@@ -96,6 +97,8 @@ type Dict = {
     pricing: string;
     login: string;
     api: string;
+    guides: string;
+    live: string;
     selfHost: string;
     source: string;
     legal: string;
@@ -110,7 +113,7 @@ type Dict = {
 
 export const DICT: Record<Locale, Dict> = {
   en: {
-    nav: { docs: "Docs", demo: "Demo", pricing: "Pricing", login: "Sign in", dashboard: "Dashboard" },
+    nav: { docs: "Docs", guides: "Guides", demo: "Demo", live: "Live stats", pricing: "Pricing", login: "Sign in", dashboard: "Dashboard" },
     menu: "Menu",
     langLabel: "Language",
     foot: {
@@ -120,6 +123,8 @@ export const DICT: Record<Locale, Dict> = {
       pricing: "Plans",
       login: "Sign in",
       api: "Stats API and MCP",
+      guides: "Guides",
+      live: "Live stats of this site",
       selfHost: "Self-hosting",
       source: "Source on GitHub",
       legal: "Legal",
@@ -132,7 +137,7 @@ export const DICT: Record<Locale, Dict> = {
     },
   },
   de: {
-    nav: { docs: "Doku", demo: "Demo", pricing: "Preise", login: "Anmelden", dashboard: "Dashboard" },
+    nav: { docs: "Doku", guides: "Guides", demo: "Demo", live: "Live-Stats", pricing: "Preise", login: "Anmelden", dashboard: "Dashboard" },
     menu: "Menü",
     langLabel: "Sprache",
     foot: {
@@ -142,6 +147,8 @@ export const DICT: Record<Locale, Dict> = {
       pricing: "Pläne",
       login: "Anmelden",
       api: "Stats-API und MCP",
+      guides: "Guides",
+      live: "Live-Statistik dieser Site",
       selfHost: "Selbst hosten",
       source: "Quellcode auf GitHub",
       legal: "Rechtliches",
