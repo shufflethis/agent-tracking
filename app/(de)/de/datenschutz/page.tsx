@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { alternatesForLocale } from "@/lib/i18n";
-import { CONTACT_EMAIL, LEGAL, PLAUSIBLE_HOST, SITE_HOST } from "@/lib/site";
+import { CONTACT_EMAIL, LEGAL, PLAUSIBLE_HOST, PLAUSIBLE_HOSTING, SITE_HOST } from "@/lib/site";
 import { RAW_RETENTION_DAYS } from "@/lib/tracking/plans";
 
 // Rendered per request, not at build: the host, the entity on the legal pages and the
@@ -61,7 +61,7 @@ export default function Page() {
         </p>
         {PLAUSIBLE_HOST ? (
           <p>
-            Seitenaufrufe dieser Site zählen wir mit Plausible Analytics, geladen von {PLAUSIBLE_HOST}, einer von uns betriebenen Instanz. Es setzt kein Cookie, speichert keine
+            Seitenaufrufe dieser Site zählen wir mit Plausible Analytics, geladen von {PLAUSIBLE_HOST}, einer Instanz, die wir selbst auf einem Server in Deutschland betreiben{PLAUSIBLE_HOSTING ? `, bereitgestellt von ${PLAUSIBLE_HOSTING}` : ""}; an Plausible Insights OÜ, den Hersteller der Software, geht nichts. Es setzt kein Cookie, speichert keine
             Netzwerkadresse und bildet keinen Fingerprint: Es erfasst Seite, Referrer, Browserfamilie und Land, aus der Adresse abgeleitet und dann verworfen, und fasst sie zu
             Tageszahlen zusammen. Rechtsgrundlage ist unser berechtigtes Interesse zu wissen, welche Seiten gelesen werden (Art. 6 Abs. 1 lit. f DSGVO). Es läuft nur auf dieser
             Site, nie auf einer Kundensite.
@@ -125,6 +125,11 @@ export default function Page() {
           <li>
             <b>Brevo</b>, Berlin: stellt unsere E-Mails zu.
           </li>
+          {PLAUSIBLE_HOSTING ? (
+            <li>
+              <b>{PLAUSIBLE_HOSTING}</b>: stellt den Server, auf dem unsere eigene Plausible-Instanz für die Seitenaufrufe dieser Site läuft. Kein Zugriff auf die Inhalte im Regelbetrieb.
+            </li>
+          ) : null}
           <li>
             <b>GitHub, Inc.</b>, San Francisco, USA: hält eine tägliche Kopie der Datenbank, mit AES-256 verschlüsselt, bevor sie den Server verlässt. GitHub kann sie nicht lesen.
             Die Übermittlung stützt sich auf das EU-US Data Privacy Framework, dem GitHub angehört.

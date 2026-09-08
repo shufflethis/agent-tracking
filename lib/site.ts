@@ -42,6 +42,8 @@ export const LEGACY_SNIPPET_HOSTS: readonly string[] = (trim(process.env.LEGACY_
  * Empty, the default, loads nothing.
  */
 export const PLAUSIBLE_SCRIPT = trim(process.env.PLAUSIBLE_SCRIPT);
+/** Who hosts that Plausible instance, for the privacy notice, for example "netcup GmbH, Karlsruhe, Germany". */
+export const PLAUSIBLE_HOSTING = trim(process.env.PLAUSIBLE_HOSTING);
 export const PLAUSIBLE_HOST = PLAUSIBLE_SCRIPT ? PLAUSIBLE_SCRIPT.replace(/^https?:\/\//, "").replace(/\/.*$/, "") : "";
 
 /** The public source, linked from the footer and the docs. */

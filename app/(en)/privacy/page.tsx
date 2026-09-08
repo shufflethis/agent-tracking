@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { alternatesFor } from "@/lib/i18n";
-import { CONTACT_EMAIL, LEGAL, PLAUSIBLE_HOST, SITE_HOST } from "@/lib/site";
+import { CONTACT_EMAIL, LEGAL, PLAUSIBLE_HOST, PLAUSIBLE_HOSTING, SITE_HOST } from "@/lib/site";
 import { RAW_RETENTION_DAYS } from "@/lib/tracking/plans";
 
 // Rendered per request, not at build: the host, the entity on the legal pages and the
@@ -65,7 +65,7 @@ export default function Page() {
         </p>
         {PLAUSIBLE_HOST ? (
           <p>
-            Page views of this site are counted with Plausible Analytics, loaded from {PLAUSIBLE_HOST}, an instance we operate. It sets no cookie, stores no network address and
+            Page views of this site are counted with Plausible Analytics, loaded from {PLAUSIBLE_HOST}, an instance we operate ourselves on a server in Germany{PLAUSIBLE_HOSTING ? ` provided by ${PLAUSIBLE_HOSTING}` : ""}; nothing goes to Plausible Insights OÜ, the maker of the software. It sets no cookie, stores no network address and
             builds no fingerprint: it records the page, the referrer, the browser family and the country, derived from the address and then discarded, and rolls them into daily
             counts. The legal basis is our legitimate interest in knowing which pages are read (Art. 6 (1) (f) GDPR). It runs only on this site, never on a customer&apos;s.
           </p>
@@ -128,6 +128,11 @@ export default function Page() {
           <li>
             <b>Brevo</b>, Berlin: delivers our email.
           </li>
+          {PLAUSIBLE_HOSTING ? (
+            <li>
+              <b>{PLAUSIBLE_HOSTING}</b>: provides the server that runs our own Plausible instance for this site&apos;s page-view counts. No access to the contents in regular operation.
+            </li>
+          ) : null}
           <li>
             <b>GitHub, Inc.</b>, San Francisco, USA: holds a daily copy of the database, encrypted with AES-256 before it leaves the server. GitHub cannot read it. The transfer
             rests on the EU-US Data Privacy Framework, of which GitHub is a member.
