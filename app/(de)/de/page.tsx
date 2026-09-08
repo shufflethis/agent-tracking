@@ -1,21 +1,37 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import HeroArt from "@/components/HeroArt";
+import Positioning from "@/components/Positioning";
 import { heroFor } from "@/lib/hero";
 import { alternatesForLocale } from "@/lib/i18n";
 import { PLANS, RAW_RETENTION_DAYS } from "@/lib/tracking/plans";
 import { snippetFor } from "@/lib/tracking/snippet";
-import { CHECK_ORIGIN, CONTACT_EMAIL, GITHUB_URL } from "@/lib/site";
+import { CHECK_ORIGIN, CONTACT_EMAIL, GITHUB_URL, LEGAL, SITE_ORIGIN } from "@/lib/site";
 
 // Rendered per request, not at build: the host, the entity on the legal pages and the
 // snippet line come from the environment, and a self-hosted copy must print its own.
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Agent Tracking: Agenten auf deiner Site messen",
+  title: { absolute: "Agent Tracking: sieh, was KI-Agenten auf deiner Website tun" },
   description:
-    "Eine Zeile Script zeigt, welche KI-Assistenten Besucher schicken, welche Agenten deine Seiten abrufen, welche WebMCP-Tools sie aufrufen und ob sie zum Ziel kommen. Keine Cookies, keine personenbezogenen Daten. Open Source, Hosting in Deutschland, in der Pilotphase kostenlos.",
+    "Analytics für KI-Agenten: welche Assistenten Besucher schicken, welche Crawler deine Seiten lesen (verifiziert), welche MCP- und WebMCP-Tools Agenten aufrufen und ob sie ans Ziel kommen. Ein Script-Tag, keine Cookies, keine personenbezogenen Daten. Open Source, Hosting in Deutschland, kostenlose Pilotphase.",
   alternates: alternatesForLocale("/", "de"),
+  robots: { index: true, follow: true, "max-image-preview": "large", "max-snippet": -1 },
+  openGraph: { title: "Agent Tracking: sieh, was KI-Agenten auf deiner Website tun", description: "KI-Referrals, verifizierte Crawler-Abrufe, MCP- und WebMCP-Tool-Aufrufe, Agenten-Conversions. Ein Script-Tag, keine Cookies. Open Source, Hosting in Deutschland.", url: "/de", type: "website" },
+  twitter: { card: "summary_large_image" },
+};
+
+const PAGE_LD = {
+  "@context": "https://schema.org",
+  "@type": "WebPage",
+  "@id": `${SITE_ORIGIN}/de#webpage`,
+  url: `${SITE_ORIGIN}/de`,
+  name: "Agent Tracking: sieh, was KI-Agenten auf deiner Website tun",
+  inLanguage: "de",
+  dateModified: LEGAL.revised,
+  isPartOf: { "@id": `${SITE_ORIGIN}/#app` },
+  about: { "@id": `${SITE_ORIGIN}/#app` },
 };
 
 const SELF_HOST = `git clone ${GITHUB_URL}.git && cd agent-tracking
@@ -28,6 +44,7 @@ const free = PLANS.free;
 export default function Page() {
   return (
     <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(PAGE_LD) }} />
       <section className="shell pagehead withart" style={{ paddingTop: 64, paddingBottom: 20 }}>
         <HeroArt name={heroFor("home")!} />
         <p className="eyebrow">Open Source · kostenlose Pilotphase</p>
@@ -52,37 +69,7 @@ export default function Page() {
         </p>
       </section>
 
-      <section className="shell section" style={{ paddingTop: 46 }}>
-        <div className="grid3">
-          {[
-            {
-              k: "Referrals",
-              t: "Wer Besucher schickt",
-              d: "Ein Besuch von chatgpt.com, perplexity.ai, claude.ai und einem Dutzend weiteren wird dem Assistenten zugeordnet, aus Referrer und utm_source. Du siehst, welche Assistenten dich empfehlen und auf welchen Seiten sie landen.",
-            },
-            {
-              k: "Abrufe",
-              t: "Wer deine Seiten liest",
-              d: "GPTBot, ClaudeBot, PerplexityBot, Google-Extended und die übrigen werden gegen eine veröffentlichte, versionierte Liste abgeglichen. Welcher Agent, welche Seiten, wie oft, mit Trend zur Vorperiode.",
-            },
-            {
-              k: "Tools",
-              t: "Was sie damit tun",
-              d: "Jedes WebMCP-Tool, das du registrierst, wird automatisch gesehen: Aufrufe, Dauer, Erfolgsquote, Fehlerklassen und die Tools, die niemand aufruft. Markiere einen Checkout oder eine Buchung als Ziel und sieh, ob Agenten dort ankommen.",
-            },
-          ].map((c) => (
-            <div className="card tc" key={c.k}>
-              <p className="smallcaps" style={{ marginBottom: 8 }}>
-                {c.k}
-              </p>
-              <h3 style={{ fontSize: 18, fontWeight: 600, marginBottom: 8 }}>{c.t}</h3>
-              <p style={{ marginTop: 0, marginBottom: 0, fontSize: 14.5, color: "var(--ink-2)", lineHeight: 1.55 }}>
-                {c.d}
-              </p>
-            </div>
-          ))}
-        </div>
-      </section>
+      <Positioning lang="de" />
 
       <section className="shell section">
         <h2>Vier Ansichten, sonst nichts</h2>
@@ -209,6 +196,7 @@ export default function Page() {
           </button>
         </form>
       </section>
+      <Positioning lang="de" part="faq" />
     </>
   );
 }

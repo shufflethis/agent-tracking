@@ -4,9 +4,11 @@ export const dynamic = "force-dynamic";
 
 const BODY = `# ${SITE_HOST}
 
-> Agent Tracking measures what AI agents do on a website: which assistants send visitors, which crawlers fetch pages, which WebMCP tools are called and whether they finish. One line of script, no cookies, no personal data. Open source (AGPL-3.0), hosted in Germany, self-hostable.
+> Agent Tracking is analytics for AI agents on a website: it records which AI assistants send visitors, which AI crawlers and live fetchers read pages (verified against vendor IP ranges), which MCP and WebMCP tools an agent calls inside the browser, and whether the agent reaches a goal. One script tag, no cookies, no personal data. Open source (AGPL-3.0), hosted in Germany, self-hostable.
 
 ## Read first
+
+- [Everything on one page](${SITE_ORIGIN}/llms-full.txt): what it does, what it sees, how it differs from analytics and bot managers, plans, API, FAQ, as Markdown.
 
 - [How it works and how to install it](${SITE_ORIGIN}/docs): the snippet, verification, the four views, the stats API and the MCP tool.
 - [Demo page](${SITE_ORIGIN}/demo): two WebMCP tools you can call and watch appear in a dashboard.

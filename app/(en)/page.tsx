@@ -1,21 +1,37 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import HeroArt from "@/components/HeroArt";
+import Positioning from "@/components/Positioning";
 import { heroFor } from "@/lib/hero";
 import { alternatesFor } from "@/lib/i18n";
 import { PLANS, RAW_RETENTION_DAYS } from "@/lib/tracking/plans";
 import { snippetFor } from "@/lib/tracking/snippet";
-import { CHECK_ORIGIN, CONTACT_EMAIL, GITHUB_URL } from "@/lib/site";
+import { CHECK_ORIGIN, CONTACT_EMAIL, GITHUB_URL, LEGAL, SITE_ORIGIN } from "@/lib/site";
 
 // Rendered per request, not at build: the host, the entity on the legal pages and the
 // snippet line come from the environment, and a self-hosted copy must print its own.
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Agent Tracking: measure agents on your site",
+  title: { absolute: "Agent Tracking: see what AI agents do on your website" },
   description:
-    "One line of script shows which AI assistants send visitors, which agents fetch your pages, which WebMCP tools they call and whether they finish. No cookies, no personal data. Open source, hosted in Germany, free during the pilot.",
+    "Analytics for AI agents: which assistants send visitors, which crawlers read your pages (verified), which MCP and WebMCP tools agents call and whether they finish. One script tag, no cookies, no personal data. Open source, hosted in Germany, free pilot.",
   alternates: alternatesFor("/"),
+  robots: { index: true, follow: true, "max-image-preview": "large", "max-snippet": -1 },
+  openGraph: { title: "Agent Tracking: see what AI agents do on your website", description: "AI referrals, verified crawler fetches, MCP and WebMCP tool calls, agent conversions. One script tag, no cookies. Open source, hosted in Germany.", url: "/", type: "website" },
+  twitter: { card: "summary_large_image" },
+};
+
+const PAGE_LD = {
+  "@context": "https://schema.org",
+  "@type": "WebPage",
+  "@id": `${SITE_ORIGIN}/#webpage`,
+  url: SITE_ORIGIN,
+  name: "Agent Tracking: see what AI agents do on your website",
+  inLanguage: "en",
+  dateModified: LEGAL.revised,
+  isPartOf: { "@id": `${SITE_ORIGIN}/#app` },
+  about: { "@id": `${SITE_ORIGIN}/#app` },
 };
 
 const SELF_HOST = `git clone ${GITHUB_URL}.git && cd agent-tracking
@@ -36,6 +52,7 @@ const free = PLANS.free;
 export default function Page() {
   return (
     <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(PAGE_LD) }} />
       <section className="shell pagehead withart" style={{ paddingTop: 64, paddingBottom: 20 }}>
         <HeroArt name={heroFor("home")!} />
         <p className="eyebrow">Open source · free pilot</p>
@@ -59,37 +76,7 @@ export default function Page() {
         </p>
       </section>
 
-      <section className="shell section" style={{ paddingTop: 46 }}>
-        <div className="grid3">
-          {[
-            {
-              k: "Referrals",
-              t: "Who sends visitors",
-              d: "A visit from chatgpt.com, perplexity.ai, claude.ai and a dozen more is attributed to the assistant, from the referrer and the utm_source. You see which assistants recommend you and which pages they land on.",
-            },
-            {
-              k: "Fetches",
-              t: "Who reads your pages",
-              d: "GPTBot, ClaudeBot, PerplexityBot, Google-Extended and the rest are matched against a published, versioned list. Which agent, which pages, how often, with a trend against the previous period.",
-            },
-            {
-              k: "Tools",
-              t: "What they do with them",
-              d: "Every WebMCP tool you register is seen automatically: calls, duration, success rate, error classes, and the tools nobody has called. Mark a checkout or a booking as a goal and see whether agents get there.",
-            },
-          ].map((c) => (
-            <div className="card tc" key={c.k}>
-              <p className="smallcaps" style={{ marginBottom: 8 }}>
-                {c.k}
-              </p>
-              <h3 style={{ fontSize: 18, fontWeight: 600, marginBottom: 8 }}>{c.t}</h3>
-              <p style={{ marginTop: 0, marginBottom: 0, fontSize: 14.5, color: "var(--ink-2)", lineHeight: 1.55 }}>
-                {c.d}
-              </p>
-            </div>
-          ))}
-        </div>
-      </section>
+      <Positioning lang="en" />
 
       <section className="shell section">
         <h2>Four views, nothing else</h2>
@@ -216,6 +203,7 @@ export default function Page() {
           </button>
         </form>
       </section>
+      <Positioning lang="en" part="faq" />
     </>
   );
 }

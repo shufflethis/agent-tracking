@@ -1639,3 +1639,44 @@ td.num {
     animation: none !important;
   }
 }
+
+/* FAQ on the landing page: native disclosures, readable closed and open. */
+.faq details {
+  border-top: 1px solid var(--rule);
+  padding: 4px 0;
+}
+.faq details:last-child {
+  border-bottom: 1px solid var(--rule);
+}
+.faq summary {
+  cursor: pointer;
+  list-style: none;
+  padding: 14px 0;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.faq summary::-webkit-details-marker {
+  display: none;
+}
+.faq summary::before {
+  content: "+";
+  font-family: var(--mono);
+  color: var(--cyan);
+  width: 1em;
+  flex: none;
+}
+.faq details[open] summary::before {
+  content: "\2013";
+}
+.faq summary h3 {
+  font-size: 17px;
+  font-weight: 600;
+  margin: 0;
+}
+.faq details p {
+  margin: 0 0 16px 2em;
+  color: var(--ink-2);
+  max-width: 70ch;
+  line-height: 1.6;
+}
