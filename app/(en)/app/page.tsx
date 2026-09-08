@@ -50,7 +50,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ a
         ) : (
           <p className="dek" style={{ marginBottom: 24 }}>{c.empty}</p>
         )}
-        <div className="card" style={{ padding: 28, maxWidth: 640 }}>
+        <div className="card" style={{ padding: 28 }}>
           <h2 style={{ fontSize: 22, marginBottom: 6 }}>{c.addTitle}</h2>
           {canAdd ? <AddSiteForm initial={add ?? ""} c={actionStrings(lang)} /> : <p style={{ color: "var(--ink-2)", margin: 0 }}>{c.planCovers(plan.name, plan.domains)}</p>}
         </div>

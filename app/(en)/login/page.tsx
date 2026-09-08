@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { safeNext } from "@/lib/safe-next";
 import LoginForm from "@/components/LoginForm";
 import { readSessionToken, SESSION_COOKIE } from "@/lib/session";
-import { dashCopy, langFromHeader } from "@/lib/tracking/copy";
+import { dashCopy } from "@/lib/tracking/copy";
 
 export const metadata: Metadata = {
   title: "Sign in to Agent Tracking",
@@ -14,12 +14,12 @@ export const metadata: Metadata = {
 
 export const runtime = "nodejs";
 
-/** No account yet, so no stored language: the browser's Accept-Language decides here. */
+/** English unless the German landing page sent the visitor here with ?lang=de. The browser's language is not consulted. */
 export default async function Page({ searchParams }: { searchParams: Promise<{ next?: string; domain?: string; lang?: string }> }) {
   const { next, domain, lang: langParam } = await searchParams;
   const session = readSessionToken((await cookies()).get(SESSION_COOKIE)?.value);
   if (session) redirect(safeNext(next));
-  const lang = langParam === "de" || langParam === "en" ? langParam : langFromHeader((await headers()).get("accept-language"));
+  const lang = langParam === "de" ? "de" : "en";
   const c = dashCopy(lang).login;
   return (
     <section className="shell" style={{ paddingTop: 72, paddingBottom: 60 }}>
@@ -29,7 +29,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ n
         <p className="dek" style={{ maxWidth: "56ch" }}>{c.dek}</p>
       </div>
       <div className="card" style={{ padding: 28, maxWidth: 560 }}>
-        <LoginForm next={next} domain={domain} labels={{ emailLabel: c.emailLabel, placeholder: c.placeholder, sending: c.sending, submit: c.submit, failed: c.failed, checkInbox: c.checkInbox, onItsWay: c.onItsWay("{email}") }} />
+        <LoginForm next={next} domain={domain} lang={lang} labels={{ emailLabel: c.emailLabel, placeholder: c.placeholder, sending: c.sending, submit: c.submit, failed: c.failed, checkInbox: c.checkInbox, onItsWay: c.onItsWay("{email}") }} />
       </div>
     </section>
   );

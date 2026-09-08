@@ -6,7 +6,7 @@ import { useState } from "react";
 export type LoginLabels = { emailLabel: string; placeholder: string; sending: string; submit: string; failed: string; checkInbox: string; onItsWay: string };
 
 /** Address in, link out. The rest happens in the email. Labels come in as strings; {email} in onItsWay is replaced. */
-export default function LoginForm({ next, domain, labels }: { next?: string; domain?: string; labels: LoginLabels }) {
+export default function LoginForm({ next, domain, lang = "en", labels }: { next?: string; domain?: string; lang?: "en" | "de"; labels: LoginLabels }) {
   const [email, setEmail] = useState("");
   const [state, setState] = useState<"idle" | "working" | "sent">("idle");
   const [failure, setFailure] = useState<string | null>(null);
@@ -20,7 +20,7 @@ export default function LoginForm({ next, domain, labels }: { next?: string; dom
     const res = await fetch("/api/auth", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ email: form.get("email"), company: form.get("company"), next: target }),
+      body: JSON.stringify({ email: form.get("email"), company: form.get("company"), next: target, lang }),
     }).catch(() => null);
     const data = res ? await res.json().catch(() => ({})) : {};
     if (!res || !data.ok) {

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { actionStrings, dashCopy, dashLang, langFromHeader } from "./copy";
+import { actionStrings, dashCopy, dashLang } from "./copy";
 
 const shape = (v: unknown, path: string[] = []): string[] => {
   if (typeof v === "function") return [`${path.join(".")}:fn`];
@@ -21,10 +21,7 @@ describe("dashboard copy", () => {
       walk(dashCopy(lang), lang);
     }
   });
-  it("picks the language from the browser and tolerates junk", () => {
-    assert.equal(langFromHeader("de-DE,de;q=0.9,en;q=0.8"), "de");
-    assert.equal(langFromHeader("en-US,en;q=0.9"), "en");
-    assert.equal(langFromHeader(null), "en");
+  it("falls back to English for anything but de", () => {
     assert.equal(dashLang("fr"), "en");
     assert.equal(dashLang("de"), "de");
     assert.equal(typeof actionStrings("de").addSite, "string");

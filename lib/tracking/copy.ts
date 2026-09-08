@@ -18,12 +18,6 @@ export function dashLang(raw: string | null | undefined): DashLang {
   return raw === "de" ? "de" : "en";
 }
 
-/** The language a new account starts with, from the browser's Accept-Language. */
-export function langFromHeader(acceptLanguage: string | null | undefined): DashLang {
-  const first = (acceptLanguage ?? "").split(",")[0]?.trim().toLowerCase() ?? "";
-  return first.startsWith("de") ? "de" : "en";
-}
-
 export const numberLocale = (lang: DashLang) => (lang === "de" ? "de-DE" : "en-GB");
 
 const en = {

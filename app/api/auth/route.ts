@@ -9,7 +9,6 @@ import { safeNext } from "@/lib/safe-next";
 import { loginUrl, mintLoginToken, mintSessionToken, readLoginToken, sessionCookieOptions, SESSION_COOKIE } from "@/lib/session";
 import { createHash } from "node:crypto";
 import { ensureAccount, markTokenUsed, setLang } from "@/lib/tracking/db";
-import { langFromHeader } from "@/lib/tracking/copy";
 
 export const runtime = "nodejs";
 
@@ -34,12 +33,12 @@ const CSS =
   "main{max-width:34rem;margin:0 auto;padding:14vh 24px 6rem}h1{font-size:1.7rem;line-height:1.25;margin:0 0 1.1rem}p{color:#c4c4c8;margin:0 0 1.1rem}" +
   "strong{color:#f0f0f0}form{margin:1.8rem 0}button{border:0;border-radius:8px;padding:13px 22px;font:inherit;font-weight:600;color:#060606;background:linear-gradient(135deg,#3fd8ca,#8b3fca);cursor:pointer}.small{color:#8a8a94;font-size:14px}";
 
-function confirmPage(email: string, token: string, next: string): string {
+function confirmPage(email: string, token: string, next: string, lang: string): string {
   return (
     `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">` +
     `<meta name="robots" content="noindex,nofollow"><title>Sign in | ${SITE_HOST}</title><style>${CSS}</style></head><body><main>` +
     `<h1>Sign in as ${escapeHtml(email)}?</h1><p>This opens the Agent Tracking dashboard in this browser for 30 days.</p>` +
-    `<form method="post" action="/api/auth"><input type="hidden" name="k" value="${escapeHtml(token)}"><input type="hidden" name="next" value="${escapeHtml(next)}"><button type="submit">Sign in</button></form>` +
+    `<form method="post" action="/api/auth"><input type="hidden" name="k" value="${escapeHtml(token)}"><input type="hidden" name="next" value="${escapeHtml(next)}"><input type="hidden" name="lang" value="${escapeHtml(lang)}"><button type="submit">Sign in</button></form>` +
     `<p class="small">Nothing happens until you press the button. If you did not ask for this link, close the page.</p></main></body></html>`
   );
 }
@@ -62,7 +61,7 @@ export async function GET(request: Request) {
   const token = url.searchParams.get("k") ?? "";
   const claims = readLoginToken(token);
   if (!claims) return html(renderProblemPage("That link is no longer valid", "Sign-in links last 30 minutes. Ask for a new one on the login page."), 410);
-  return html(confirmPage(claims.email, token, safeNext(url.searchParams.get("next"))));
+  return html(confirmPage(claims.email, token, safeNext(url.searchParams.get("next")), url.searchParams.get("lang") === "de" ? "de" : "en"));
 }
 
 export async function POST(request: Request) {
@@ -79,7 +78,9 @@ export async function POST(request: Request) {
       return html(renderProblemPage("That link was already used", "Each sign-in link works once. Ask for a new one on the login page."), 410);
     }
     const account = ensureAccount(claims.email);
-    if (!account.lang) setLang(claims.email, langFromHeader(request.headers.get("accept-language")));
+    // A new account speaks English unless the person came through the German
+    // landing page; the browser's Accept-Language is deliberately not consulted.
+    if (!account.lang) setLang(claims.email, body.lang === "de" ? "de" : "en");
     (await cookies()).set({ ...sessionCookieOptions(), value: mintSessionToken(claims.email) });
     return new Response(null, { status: 303, headers: { location: safeNext(body.next) } });
   }
@@ -97,7 +98,8 @@ export async function POST(request: Request) {
   const quota = await consume(loginQuotaKey(email), LOGIN_LINKS_PER_DAY);
   if (!quota.allowed) return Response.json({ ok: false, detail: "Too many sign-in links for that address today." }, { status: 429 });
 
-  const link = `${loginUrl(mintLoginToken(email))}&next=${encodeURIComponent(safeNext(body.next))}`;
+  const lang = body.lang === "de" ? "de" : "en";
+  const link = `${loginUrl(mintLoginToken(email))}&next=${encodeURIComponent(safeNext(body.next))}&lang=${lang}`;
   const subject = `Your sign-in link for ${SITE_HOST}`;
   const text =
     `Open this link and press the button to sign in to the Agent Tracking dashboard:\n\n${link}\n\n` +
