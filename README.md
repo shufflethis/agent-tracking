@@ -6,7 +6,7 @@
 
 <p align="center"><b>See what AI agents do on your website.</b><br>
 Which assistants send you visitors, which agents read your pages, which of your MCP and WebMCP tools they call, and whether they get to the goal.<br>
-One line of script. No cookies, no personal data, no third-party scripts.</p>
+One line of script. No cookies, no personal data, no ad or social trackers.</p>
 
 <p align="center">
   <a href="https://github.com/shufflethis/agent-tracking/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/shufflethis/agent-tracking/actions/workflows/ci.yml/badge.svg"></a>

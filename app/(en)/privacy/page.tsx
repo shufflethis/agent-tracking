@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { alternatesFor } from "@/lib/i18n";
-import { CONTACT_EMAIL, LEGAL, SITE_HOST } from "@/lib/site";
+import { CONTACT_EMAIL, LEGAL, PLAUSIBLE_HOST, SITE_HOST } from "@/lib/site";
 import { RAW_RETENTION_DAYS } from "@/lib/tracking/plans";
 
 // Rendered per request, not at build: the host, the entity on the legal pages and the
@@ -35,7 +35,7 @@ export default function Page() {
       <div className="callout mid" style={{ maxWidth: "var(--measure)" }}>
         <span className="tag">The short version</span>
         <p>
-          No cookies, no third-party scripts, no advertising, no analytics service. Visiting this site leaves a server log line that is deleted after 14 days. An account is an
+          No cookies, no advertising, no ad or social trackers.{PLAUSIBLE_HOST ? " Page views of this site are counted with Plausible, without cookies or identifiers." : ""} Visiting this site leaves a server log line that is deleted after 14 days. An account is an
           email address. On customers&apos; sites our script records what AI agents do, without addresses or identifiers, on the customer&apos;s behalf. Everything is stored on
           one server in {LEGAL.hostingCountry}.
         </p>
@@ -60,8 +60,16 @@ export default function Page() {
           days. The legal basis is our legitimate interest in a working and secure service (Art. 6 (1) (f) GDPR).
         </p>
         <p>
-          Fonts are served from this server. There is no font, script, image or style loaded from anyone else&apos;s domain, so no other party learns of your visit. The site
-          carries its own tracking snippet, which records the same things on this site as it does on customers&apos; sites, described below.
+          Fonts are served from this server. No font, image or style is loaded from anyone else&apos;s domain. The site carries its own tracking snippet, which records the same
+          things on this site as it does on customers&apos; sites, described below.
+        </p>
+        {PLAUSIBLE_HOST ? (
+          <p>
+            Page views of this site are counted with Plausible Analytics, loaded from {PLAUSIBLE_HOST}, an instance we operate. It sets no cookie, stores no network address and
+            builds no fingerprint: it records the page, the referrer, the browser family and the country, derived from the address and then discarded, and rolls them into daily
+            counts. The legal basis is our legitimate interest in knowing which pages are read (Art. 6 (1) (f) GDPR). It runs only on this site, never on a customer&apos;s.
+          </p>
+        ) : null}
         </p>
 
         <h2 id="account">Accounts and sign-in</h2>

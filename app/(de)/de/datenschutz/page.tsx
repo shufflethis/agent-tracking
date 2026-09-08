@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { alternatesForLocale } from "@/lib/i18n";
-import { CONTACT_EMAIL, LEGAL, SITE_HOST } from "@/lib/site";
+import { CONTACT_EMAIL, LEGAL, PLAUSIBLE_HOST, SITE_HOST } from "@/lib/site";
 import { RAW_RETENTION_DAYS } from "@/lib/tracking/plans";
 
 // Rendered per request, not at build: the host, the entity on the legal pages and the
@@ -30,7 +30,7 @@ export default function Page() {
       <div className="callout mid" style={{ maxWidth: "var(--measure)" }}>
         <span className="tag">Die Kurzfassung</span>
         <p>
-          Keine Cookies, keine Fremdscripts, keine Werbung, kein Analytics-Dienst. Ein Besuch hinterlässt eine Server-Log-Zeile, die nach 14 Tagen gelöscht wird. Ein Konto ist
+          Keine Cookies, keine Werbung, keine Werbe- oder Social-Tracker.{PLAUSIBLE_HOST ? " Seitenaufrufe dieser Site zählen wir mit Plausible, ohne Cookies und ohne Kennungen." : ""} Ein Besuch hinterlässt eine Server-Log-Zeile, die nach 14 Tagen gelöscht wird. Ein Konto ist
           eine E-Mail-Adresse. Auf den Sites unserer Kunden erfasst unser Script, was KI-Agenten tun, ohne Adressen oder Kennungen, im Auftrag des Kunden. Alles liegt auf einem
           Server in {country}.
         </p>
@@ -56,9 +56,17 @@ export default function Page() {
           nach 14 Tagen gelöscht. Rechtsgrundlage ist unser berechtigtes Interesse an einem funktionierenden und sicheren Dienst (Art. 6 Abs. 1 lit. f DSGVO).
         </p>
         <p>
-          Schriften werden von diesem Server ausgeliefert. Keine Schrift, kein Script, kein Bild und kein Stylesheet wird von einer fremden Domain geladen; niemand sonst erfährt
-          von Ihrem Besuch. Die Site trägt ihr eigenes Tracking-Snippet, das hier dasselbe erfasst wie auf Kundensites, siehe unten.
+          Schriften werden von diesem Server ausgeliefert. Keine Schrift, kein Bild und kein Stylesheet wird von einer fremden Domain geladen. Die Site trägt ihr eigenes
+          Tracking-Snippet, das hier dasselbe erfasst wie auf Kundensites, siehe unten.
         </p>
+        {PLAUSIBLE_HOST ? (
+          <p>
+            Seitenaufrufe dieser Site zählen wir mit Plausible Analytics, geladen von {PLAUSIBLE_HOST}, einer von uns betriebenen Instanz. Es setzt kein Cookie, speichert keine
+            Netzwerkadresse und bildet keinen Fingerprint: Es erfasst Seite, Referrer, Browserfamilie und Land, aus der Adresse abgeleitet und dann verworfen, und fasst sie zu
+            Tageszahlen zusammen. Rechtsgrundlage ist unser berechtigtes Interesse zu wissen, welche Seiten gelesen werden (Art. 6 Abs. 1 lit. f DSGVO). Es läuft nur auf dieser
+            Site, nie auf einer Kundensite.
+          </p>
+        ) : null}
 
         <h2 id="account">Konto und Anmeldung</h2>
         <p>

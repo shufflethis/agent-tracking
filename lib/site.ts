@@ -35,6 +35,15 @@ export const LEGACY_SNIPPET_HOSTS: readonly string[] = (trim(process.env.LEGACY_
   .map((h) => h.trim().toLowerCase())
   .filter(Boolean);
 
+/**
+ * Optional page-view counter for the site itself: the URL of a Plausible
+ * script (self-hosted or plausible.io). Cookieless, no personal identifiers,
+ * and it counts only visits to this installation, never a customer's site.
+ * Empty, the default, loads nothing.
+ */
+export const PLAUSIBLE_SCRIPT = trim(process.env.PLAUSIBLE_SCRIPT);
+export const PLAUSIBLE_HOST = PLAUSIBLE_SCRIPT ? PLAUSIBLE_SCRIPT.replace(/^https?:\/\//, "").replace(/\/.*$/, "") : "";
+
 /** The public source, linked from the footer and the docs. */
 export const GITHUB_URL = trim(process.env.GITHUB_URL) || "https://github.com/shufflethis/agent-tracking";
 

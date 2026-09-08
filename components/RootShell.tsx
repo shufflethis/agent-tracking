@@ -1,7 +1,7 @@
 import { DM_Mono, Jost, Open_Sans } from "next/font/google";
 import SiteChrome from "@/components/SiteChrome";
 import { HTML_LANG, type Locale } from "@/lib/i18n";
-import { LEGAL, SITE_HOST, SITE_NAME, SITE_ORIGIN } from "@/lib/site";
+import { LEGAL, PLAUSIBLE_SCRIPT, SITE_HOST, SITE_NAME, SITE_ORIGIN } from "@/lib/site";
 import "@/app/globals.css";
 
 /*
@@ -49,8 +49,10 @@ const SITE_LD = {
  * The document shell, shared by both locales' root layouts. Each locale tree
  * has its own root layout so <html lang> is right for a screen reader.
  *
- * No third-party script anywhere: the only tag in the body is this site's own
- * agent.js, the same line a customer pastes. It is a plain tag rather than
+ * The only tag in the body is this site's own agent.js, the same line a
+ * customer pastes. The head may carry a Plausible page-view script when the
+ * installation sets PLAUSIBLE_SCRIPT: cookieless, no identifiers, and it
+ * counts this site's visitors, never a customer's. It is a plain tag rather than
  * next/script so it is in the served HTML, which is what verification reads.
  * data-demo because /demo needs window.__wmtSimulate.
  */
@@ -59,6 +61,17 @@ export default function RootShell({ locale, children }: { locale: Locale; childr
     <html lang={HTML_LANG[locale]} className={`${jost.variable} ${openSans.variable} ${dmMono.variable}`}>
       <head>
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(SITE_LD) }} />
+        {PLAUSIBLE_SCRIPT ? (
+          <>
+            {/* Privacy-friendly analytics by Plausible. The queue shim lets the inline init run before the async script arrives. */}
+            <script async src={PLAUSIBLE_SCRIPT} />
+            <script
+              dangerouslySetInnerHTML={{
+                __html: "window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(i){plausible.o=i||{}};plausible.init()",
+              }}
+            />
+          </>
+        ) : null}
       </head>
       <body>
         <SiteChrome locale={locale}>{children}</SiteChrome>
