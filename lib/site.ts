@@ -73,4 +73,4 @@ export const LEGAL = {
   revised: trim(process.env.LEGAL_REVISED) || "2026-09-08",
 };
 
-export const LEGAL_LINE = `${LEGAL.name} · ${LEGAL.addressLines.join(", ")}`;
+export const LEGAL_LINE = [LEGAL.name, LEGAL.addressLines.join(", ")].filter(Boolean).join(" · ");
