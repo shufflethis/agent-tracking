@@ -1,0 +1,1641 @@
+/*
+ * agent-tracking design tokens (shared with webmcp-tool.com).
+ *
+ * Dark ground, 135° gradient, a geometric display face over a humanist body
+ * face. Violet is the anchor and Signal Cyan the counterweight: cyan reads as
+ * protocol where green would read as organic, which is the right register for
+ * a tool about agents calling functions.
+ *
+ * Dark only, on purpose. The brand commits to one look, so there is no
+ * light-theme fork to keep honest.
+ */
+
+:root {
+  /* Ground */
+  --void: #060606;
+  --surface: #111111;
+  --surface-2: #181818;
+  --surface-3: #1f1f21;
+  --rule: #262629;
+  --rule-strong: #3a3a40;
+
+  /* Accent — family anchor plus our own half */
+  --cyan: #3fd8ca;
+  --violet: #8b3fca;
+  --soft-violet: #a870e0;
+  --light-cyan: #9aeee4;
+  --grad-main: linear-gradient(135deg, var(--cyan), var(--violet));
+  --grad-subtle: linear-gradient(135deg, rgba(63, 216, 202, 0.12), rgba(139, 63, 202, 0.12));
+  --cyan-12: rgba(63, 216, 202, 0.12);
+  --violet-12: rgba(139, 63, 202, 0.12);
+
+  /* Text */
+  --ink: #f0f0f0;
+  --ink-2: #c4c4c8;
+  --muted: #8a8a94;
+
+  /* Semantic — separate from the accent, so a verdict never reads as branding */
+  --good: #6ee7a8;
+  --good-soft: rgba(110, 231, 168, 0.13);
+  --warn: #f0c14b;
+  --warn-soft: rgba(240, 193, 75, 0.13);
+  --crit: #ff6b6b;
+  --crit-soft: rgba(255, 107, 107, 0.13);
+
+  /* Type */
+  /* The --font-* variables come from next/font in layout.tsx, which serves the
+     files from this origin. The literal names stay as a fallback in case the
+     variable is missing, so a build without them degrades to a near match
+     rather than to Times. */
+  --display: var(--font-display), "Jost", Futura, "Century Gothic", "Trebuchet MS", sans-serif;
+  --body: var(--font-body), "Open Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: var(--font-mono), "DM Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  /*
+   * Fluid type. Every step is clamp(mobile, viewport, desktop) so a phone never
+   * has to be told about the scale separately — the tokens carry it. The vw
+   * middle terms are tuned so the whole scale lands on its desktop value at
+   * about 1160px, which is --wide.
+   */
+  --t-display: clamp(36px, 5.4vw, 56px);
+  --t-h1: clamp(29px, 4vw, 40px);
+  --t-h2: clamp(23px, 2.6vw, 28px);
+  --t-h3: clamp(18px, 1.8vw, 20px);
+  --t-body-lg: clamp(16.5px, 1.4vw, 18px);
+  --t-body: 15px;
+  --t-small: 13px;
+
+  /* Motion */
+  --fast: 100ms;
+  --base: 200ms;
+  --slow: 300ms;
+  --x-slow: 500ms;
+  --ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --spring: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+
+  --measure: 68ch;
+  --wide: 1160px;
+  --gutter: 24px;
+}
+
+/* Phones give the gutter back to the content; 24px each side is 12% of a 390px
+   screen and the measure suffers more from that than the layout gains. */
+@media (max-width: 520px) {
+  :root {
+    --gutter: 18px;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  scroll-behavior: smooth;
+}
+
+/* The header is sticky and 64px tall, so an anchor jump would otherwise land
+   its target underneath it. Every linkable heading keeps clear of it. */
+:target,
+h2[id],
+h3[id],
+section[id],
+[id^="check-"] {
+  scroll-margin-top: 82px;
+}
+
+body {
+  margin: 0;
+  background: var(--void);
+  color: var(--ink);
+  font-family: var(--body);
+  font-size: var(--t-body);
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Ambient wash. Purely decorative, so it never traps a pointer. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: -20% -10% auto -10%;
+  height: 70vh;
+  background:
+    radial-gradient(45% 55% at 18% 0%, rgba(63, 216, 202, 0.1), transparent 70%),
+    radial-gradient(45% 55% at 82% 8%, rgba(139, 63, 202, 0.12), transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+body > * {
+  position: relative;
+  z-index: 1;
+}
+
+a {
+  color: var(--cyan);
+  text-decoration: none;
+  /* Source links are bare URLs set in mono; on a narrow screen one of them is
+     wider than the column and pushes the whole page sideways. break-word only
+     splits a word that cannot fit at all, so ordinary link text is untouched. */
+  overflow-wrap: break-word;
+  border-bottom: 1px solid rgba(63, 216, 202, 0.35);
+  transition: color var(--base) var(--ease), border-color var(--base) var(--ease);
+}
+a:hover {
+  color: var(--light-cyan);
+  border-bottom-color: var(--light-cyan);
+}
+:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--display);
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  line-height: 1.12;
+  text-wrap: balance;
+  margin: 0;
+}
+
+code,
+kbd,
+.mono {
+  font-family: var(--mono);
+  font-size: 0.9em;
+}
+p code,
+li code,
+td code {
+  background: var(--surface-2);
+  border: 1px solid var(--rule);
+  padding: 1px 6px;
+  border-radius: 4px;
+  color: var(--light-cyan);
+}
+
+/* ---------- shell ---------- */
+.shell {
+  max-width: var(--wide);
+  margin: 0 auto;
+  padding: 0 var(--gutter);
+}
+
+/* ---------- gradient text ---------- */
+.grad {
+  background: var(--grad-main);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* ---------- header ---------- */
+.site-head {
+  border-bottom: 1px solid var(--rule);
+  background: rgba(6, 6, 6, 0.82);
+  backdrop-filter: blur(14px);
+  position: sticky;
+  top: 0;
+  z-index: 40;
+}
+.site-head .row {
+  max-width: var(--wide);
+  margin: 0 auto;
+  padding: 0 var(--gutter);
+  height: 64px;
+  display: flex;
+  align-items: center;
+  gap: 26px;
+}
+.brand {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 17px;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  border: 0;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+/* The mark leads on a hover, so the wordmark does not have to change colour. */
+.brand svg,
+.foot-brand svg {
+  transition: transform var(--base) var(--ease);
+}
+.brand:hover svg,
+.foot-brand:hover svg {
+  transform: scale(1.08);
+}
+.brand em,
+.foot-brand em {
+  font-style: normal;
+  background: var(--grad-main);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.site-nav {
+  display: none;
+  gap: 22px;
+  margin-left: auto;
+  align-items: center;
+}
+@media (min-width: 940px) {
+  .site-nav {
+    display: flex;
+  }
+}
+.site-nav a {
+  font-family: var(--body);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink-2);
+  border: 0;
+}
+.site-nav a:hover {
+  color: var(--ink);
+}
+
+/* ---------- mobile nav ----------
+ * A <details> disclosure rather than a JS drawer. This site scores other sites
+ * on whether their content survives without JavaScript, so its own navigation
+ * had better. The panel links are plain <a>, not next/link, on purpose: a full
+ * navigation resets the open state, which is the one thing a CSS-only
+ * disclosure cannot do for itself.
+ */
+/* One auto margin on the group, not one per control: two auto margins in the
+   same flex row split the free space and park the CTA in the middle. */
+.head-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+@media (min-width: 940px) {
+  .head-actions {
+    display: none;
+  }
+}
+.navtoggle {
+  position: relative;
+}
+@media (min-width: 940px) {
+  .navtoggle {
+    display: none;
+  }
+}
+.navtoggle > summary {
+  list-style: none;
+  cursor: pointer;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  border: 1px solid var(--rule-strong);
+  border-radius: 8px;
+  transition: border-color var(--base) var(--ease);
+}
+.navtoggle > summary::-webkit-details-marker {
+  display: none;
+}
+.navtoggle[open] > summary {
+  border-color: var(--cyan);
+}
+.navtoggle > summary i {
+  display: block;
+  width: 17px;
+  height: 1.5px;
+  background: var(--ink);
+  border-radius: 2px;
+  transition: transform var(--base) var(--ease), opacity var(--fast) var(--ease);
+}
+.navtoggle[open] > summary i:nth-child(1) {
+  transform: translateY(6.5px) rotate(45deg);
+}
+.navtoggle[open] > summary i:nth-child(2) {
+  opacity: 0;
+}
+.navtoggle[open] > summary i:nth-child(3) {
+  transform: translateY(-6.5px) rotate(-45deg);
+}
+
+/* Anchored to the header, not the button, so the panel spans the full width
+   instead of hanging off a 40px box. */
+.navpanel {
+  /* left/right rather than width:100vw — 100vw includes the scrollbar, so on a
+     desktop browser with classic scrollbars the open panel would be wider than
+     the page and add a horizontal scrollbar of its own. A headless browser has
+     no scrollbar and cannot reproduce that, which is why it is written out. */
+  position: fixed;
+  top: 64px;
+  left: 0;
+  right: 0;
+  /* Solid, and deliberately no backdrop-filter of its own. The header above is
+     already a backdrop root (it blurs); a nested backdrop-filter samples that
+     root instead of the real page composite, and the panel then renders as if
+     it were half transparent no matter how opaque its background is. */
+  background: #0a0a0b;
+  border-top: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+  padding: 14px var(--gutter) 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: calc(100dvh - 64px);
+  overflow-y: auto;
+}
+.navpanel a {
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 16px;
+  color: var(--ink-2);
+  border: 0;
+  padding: 12px 2px;
+  border-bottom: 1px solid var(--rule);
+}
+.navpanel a:last-of-type {
+  border-bottom: 0;
+}
+.navpanel .btn {
+  margin-top: 14px;
+  width: 100%;
+  color: var(--void);
+  border: 0;
+  font-size: 15px;
+  padding: 14px 20px;
+}
+
+/* Compact check button that rides in the header row on phones. */
+.head-cta {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 13.5px;
+  padding: 9px 15px;
+  border-radius: 8px;
+  background: var(--grad-main);
+  color: var(--void);
+  border: 0;
+  white-space: nowrap;
+}
+.head-cta:hover {
+  color: var(--void);
+  filter: brightness(1.08);
+}
+@media (min-width: 940px) {
+  .head-cta {
+    display: none;
+  }
+}
+/* Measured, not guessed: at 320px the brand ends at 145 and the burger needs
+   the last 40, which leaves room for the CTA. It only stops fitting below that,
+   and the burger carries the CTA anyway, so the duplicate goes rather than
+   wrapping the header row. */
+@media (max-width: 319px) {
+  .head-cta {
+    display: none;
+  }
+}
+
+/* ---------- language switch ---------- */
+.langswitch {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--rule);
+  border-radius: 7px;
+}
+.langswitch a {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  border: 0;
+  padding: 4px 7px;
+  border-radius: 5px;
+  line-height: 1;
+}
+.langswitch a:hover {
+  color: var(--ink);
+}
+.langswitch a.on {
+  background: var(--surface-2);
+  color: var(--ink);
+}
+/* In the mobile panel it sits under the CTA, so it needs its own breathing room. */
+.navpanel .langswitch {
+  margin-top: 16px;
+  align-self: flex-start;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ---------- buttons ---------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: 0.01em;
+  padding: 13px 24px;
+  border-radius: 8px;
+  border: 0;
+  cursor: pointer;
+  background: var(--grad-main);
+  color: var(--void);
+  white-space: nowrap;
+  transition: transform var(--base) var(--ease), filter var(--base) var(--ease);
+}
+.btn:hover {
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+  color: var(--void);
+}
+.btn:disabled {
+  opacity: 0.55;
+  cursor: progress;
+  transform: none;
+}
+.btn.ghost {
+  background: transparent;
+  color: var(--ink);
+  border: 1px solid var(--rule-strong);
+}
+.btn.ghost:hover {
+  border-color: var(--cyan);
+  color: var(--cyan);
+}
+
+/* ---------- type utilities ---------- */
+.eyebrow {
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--cyan);
+  margin: 0 0 18px;
+}
+.dek {
+  color: var(--ink-2);
+  font-size: var(--t-body-lg);
+  line-height: 1.6;
+  max-width: var(--measure);
+}
+.smallcaps {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.prose {
+  max-width: var(--measure);
+  font-size: 16px;
+  line-height: 1.75;
+  color: var(--ink-2);
+}
+.prose p {
+  margin: 0 0 20px;
+}
+.prose b {
+  color: var(--ink);
+  font-weight: 700;
+}
+.prose h2 {
+  font-size: var(--t-h2);
+  margin: 52px 0 14px;
+  color: var(--ink);
+}
+.prose h3 {
+  font-size: var(--t-h3);
+  margin: 36px 0 10px;
+  color: var(--ink);
+}
+.prose ul,
+.prose ol {
+  padding-left: 22px;
+  margin: 0 0 20px;
+}
+.prose li {
+  margin-bottom: 9px;
+}
+.prose li::marker {
+  color: var(--cyan);
+}
+.prose blockquote {
+  margin: 0 0 22px;
+  padding: 4px 0 4px 20px;
+  border-left: 2px solid transparent;
+  border-image: var(--grad-main) 1;
+  color: var(--ink);
+  font-size: var(--t-body-lg);
+}
+
+/* ---------- cards / callouts ---------- */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  padding: 22px 24px;
+}
+.callout {
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  padding: 20px 24px;
+  margin: 0 0 24px;
+  max-width: var(--measure);
+  position: relative;
+  overflow: hidden;
+}
+.callout::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  background: var(--grad-main);
+}
+.callout.hot::before {
+  background: linear-gradient(135deg, var(--warn), var(--crit));
+}
+.callout .tag {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--cyan);
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+.callout.hot .tag {
+  color: var(--warn);
+}
+.callout p {
+  margin: 0 0 12px;
+  color: var(--ink-2);
+}
+.callout p:last-child {
+  margin-bottom: 0;
+}
+
+/* ---------- code ---------- */
+pre.code {
+  background: var(--surface-2);
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  padding: 18px 20px;
+  overflow-x: auto;
+  font-family: var(--mono);
+  font-size: 13px;
+  line-height: 1.7;
+  margin: 0 0 22px;
+  color: var(--ink-2);
+  tab-size: 2;
+}
+
+/* ---------- tables ---------- */
+.tablewrap {
+  overflow-x: auto;
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  background: var(--surface);
+  margin: 0 0 24px;
+}
+table {
+  border-collapse: collapse;
+  width: 100%;
+  min-width: 560px;
+}
+th,
+td {
+  text-align: left;
+  padding: 13px 18px;
+  border-bottom: 1px solid var(--rule);
+  vertical-align: top;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--ink-2);
+}
+th {
+  font-family: var(--mono);
+  font-weight: 500;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  background: var(--surface-2);
+  white-space: nowrap;
+}
+tbody tr:last-child td {
+  border-bottom: none;
+}
+td b {
+  color: var(--ink);
+}
+td.num {
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* ---------- chips ---------- */
+.chip {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 3px 9px;
+  border-radius: 999px;
+  white-space: nowrap;
+  display: inline-block;
+  border: 1px solid transparent;
+}
+.chip.pass {
+  background: var(--good-soft);
+  color: var(--good);
+  border-color: rgba(110, 231, 168, 0.3);
+}
+.chip.partial {
+  background: var(--warn-soft);
+  color: var(--warn);
+  border-color: rgba(240, 193, 75, 0.3);
+}
+.chip.fail {
+  background: var(--crit-soft);
+  color: var(--crit);
+  border-color: rgba(255, 107, 107, 0.3);
+}
+.chip.na {
+  background: var(--surface-2);
+  color: var(--muted);
+  border-color: var(--rule);
+}
+.chip.accent {
+  background: var(--cyan-12);
+  color: var(--cyan);
+  border-color: rgba(63, 216, 202, 0.3);
+}
+
+/* ---------- scan form ---------- */
+.scanform {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 640px;
+}
+@media (min-width: 620px) {
+  .scanform {
+    flex-direction: row;
+  }
+}
+/* Without flex:none the button keeps the default flex-shrink:1 and the input's
+   flex:1 squeezes it until the label wraps inside its own height. */
+.scanform .btn,
+.gateform .btn {
+  flex: none;
+}
+.scanform input {
+  flex: 1;
+  font-family: var(--mono);
+  font-size: 15px;
+  padding: 15px 18px;
+  border: 1px solid var(--rule-strong);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--ink);
+  min-width: 0;
+  transition: border-color var(--base) var(--ease);
+}
+.scanform input::placeholder {
+  color: var(--muted);
+}
+.scanform input:focus {
+  border-color: var(--cyan);
+}
+.formnote {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--muted);
+  margin: 12px 0 0;
+}
+.formerror {
+  color: var(--crit);
+  font-family: var(--mono);
+  font-size: 13px;
+  margin: 12px 0 0;
+}
+
+/* ---------- score ---------- */
+.scorehead {
+  display: grid;
+  gap: 28px;
+  grid-template-columns: 1fr;
+  align-items: start;
+}
+@media (min-width: 820px) {
+  .scorehead {
+    grid-template-columns: 260px 1fr;
+    gap: 48px;
+  }
+}
+/* On one column the score has no neighbour to sit beside, so it centres over
+   the axes rather than hugging a left edge with 200px of nothing to its right. */
+@media (max-width: 819px) {
+  .scorehead > .scoreblock {
+    text-align: center;
+  }
+  .scorehead > .scoreblock > p {
+    margin-inline: auto;
+  }
+}
+.bigscore {
+  font-family: var(--display);
+  font-size: clamp(74px, 18vw, 96px);
+  font-weight: 700;
+  line-height: 0.88;
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
+  background: var(--grad-main);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.bigscore small {
+  font-family: var(--mono);
+  font-size: 20px;
+  color: var(--muted);
+  font-weight: 400;
+  letter-spacing: 0;
+  -webkit-text-fill-color: var(--muted);
+}
+.gradepill {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  padding: 5px 12px;
+  border-radius: 999px;
+  margin-top: 14px;
+  border: 1px solid var(--rule-strong);
+  color: var(--ink);
+}
+
+.axis-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 5px 18px;
+  margin-bottom: 20px;
+}
+@media (min-width: 620px) {
+  .axis-row {
+    grid-template-columns: 120px 84px 1fr;
+    align-items: center;
+  }
+}
+.axis-name {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 16px;
+}
+.axis-val {
+  font-family: var(--mono);
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-2);
+}
+.axis-q {
+  font-size: 14px;
+  color: var(--muted);
+}
+.axis-track {
+  grid-column: 1 / -1;
+  height: 7px;
+  background: var(--surface-2);
+  border-radius: 999px;
+  overflow: hidden;
+  border: 1px solid var(--rule);
+}
+.axis-track i {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  transition: width var(--x-slow) var(--ease);
+}
+
+/* ---------- pillars ---------- */
+.pillar {
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  background: var(--surface);
+  margin: 0 0 12px;
+  overflow: hidden;
+}
+.pillar > summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 17px 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 17px;
+}
+.pillar > summary::-webkit-details-marker {
+  display: none;
+}
+.pillar > summary::after {
+  content: "+";
+  margin-left: auto;
+  font-family: var(--mono);
+  font-weight: 400;
+  color: var(--muted);
+  font-size: 18px;
+}
+.pillar[open] > summary::after {
+  content: "\2013";
+}
+.pillar-pts {
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  padding: 4px 10px;
+  border-radius: 999px;
+  flex: none;
+  background: var(--surface-2);
+  border: 1px solid var(--rule);
+}
+.pillar-body {
+  border-top: 1px solid var(--rule);
+  padding: 6px 20px 18px;
+}
+.pillar-blurb {
+  font-size: 14px;
+  color: var(--muted);
+  margin: 16px 0 8px;
+  line-height: 1.65;
+}
+
+.check {
+  border-top: 1px solid var(--rule);
+  padding: 18px 0 6px;
+}
+.check:first-of-type {
+  border-top: none;
+}
+.check-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.check-title {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 16px;
+  color: var(--ink);
+}
+.check-pts {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  margin-left: auto;
+}
+.check-detail {
+  font-size: 15px;
+  margin: 9px 0 0;
+  color: var(--ink-2);
+}
+.check-evidence {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 12px 14px;
+  background: var(--surface-2);
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--muted);
+  overflow-x: auto;
+}
+.check-fix {
+  margin: 14px 0 0;
+  font-size: 14.5px;
+  color: var(--ink-2);
+}
+.check-fix b {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--cyan);
+  display: block;
+  margin-bottom: 5px;
+  font-weight: 500;
+}
+.check-docs {
+  margin: 12px 0 0;
+  font-size: 13px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+}
+
+/* ---------- priorities ---------- */
+.prio {
+  counter-reset: prio;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.prio-item {
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  padding: 18px 22px;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 18px;
+  align-items: baseline;
+  transition: border-color var(--base) var(--ease);
+}
+.prio-item:hover {
+  border-color: var(--rule-strong);
+}
+/* Three columns leave the middle one about 12ch wide on a phone. The gain moves
+   under the number instead, where it still reads as belonging to the item. */
+@media (max-width: 600px) {
+  .prio-item {
+    grid-template-columns: auto 1fr;
+    gap: 6px 14px;
+    padding: 16px 18px;
+  }
+  .prio-item .gain {
+    grid-column: 2;
+  }
+}
+.prio-item .n {
+  counter-increment: prio;
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  background: var(--grad-main);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.prio-item .n::before {
+  content: counter(prio, decimal-leading-zero);
+}
+.prio-item .gain {
+  font-family: var(--mono);
+  font-size: 12.5px;
+  color: var(--muted);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.prio-item h4 {
+  font-size: 16px;
+  margin: 0 0 5px;
+}
+.prio-item p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--ink-2);
+}
+
+/* ---------- gate ---------- */
+.gate {
+  position: relative;
+  border: 1px solid var(--rule);
+  border-radius: 16px;
+  background: var(--surface);
+  padding: 32px;
+  overflow: hidden;
+  max-width: 720px;
+  margin-inline: auto;
+}
+@media (max-width: 560px) {
+  .gate {
+    padding: 22px 18px;
+    border-radius: 12px;
+  }
+}
+.gate::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--grad-subtle);
+  pointer-events: none;
+}
+.gate > * {
+  position: relative;
+}
+.gate h2 {
+  font-size: var(--t-h2);
+  margin-bottom: 10px;
+}
+.gate .lede {
+  color: var(--ink-2);
+  font-size: 16px;
+  margin: 0 0 22px;
+  max-width: 52ch;
+}
+.gate ul {
+  list-style: none;
+  margin: 0 0 24px;
+  padding: 0;
+  display: grid;
+  gap: 9px;
+}
+@media (min-width: 640px) {
+  .gate ul {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+.gate ul li {
+  font-size: 14px;
+  color: var(--ink-2);
+  padding-left: 24px;
+  position: relative;
+}
+.gate ul li::before {
+  content: "→";
+  position: absolute;
+  left: 0;
+  color: var(--cyan);
+  font-family: var(--mono);
+}
+.gateform {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+@media (min-width: 560px) {
+  .gateform {
+    flex-direction: row;
+  }
+}
+.gateform input {
+  flex: 1;
+  font-family: var(--body);
+  font-size: 15px;
+  padding: 14px 16px;
+  border: 1px solid var(--rule-strong);
+  border-radius: 8px;
+  background: var(--void);
+  color: var(--ink);
+  min-width: 0;
+}
+.gateform input:focus {
+  border-color: var(--cyan);
+}
+.gatenote {
+  font-size: 12.5px;
+  color: var(--muted);
+  margin: 14px 0 0;
+  line-height: 1.6;
+}
+
+/* Locked preview of what sits behind the gate. */
+.locked {
+  position: relative;
+  max-height: 240px;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 40%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 0%, #000 40%, transparent 100%);
+  pointer-events: none;
+  user-select: none;
+}
+
+/* ---------- contact form ---------- */
+.contactgrid {
+  display: grid;
+  gap: 22px;
+  grid-template-columns: 1fr;
+  align-items: start;
+}
+@media (min-width: 920px) {
+  .contactgrid {
+    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+    gap: 30px;
+  }
+}
+.contactform {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.contactform .field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.contactform label {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--ink);
+}
+.contactform label span {
+  color: var(--cyan);
+}
+.contactform input,
+.contactform select,
+.contactform textarea {
+  font-family: var(--body);
+  font-size: 15px;
+  padding: 12px 14px;
+  border: 1px solid var(--rule-strong);
+  border-radius: 8px;
+  background: var(--void);
+  color: var(--ink);
+  width: 100%;
+}
+.contactform input:focus,
+.contactform select:focus,
+.contactform textarea:focus {
+  border-color: var(--cyan);
+}
+.contactform textarea {
+  resize: vertical;
+  line-height: 1.6;
+}
+.contactform [aria-invalid="true"] {
+  border-color: var(--crit);
+}
+.contactform .fieldhint {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+.contactform .fielderror {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--crit);
+}
+.contactform button {
+  align-self: flex-start;
+}
+
+/* ---------- legal pages ----------
+ * A description list, because that is what an imprint is: labelled fields, not
+ * prose. Two columns where there is room so the labels form a scannable rail;
+ * stacked on a phone, where a 200px label column would leave the values a
+ * dozen characters wide.
+ */
+.legal {
+  margin: 0;
+  max-width: var(--measure);
+}
+.legal-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 4px 28px;
+  padding: 18px 0;
+  border-top: 1px solid var(--rule);
+}
+.legal-row:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+@media (min-width: 700px) {
+  .legal {
+    max-width: 860px;
+  }
+  .legal-row {
+    grid-template-columns: 250px minmax(0, 1fr);
+  }
+}
+.legal dt {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  line-height: 1.6;
+  padding-top: 3px;
+}
+.legal dd {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.7;
+  color: var(--ink-2);
+}
+.legal dd b {
+  color: var(--ink);
+  font-family: var(--display);
+  font-size: 17px;
+  font-weight: 700;
+}
+/* For a single block sitting inside running prose: keep the label above the
+   value and the column at the prose measure, so the left edge does not jog. */
+.legal-stack {
+  max-width: var(--measure);
+}
+.legal-stack .legal-row {
+  grid-template-columns: 1fr;
+}
+.legal-note {
+  margin: 8px 0 0;
+  font-size: 13.5px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+/* Numbered clauses: the number sits in the margin where there is room for it,
+   so the headings still line up with the body text they govern. */
+.terms .clause {
+  margin-bottom: 34px;
+}
+.terms .clause h2 {
+  margin-top: 0;
+  font-size: var(--t-h3);
+  position: relative;
+}
+.terms .clause-n {
+  display: block;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  color: var(--cyan);
+  margin-bottom: 6px;
+}
+@media (min-width: 900px) {
+  .terms .clause-n {
+    position: absolute;
+    left: -84px;
+    top: 5px;
+    width: 68px;
+    text-align: right;
+    margin-bottom: 0;
+  }
+}
+.terms-date {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 34px;
+  padding-top: 18px;
+  border-top: 1px solid var(--rule);
+}
+
+/* ---------- footer ---------- */
+.site-foot {
+  border-top: 1px solid var(--rule);
+  margin-top: 100px;
+  padding: 48px 0 64px;
+  background: var(--surface);
+}
+@media (max-width: 620px) {
+  .site-foot {
+    margin-top: 64px;
+    padding: 36px 0 44px;
+  }
+}
+/* Two columns from the smallest screen up: four stacked link lists is roughly a
+   full phone screen of nothing but footer. */
+.foot-grid {
+  display: grid;
+  gap: 28px 22px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+@media (min-width: 760px) {
+  .foot-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 30px;
+  }
+}
+.foot-grid h4 {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 500;
+  margin-bottom: 12px;
+}
+.foot-grid ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.foot-grid a {
+  font-size: 14px;
+  color: var(--ink-2);
+  border: 0;
+}
+.foot-grid a:hover {
+  color: var(--cyan);
+}
+.foot-note {
+  margin-top: 40px;
+  padding-top: 22px;
+  border-top: 1px solid var(--rule);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px 24px;
+}
+.foot-note p {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--muted);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+}
+.foot-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 18px;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  border: 0;
+  white-space: nowrap;
+}
+.foot-brand:hover {
+  color: var(--ink);
+}
+
+/* ---------- centred headers ----------
+ * Headers centre, bodies do not. A centred page header reads as composed; a
+ * centred paragraph of running text has a ragged left edge and the eye loses
+ * the line start on every return. So the rule stops at the header.
+ *
+ * The margin-inline is the load-bearing half: almost every element in a header
+ * carries its own max-width (17ch, 44ch, --measure). Centring the text without
+ * centring the box leaves that box hanging left, which looks more lopsided than
+ * plain left alignment did.
+ */
+.pagehead {
+  text-align: center;
+}
+/* Note for anyone editing the pages: a child written with the inline shorthand
+   style={{ margin: "0 0 32px" }} defeats this. The shorthand writes all four
+   longhands, inline styles outrank the sheet, and the block silently hangs
+   left. Use marginTop/marginBottom inline and leave the inline axis to CSS. */
+.pagehead > *,
+.pagehead .dek,
+.pagehead .scanform,
+.pagehead .prose {
+  margin-inline: auto;
+}
+.pagehead .btn-row {
+  justify-content: center;
+}
+/* Anything explicitly opted out — a stat block, a code sample — keeps its own
+   alignment inside an otherwise centred header. */
+.pagehead .left {
+  text-align: left;
+}
+
+.sechead {
+  text-align: center;
+  margin-bottom: 30px;
+}
+.sechead > * {
+  margin-inline: auto;
+}
+.sechead h2 {
+  margin-bottom: 12px;
+}
+.sechead .dek {
+  margin-bottom: 0;
+}
+
+/* A document page: a single measure-wide column, centred in the shell rather
+   than hugging its left edge with 500px of nothing beside it. Children without
+   their own max-width are unaffected — auto margins need a width to work on. */
+.doc > *,
+.doc .prose {
+  margin-inline: auto;
+}
+
+/* Plain text-centring utility, for a card whose contents should read centred
+   like the header above it rather than as a left-aligned column. */
+.tc {
+  text-align: center;
+}
+.tc > * {
+  margin-inline: auto;
+}
+
+/* Opt-in for the blocks that follow a centred header but carry their own width.
+   Deliberately not applied to .tablewrap/.callout wholesale — those also live
+   inside left-aligned article prose, where centring them would break the column. */
+.mid {
+  margin-inline: auto;
+}
+
+/* ---------- layout helpers ---------- */
+/* margin-bottom, never the `margin: 0 0 72px` shorthand. .section is applied
+   alongside .shell, whose centring is `margin: 0 auto`; the shorthand writes
+   margin-left/right:0 as well, wins on source order, and every section then
+   hugs the left edge. Invisible at 1280px, where the 1160px column nearly
+   fills the window — a 700px offset on a 2560px monitor. */
+.section {
+  margin-bottom: 72px;
+}
+@media (max-width: 620px) {
+  .section {
+    margin-bottom: 52px;
+  }
+  .hr {
+    margin: 42px 0;
+  }
+}
+.grid2 {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: 1fr;
+}
+@media (min-width: 760px) {
+  .grid2 {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+.grid3 {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: 1fr;
+}
+@media (min-width: 880px) {
+  .grid3 {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+.hr {
+  height: 1px;
+  background: var(--rule);
+  border: 0;
+  margin: 60px 0;
+}
+
+/* Hero artwork ------------------------------------------------------------
+   A photograph behind a page header, on a site whose entire palette is near
+   black. Opacity alone does not make that safe: a bright window or a white
+   shirt in the photograph still lands under the headline, and how readable the
+   text is would then depend on what happens to be in the picture.
+
+   So there are two layers. The photograph is dimmed, and a veil over it is
+   darkest exactly where the text sits and fades out at the edges. Contrast is
+   then a property of the treatment rather than of the image, and swapping in a
+   different photograph cannot break it.
+
+   The art is decorative: it carries no information the text does not, so it is
+   drawn in CSS and hidden from assistive technology rather than given an alt
+   text that would only describe a stock office. */
+
+.withart {
+  position: relative;
+  /* Own stacking context, so the z-index below stays inside this section and
+     does not slide behind the page background. */
+  isolation: isolate;
+}
+.heroart {
+  position: absolute;
+  /* Bleeds upward under the header, never downward. .withart is positioned, so
+     it paints above the plain sections that follow it — any overhang past the
+     bottom edge lands on top of the next heading rather than behind it, which
+     is exactly what happened on /services, where the header has only 10px of
+     padding under the last line. The veil fades to void at the bottom anyway,
+     so nothing is lost by stopping here. */
+  inset: -24px 0 0;
+  z-index: -1;
+  border-radius: 18px;
+  overflow: hidden;
+  pointer-events: none;
+}
+.heroart::before,
+.heroart::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+}
+.heroart::before {
+  background-image: var(--art);
+  background-size: cover;
+  background-position: center 42%;
+  opacity: 0.38;
+}
+.heroart::after {
+  background:
+    radial-gradient(88% 74% at 50% 50%, rgba(6, 6, 6, 0.88), rgba(6, 6, 6, 0.36) 68%, rgba(6, 6, 6, 0) 100%),
+    linear-gradient(180deg, var(--void), rgba(6, 6, 6, 0) 24%, rgba(6, 6, 6, 0) 76%, var(--void));
+}
+@media (max-width: 700px) {
+  /* Less room, so the headline covers more of the frame: dim harder rather
+     than let a narrow screen decide whether the text is legible. */
+  .heroart::before {
+    opacity: 0.28;
+  }
+}
+
+/* Team ------------------------------------------------------------------- */
+
+.team {
+  display: grid;
+  gap: 22px;
+  grid-template-columns: 1fr;
+  margin: 26px 0 8px;
+}
+@media (min-width: 700px) {
+  .team {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+.member {
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  padding: 24px;
+}
+.member img {
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
+  margin-bottom: 16px;
+  /* The portraits are lit against a dark room; a hairline ring keeps them from
+     bleeding into the card behind them. */
+  border: 1px solid var(--rule-strong);
+}
+.member h3 {
+  font-size: 17px;
+  margin: 0 0 2px;
+}
+.member .role {
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0 0 12px;
+}
+.member p {
+  font-size: 14.5px;
+  color: var(--ink-2);
+  margin: 0 0 14px;
+  line-height: 1.55;
+}
+.member a {
+  font-size: 13px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    transition: none !important;
+    animation: none !important;
+  }
+}

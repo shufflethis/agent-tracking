@@ -1,0 +1,36 @@
+# Self-hosted Agent Tracking.
+#
+#   cp .env.example .env    # fill in SITE_ORIGIN, UNLOCK_SECRET, BREVO_API_KEY, LEGAL_*
+#   docker compose up -d
+#
+# Then put a TLS-terminating proxy (Caddy, nginx, Traefik) in front of port 3000
+# on the host name you set as SITE_ORIGIN. The database, the daily salt, the
+# crawler address ranges and the log-import cursor live in the ./data volume.
+services:
+  app:
+    build: .
+    image: agent-tracking
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "127.0.0.1:3000:3000"
+    volumes:
+      - ./data:/app/.data
+
+  # The nightly run: prune raw events, refresh crawler ranges, re-score sites,
+  # manifest alerts. Weekly digest on Mondays. Both share the volume and the env.
+  cron:
+    image: agent-tracking
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - ./data:/app/.data
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        while true; do
+          now=$$(date +%H:%M); dow=$$(date +%u)
+          if [ "$$now" = "07:40" ]; then npx tsx --no-warnings scripts/tracking-cron.ts; sleep 60; fi
+          if [ "$$now" = "07:50" ] && [ "$$dow" = "1" ]; then npx tsx --no-warnings scripts/weekly-digest.ts; sleep 60; fi
+          sleep 30
+        done

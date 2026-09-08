@@ -1,0 +1,5 @@
+# Agent Tracking cron lines for the cloud installation (crontab -e as root).
+40 7 * * * /bin/bash /root/agent-tracking/scripts/tracking-cron.sh
+*/15 * * * * /bin/bash /root/agent-tracking/scripts/log-import.sh
+50 7 * * 1 /bin/bash /root/agent-tracking/scripts/weekly-digest.sh
+35 5 * * * /bin/bash /root/agent-tracking/scripts/backup-tracking.sh

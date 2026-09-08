@@ -1,0 +1,413 @@
+import { CONTACT_EMAIL, SITE_ORIGIN } from "@/lib/site";
+
+/**
+ * Dashboard and login copy, English and German.
+ *
+ * The dashboard has no locale in its URL: the account carries a language
+ * (accounts.lang), chosen at first sign-in from the browser and switchable in
+ * the settings. Every string a dashboard page or one of its client components
+ * shows comes from here, so the two languages cannot drift apart without the
+ * parity test in copy.test.ts noticing.
+ */
+
+export type DashLang = "en" | "de";
+
+export const DASH_LANGS: readonly DashLang[] = ["en", "de"];
+
+export function dashLang(raw: string | null | undefined): DashLang {
+  return raw === "de" ? "de" : "en";
+}
+
+/** The language a new account starts with, from the browser's Accept-Language. */
+export function langFromHeader(acceptLanguage: string | null | undefined): DashLang {
+  const first = (acceptLanguage ?? "").split(",")[0]?.trim().toLowerCase() ?? "";
+  return first.startsWith("de") ? "de" : "en";
+}
+
+export const numberLocale = (lang: DashLang) => (lang === "de" ? "de-DE" : "en-GB");
+
+const en = {
+  shell: {
+    brand: "Agent Tracking",
+    yourSites: "Your sites",
+    notVerified: "Snippet not verified yet.",
+    installAndCheck: "Install it and check",
+    planLine: (plan: string, used: string, limit: string) => `${plan} plan · ${used} of ${limit} agent events this month`,
+    signOut: "Sign out",
+    views: { overview: "Overview", agents: "Agents", tools: "Tools", pages: "Pages", settings: "Settings" },
+    lang: "Language",
+  },
+  trend: {
+    newInPeriod: "new in this period",
+    noneYet: "none yet",
+    vsBefore: (pct: string) => `${pct} vs the period before`,
+  },
+  overview: {
+    title: "Overview",
+    referrals: "AI referrals",
+    fetches: "AI fetches",
+    calls: "Tool calls",
+    conversions: "Conversions",
+    sessions: "Agent sessions",
+    sessionsNote: "distinct daily sessions that called a tool",
+    perDay: (days: number) => `Last ${days} days, per day`,
+    checkTitle: "Agent Readiness Check",
+    grade: "grade",
+    scanned: (date: string) => `Scanned ${date}, re-scanned monthly.`,
+    openCheck: "Open the check",
+    notScanned: "Not scanned from here yet.",
+    runCheck: "Run the check",
+    scoreAfterVerify: "the score appears here once the site is verified.",
+    inNumbers: "In numbers",
+    numbers: (interactions: string, days: number, views: string) => `${interactions} agent interactions in ${days} days, beside ${views} page views in total.`,
+    statsPageSame: "The public stats page says the same.",
+    publishToShare: "Publish a stats page to share it.",
+  },
+  agents: {
+    title: "Agents",
+    intro: (days: number) => `Who sent visitors and who fetched pages, over the last ${days} days. A referral is a person arriving from an assistant; a fetch is the assistant itself loading a page.`,
+    logFed: (date: string) =>
+      `Fetches come from this site's server log since ${date}, so crawlers that never run JavaScript are counted too. A burst is one agent fetching several pages within seconds: the footprint of a query fan-out. Agents whose vendor publishes address ranges are checked against them; a line that claims such an agent from elsewhere is listed as unverified and not counted.`,
+    snippetOnly: "Crawlers that do not run JavaScript never reach the snippet and are not in this table.",
+    cols: { source: "Agent or source", kind: "Kind", count: "Count", share: "Share", trend: "Trend", bursts: "Bursts", verified: "Verified" },
+    fetch: "AI fetch",
+    referral: "AI referral",
+    flat: "flat",
+    burstCell: (n: number, pages: number) => `${n} (${pages} pages)`,
+    claimedOutside: (n: number) => `${n} claimed, outside the vendor's ranges`,
+    againstRanges: "against published ranges",
+    noRanges: "no published ranges",
+    empty: "Nothing yet. The first assistant that sends someone here, or fetches a page with scripts on, appears as a row.",
+    recentBursts: "Recent fetch bursts",
+    burstCols: { when: "When", agent: "Agent", pages: "Pages", within: "Within", paths: "Paths" },
+    sourceVersion: (v: string) => `Source list version ${v}.`,
+  },
+  tools: {
+    title: "Tools",
+    intro: "Every WebMCP tool the snippet saw registered on your pages, with what happened when it was called. Argument values are never recorded, only the names of the keys an agent supplied.",
+    neverCalled: "Registered, never called",
+    neverCalledNote: "A tool agents never reach for is either described badly or not worth having; the description is the first thing to change.",
+    cols: { tool: "Tool", calls: "Calls", success: "Success", avg: "Avg time", errors: "Most frequent errors", lastSeen: "Last seen" },
+    form: "form",
+    simulated: (n: number) => `+${n} simulated`,
+    na: "n/a",
+    none: "none",
+    never: "never",
+    empty: "No tools seen yet. Register one with document.modelContext.registerTool, or add a toolname attribute to a form, and it appears here on the next page load.",
+  },
+  pages: {
+    title: "Pages",
+    intro: "Which paths AI agents fetch most, and on which paths tools get called. Paths only; query strings are dropped before anything is stored.",
+    cols: { path: "Path", fetches: "AI fetches and referrals", calls: "Tool calls" },
+    empty: "Nothing yet.",
+  },
+  list: {
+    title: "Your sites",
+    cols: { site: "Site", snippet: "Snippet", score: "Check score", stats: "Stats page" },
+    verified: "verified",
+    notVerified: "not verified",
+    notScanned: "not scanned yet",
+    public: "public",
+    private: "private",
+    empty: "No sites yet. Add the first one below; the snippet and the setup steps follow on its page.",
+    addTitle: "Add a site",
+    planCovers: (plan: string, n: number) => `The ${plan} plan covers ${n} site${n === 1 ? "" : "s"}. Upgrade on a site's settings page to add more.`,
+  },
+  settings: {
+    title: "Settings",
+    paymentReceived: "Payment received",
+    paymentNote: "The plan updates as soon as Stripe confirms it, usually within a minute. Reload this page.",
+    installTitle: "1. Install the snippet",
+    installText: "One line, before the closing body tag or in the head with defer, on every page. Under five kilobytes, no cookies, no storage. What it records and what it refuses to is on the",
+    docsLink: "documentation page",
+    copySnippet: "Copy the snippet",
+    copied: "Copied",
+    verifyTitle: "2. Verify",
+    verifiedOn: (date: string) => `Verified on ${date}: the snippet is on the homepage with this domain in data-domain.`,
+    verifyText: "We fetch the homepage and look for the snippet with this domain in data-domain. Events are accepted either way; verification is what marks the site as yours.",
+    shareTitle: "Public stats page",
+    shareText: (domain: string) => `Opt in to a public page at /stats/${domain} that says how many agent interactions this site had in the last 30 days, with a share image. Off by default.`,
+    shareOn: "It is on:",
+    openIt: "open it",
+    planTitle: "Plan",
+    planLine: (plan: string, sites: string, events: string, days: number, extras: string) => `You are on ${plan}: ${sites}, ${events} agent events a month (plain page views are free), ${days} days of history${extras}.`,
+    sites: (n: number | "unlimited") => (n === "unlimited" ? "unlimited sites" : `${n} site${n === 1 ? "" : "s"}`),
+    unlimited: "unlimited",
+    days: (n: number) => `${n} days`,
+    manifestAlerts: "manifest change alerts",
+    whiteLabel: "white-label badge",
+    planCols: { plan: "Plan", sites: "Sites", events: "Agent events / month", history: "History", extras: "Extras" },
+    noExtras: "none",
+    upgradePro: "Upgrade to Pro",
+    upgradeAgency: "Upgrade to Agency",
+    pilotNote: `Free during the pilot; paid plans are not open yet. Write to ${CONTACT_EMAIL} if you need more than Free today and we switch your account by hand.`,
+    apiTitle: "API and MCP",
+    apiText: (domain: string) =>
+      `Read these numbers from your own scripts and agents. One token per account, for all its sites, read-only, daily totals only. With it, GET ${SITE_ORIGIN}/api/stats/${domain}?days=30 returns what this dashboard shows as JSON, and the get_agent_stats tool on our MCP server answers the same question in Claude, ChatGPT or Cursor. Examples are on the`,
+    logTitle: "Server log",
+    logText:
+      "Crawlers that never run JavaScript (GPTBot, ClaudeBot, PerplexityBot) are only in your server log. Upload it here, or let a cron on your server send it daily with the API token. nginx or Apache combined format, plain or gzipped, whole files are fine: lines older than the newest line already imported are skipped. From a line we keep the day, the agent and the page path; the address is used to group bursts and to check the agent against its vendor's published ranges, then dropped.",
+    logFedSince: (date: string) => `Log-fed since ${date}`,
+    newestLine: (when: string) => `, newest line ${when} UTC`,
+    logCurlComment: "# daily, from your server: sends the whole file, we skip what we have",
+    logProxyNote: "Behind a CDN or proxy, make sure the log carries the visitor address (real_ip), or every crawler shows as unverified.",
+    digestTitle: "Weekly digest, language and your data",
+    digestText: (on: boolean) =>
+      `Every Monday, one mail with the week's numbers for your sites: agents, pages, tool errors, bursts. Only in weeks with something to report, and only while it is switched on (it is ${on ? "on" : "off"}). The daily counters behind every view are yours to take:`,
+    downloadCsv: "download them as CSV",
+    csvNote: ", the plan's whole window.",
+    removeTitle: "Remove",
+    removeText: "Deletes the site and every event and counter under it. There is no undo.",
+  },
+  actions: {
+    adding: "Adding",
+    addSite: "Add site",
+    domainLabel: "Domain to track",
+    addNote: "The bare domain. Subdomains are their own sites. Adding a site concludes the",
+    dpa: "data processing agreement",
+    addNoteEnd: "for it.",
+    failed: "That did not work.",
+    noConnection: "No connection.",
+    checking: "Checking the homepage",
+    checkSnippet: "Check for the snippet",
+    couldNotCheck: "Could not check.",
+    found: "Found. The site is verified.",
+    notFound: "Not found yet.",
+    makePrivate: "Make the stats page private",
+    publish: "Publish the stats page",
+    confirmDelete: (domain: string) => `Yes, delete ${domain} and its data`,
+    keep: "Keep it",
+    remove: "Remove this site",
+    copyToken: "Copy the token",
+    copied: "Copied",
+    shownOnce: "Shown once. Store it now; this page will not show it again.",
+    replaceToken: "Replace the token",
+    createToken: "Create a token",
+    revoke: "Revoke",
+    tokenExists: (created: string) => `A token exists${created ? `, created ${created}` : ""}. Replacing it stops the old one.`,
+    logFileLabel: "Access log file",
+    sending: (name: string, kb: number) => `Sending ${name} (${kb} KB)`,
+    logResult: (r: { scanned: number; skipped: number; fetches: number; unverified: number; bursts: number }) =>
+      `${r.scanned} lines read, ${r.skipped} already imported, ${r.fetches} agent fetches, ${r.unverified} unverified, ${r.bursts} bursts.`,
+    digestOff: "Stop the weekly digest",
+    digestOn: "Send me the weekly digest",
+    signOut: "Sign out",
+    langEn: "English",
+    langDe: "Deutsch",
+  },
+  login: {
+    metaTitle: "Sign in to Agent Tracking",
+    eyebrow: "Agent Tracking",
+    title: "Sign in",
+    dek: "No password. We email you a link; the page behind it has one button, and that button signs you in on this browser for 30 days.",
+    emailLabel: "Your email address",
+    placeholder: "you@company.com",
+    sending: "Sending",
+    submit: "Email me a sign-in link",
+    failed: "That did not go through. Try again.",
+    checkInbox: "Check your inbox",
+    onItsWay: (email: string) => `The link is on its way to ${email} and stays valid for 30 minutes. Open it and press the button.`,
+  },
+};
+
+export type DashCopy = typeof en;
+
+const de: DashCopy = {
+  shell: {
+    brand: "Agent Tracking",
+    yourSites: "Ihre Sites",
+    notVerified: "Snippet noch nicht verifiziert.",
+    installAndCheck: "Einbauen und prüfen",
+    planLine: (plan, used, limit) => `Plan ${plan} · ${used} von ${limit} Agenten-Ereignissen in diesem Monat`,
+    signOut: "Abmelden",
+    views: { overview: "Überblick", agents: "Agenten", tools: "Tools", pages: "Seiten", settings: "Einstellungen" },
+    lang: "Sprache",
+  },
+  trend: {
+    newInPeriod: "neu in diesem Zeitraum",
+    noneYet: "noch keine",
+    vsBefore: (pct) => `${pct} gegenüber dem Zeitraum davor`,
+  },
+  overview: {
+    title: "Überblick",
+    referrals: "KI-Referrals",
+    fetches: "KI-Abrufe",
+    calls: "Tool-Aufrufe",
+    conversions: "Conversions",
+    sessions: "Agenten-Sitzungen",
+    sessionsNote: "verschiedene Tagessitzungen, die ein Tool aufgerufen haben",
+    perDay: (days) => `Letzte ${days} Tage, pro Tag`,
+    checkTitle: "Agent Readiness Check",
+    grade: "Note",
+    scanned: (date) => `Geprüft am ${date}, monatliche Wiederholung.`,
+    openCheck: "Check öffnen",
+    notScanned: "Von hier noch nicht geprüft.",
+    runCheck: "Check ausführen",
+    scoreAfterVerify: "der Score erscheint hier, sobald die Site verifiziert ist.",
+    inNumbers: "In Zahlen",
+    numbers: (interactions, days, views) => `${interactions} Agenten-Interaktionen in ${days} Tagen, neben ${views} Seitenaufrufen insgesamt.`,
+    statsPageSame: "Die öffentliche Statistikseite zeigt dasselbe.",
+    publishToShare: "Statistikseite veröffentlichen, um sie zu teilen.",
+  },
+  agents: {
+    title: "Agenten",
+    intro: (days) => `Wer Besucher geschickt und wer Seiten abgerufen hat, in den letzten ${days} Tagen. Ein Referral ist eine Person, die von einem Assistenten kommt; ein Abruf ist der Assistent selbst, der eine Seite lädt.`,
+    logFed: (date) =>
+      `Abrufe stammen seit ${date} aus dem Server-Log dieser Site, deshalb zählen auch Crawler, die nie JavaScript ausführen. Ein Burst ist ein Agent, der innerhalb von Sekunden mehrere Seiten abruft: der Fußabdruck eines Query-Fan-outs. Agenten, deren Anbieter Adressbereiche veröffentlicht, werden dagegen geprüft; eine Zeile, die einen solchen Agenten von anderswo behauptet, steht als unverifiziert da und zählt nicht.`,
+    snippetOnly: "Crawler ohne JavaScript erreichen das Snippet nie und fehlen in dieser Tabelle.",
+    cols: { source: "Agent oder Quelle", kind: "Art", count: "Anzahl", share: "Anteil", trend: "Trend", bursts: "Bursts", verified: "Verifiziert" },
+    fetch: "KI-Abruf",
+    referral: "KI-Referral",
+    flat: "gleich",
+    burstCell: (n, pages) => `${n} (${pages} Seiten)`,
+    claimedOutside: (n) => `${n} behauptet, außerhalb der Anbieterbereiche`,
+    againstRanges: "gegen veröffentlichte Bereiche",
+    noRanges: "keine veröffentlichten Bereiche",
+    empty: "Noch nichts. Der erste Assistent, der jemanden hierher schickt oder eine Seite mit Scripts abruft, erscheint als Zeile.",
+    recentBursts: "Letzte Abruf-Bursts",
+    burstCols: { when: "Wann", agent: "Agent", pages: "Seiten", within: "Innerhalb", paths: "Pfade" },
+    sourceVersion: (v) => `Quellenliste Version ${v}.`,
+  },
+  tools: {
+    title: "Tools",
+    intro: "Jedes WebMCP-Tool, das das Snippet auf Ihren Seiten registriert gesehen hat, und was beim Aufruf passiert ist. Argumentwerte werden nie erfasst, nur die Namen der Felder, die ein Agent geliefert hat.",
+    neverCalled: "Registriert, nie aufgerufen",
+    neverCalledNote: "Ein Tool, das Agenten nie anfassen, ist entweder schlecht beschrieben oder überflüssig; die Beschreibung ist das Erste, was sich ändern sollte.",
+    cols: { tool: "Tool", calls: "Aufrufe", success: "Erfolg", avg: "Ø Dauer", errors: "Häufigste Fehler", lastSeen: "Zuletzt gesehen" },
+    form: "Formular",
+    simulated: (n) => `+${n} simuliert`,
+    na: "k. A.",
+    none: "keine",
+    never: "nie",
+    empty: "Noch keine Tools gesehen. Registrieren Sie eines mit document.modelContext.registerTool oder geben Sie einem Formular ein toolname-Attribut; beim nächsten Seitenaufruf erscheint es hier.",
+  },
+  pages: {
+    title: "Seiten",
+    intro: "Welche Pfade KI-Agenten am häufigsten abrufen und auf welchen Pfaden Tools aufgerufen werden. Nur Pfade; Query-Strings werden verworfen, bevor etwas gespeichert wird.",
+    cols: { path: "Pfad", fetches: "KI-Abrufe und Referrals", calls: "Tool-Aufrufe" },
+    empty: "Noch nichts.",
+  },
+  list: {
+    title: "Ihre Sites",
+    cols: { site: "Site", snippet: "Snippet", score: "Check-Score", stats: "Statistikseite" },
+    verified: "verifiziert",
+    notVerified: "nicht verifiziert",
+    notScanned: "noch nicht geprüft",
+    public: "öffentlich",
+    private: "privat",
+    empty: "Noch keine Sites. Legen Sie unten die erste an; Snippet und Einrichtung folgen auf ihrer Seite.",
+    addTitle: "Site hinzufügen",
+    planCovers: (plan, n) => `Der Plan ${plan} umfasst ${n} Site${n === 1 ? "" : "s"}. Für mehr auf der Einstellungsseite einer Site hochstufen.`,
+  },
+  settings: {
+    title: "Einstellungen",
+    paymentReceived: "Zahlung eingegangen",
+    paymentNote: "Der Plan wird aktualisiert, sobald Stripe bestätigt, meist innerhalb einer Minute. Seite neu laden.",
+    installTitle: "1. Snippet einbauen",
+    installText: "Eine Zeile, vor dem schließenden body-Tag oder mit defer im head, auf jeder Seite. Unter fünf Kilobyte, keine Cookies, kein Speicher. Was es erfasst und was nicht, steht auf der",
+    docsLink: "Dokumentationsseite",
+    copySnippet: "Snippet kopieren",
+    copied: "Kopiert",
+    verifyTitle: "2. Prüfen",
+    verifiedOn: (date) => `Verifiziert am ${date}: das Snippet steht mit dieser Domain in data-domain auf der Startseite.`,
+    verifyText: "Wir holen die Startseite und suchen das Snippet mit dieser Domain in data-domain. Ereignisse werden so oder so angenommen; die Prüfung markiert die Site als Ihre.",
+    shareTitle: "Öffentliche Statistikseite",
+    shareText: (domain) => `Auf Wunsch eine öffentliche Seite unter /stats/${domain}, die sagt, wie viele Agenten-Interaktionen diese Site in den letzten 30 Tagen hatte, mit Share-Bild. Standardmäßig aus.`,
+    shareOn: "Sie ist an:",
+    openIt: "öffnen",
+    planTitle: "Plan",
+    planLine: (plan, sites, events, days, extras) => `Sie sind auf ${plan}: ${sites}, ${events} Agenten-Ereignisse im Monat (reine Seitenaufrufe sind frei), ${days} Tage Verlauf${extras}.`,
+    sites: (n) => (n === "unlimited" ? "unbegrenzt viele Sites" : `${n} Site${n === 1 ? "" : "s"}`),
+    unlimited: "unbegrenzt",
+    days: (n) => `${n} Tage`,
+    manifestAlerts: "Manifest-Änderungsalarm",
+    whiteLabel: "White-Label-Badge",
+    planCols: { plan: "Plan", sites: "Sites", events: "Agenten-Ereignisse / Monat", history: "Verlauf", extras: "Extras" },
+    noExtras: "keine",
+    upgradePro: "Auf Pro hochstufen",
+    upgradeAgency: "Auf Agency hochstufen",
+    pilotNote: `In der Pilotphase kostenlos; bezahlte Pläne sind noch nicht offen. Wenn Sie heute mehr als Free brauchen, schreiben Sie an ${CONTACT_EMAIL}, wir stellen Ihr Konto von Hand um.`,
+    apiTitle: "API und MCP",
+    apiText: (domain) =>
+      `Lesen Sie diese Zahlen aus Ihren eigenen Scripts und Agenten. Ein Token pro Konto, für alle seine Sites, nur lesend, nur Tagessummen. Damit liefert GET ${SITE_ORIGIN}/api/stats/${domain}?days=30 als JSON, was dieses Dashboard zeigt, und das Tool get_agent_stats auf unserem MCP-Server beantwortet dieselbe Frage in Claude, ChatGPT oder Cursor. Beispiele stehen auf der`,
+    logTitle: "Server-Log",
+    logText:
+      "Crawler ohne JavaScript (GPTBot, ClaudeBot, PerplexityBot) stehen nur in Ihrem Server-Log. Laden Sie es hier hoch oder lassen Sie es einen Cron auf Ihrem Server täglich mit dem API-Token schicken. nginx- oder Apache-Format combined, roh oder gezippt, ganze Dateien sind in Ordnung: Zeilen, die älter sind als die neueste bereits importierte, werden übersprungen. Aus einer Zeile behalten wir Tag, Agent und Seitenpfad; die Adresse dient dem Gruppieren von Bursts und der Prüfung gegen die veröffentlichten Bereiche des Anbieters und wird dann verworfen.",
+    logFedSince: (date) => `Log-gespeist seit ${date}`,
+    newestLine: (when) => `, neueste Zeile ${when} UTC`,
+    logCurlComment: "# täglich von Ihrem Server: schickt die ganze Datei, wir überspringen Bekanntes",
+    logProxyNote: "Hinter einem CDN oder Proxy muss das Log die Besucheradresse tragen (real_ip), sonst erscheint jeder Crawler als unverifiziert.",
+    digestTitle: "Wochenbericht, Sprache und Ihre Daten",
+    digestText: (on) =>
+      `Jeden Montag eine Mail mit den Zahlen der Woche für Ihre Sites: Agenten, Seiten, Tool-Fehler, Bursts. Nur in Wochen, in denen es etwas zu berichten gibt, und nur solange sie eingeschaltet ist (sie ist ${on ? "an" : "aus"}). Die Tageszähler hinter jeder Ansicht gehören Ihnen:`,
+    downloadCsv: "als CSV herunterladen",
+    csvNote: ", der gesamte Zeitraum des Plans.",
+    removeTitle: "Entfernen",
+    removeText: "Löscht die Site und jedes Ereignis und jeden Zähler darunter. Es gibt kein Zurück.",
+  },
+  actions: {
+    adding: "Wird angelegt",
+    addSite: "Site hinzufügen",
+    domainLabel: "Zu messende Domain",
+    addNote: "Die nackte Domain. Subdomains sind eigene Sites. Mit dem Hinzufügen schließen Sie den",
+    dpa: "Auftragsverarbeitungsvertrag",
+    addNoteEnd: "dafür.",
+    failed: "Das hat nicht geklappt.",
+    noConnection: "Keine Verbindung.",
+    checking: "Startseite wird geprüft",
+    checkSnippet: "Nach dem Snippet suchen",
+    couldNotCheck: "Prüfung nicht möglich.",
+    found: "Gefunden. Die Site ist verifiziert.",
+    notFound: "Noch nicht gefunden.",
+    makePrivate: "Statistikseite privat schalten",
+    publish: "Statistikseite veröffentlichen",
+    confirmDelete: (domain) => `Ja, ${domain} und alle Daten löschen`,
+    keep: "Behalten",
+    remove: "Diese Site entfernen",
+    copyToken: "Token kopieren",
+    copied: "Kopiert",
+    shownOnce: "Wird einmal gezeigt. Jetzt speichern; diese Seite zeigt ihn nicht wieder.",
+    replaceToken: "Token ersetzen",
+    createToken: "Token erzeugen",
+    revoke: "Widerrufen",
+    tokenExists: (created) => `Ein Token existiert${created ? `, erzeugt am ${created}` : ""}. Ersetzen macht den alten ungültig.`,
+    logFileLabel: "Access-Log-Datei",
+    sending: (name, kb) => `Sende ${name} (${kb} KB)`,
+    logResult: (r) => `${r.scanned} Zeilen gelesen, ${r.skipped} bereits importiert, ${r.fetches} Agenten-Abrufe, ${r.unverified} unverifiziert, ${r.bursts} Bursts.`,
+    digestOff: "Wochenbericht abbestellen",
+    digestOn: "Wochenbericht schicken",
+    signOut: "Abmelden",
+    langEn: "English",
+    langDe: "Deutsch",
+  },
+  login: {
+    metaTitle: "Anmelden bei Agent Tracking",
+    eyebrow: "Agent Tracking",
+    title: "Anmelden",
+    dek: "Kein Passwort. Wir schicken Ihnen einen Link per E-Mail; die Seite dahinter hat einen Button, und der meldet Sie in diesem Browser für 30 Tage an.",
+    emailLabel: "Ihre E-Mail-Adresse",
+    placeholder: "sie@firma.de",
+    sending: "Wird gesendet",
+    submit: "Anmeldelink per E-Mail",
+    failed: "Das ist nicht durchgegangen. Bitte noch einmal.",
+    checkInbox: "Posteingang prüfen",
+    onItsWay: (email) => `Der Link ist unterwegs an ${email} und 30 Minuten gültig. Öffnen und den Button drücken.`,
+  },
+};
+
+const COPY: Record<DashLang, DashCopy> = { en, de };
+
+export function dashCopy(lang: DashLang): DashCopy {
+  return COPY[lang];
+}
+
+/** The plain-string subset a client component may receive as a prop. */
+export type ActionCopy = {
+  [K in keyof DashCopy["actions"]as DashCopy["actions"][K] extends string ? K : never]: string;
+};
+
+export function actionStrings(lang: DashLang): ActionCopy {
+  const out: Record<string, string> = {};
+  for (const [k, v] of Object.entries(COPY[lang].actions)) if (typeof v === "string") out[k] = v;
+  return out as ActionCopy;
+}

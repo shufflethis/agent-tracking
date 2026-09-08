@@ -1,0 +1,17 @@
+# /etc/systemd/system/agent-tracking.service
+[Unit]
+Description=Agent Tracking (Next.js)
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/root/agent-tracking
+EnvironmentFile=/root/agent-tracking/.env.production
+Environment=NODE_ENV=production
+ExecStart=/usr/bin/node --no-warnings /root/agent-tracking/node_modules/next/dist/bin/next start -p 3058
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

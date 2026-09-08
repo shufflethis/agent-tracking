@@ -1,0 +1,125 @@
+/* agent-tracking agent.js v1: what AI agents do on this site. No cookies, no storage, no identifiers.
+   <script defer data-domain="example.com" src="https://agenttracking.co/agent.js"></script>  */
+(function () {
+  var s = document.currentScript, d = s && s.getAttribute("data-domain");
+  if (!d) return;
+  var ep = (s.src.replace(/\/agent\.js.*$/, "") || "") + "/api/event";
+  var q = [], timer = null;
+
+  function send() {
+    if (!q.length) return;
+    var body = JSON.stringify({ d: d, e: q.splice(0, 50), v: 1 });
+    try {
+      // text/plain keeps the beacon a simple request: no preflight on someone else's origin.
+      if (!(navigator.sendBeacon && navigator.sendBeacon(ep, new Blob([body], { type: "text/plain" })))) {
+        fetch(ep, { method: "POST", body: body, keepalive: true, mode: "cors", headers: { "content-type": "text/plain" } }).catch(function () {});
+      }
+    } catch (e) {}
+    if (q.length) send();
+  }
+  function push(ev) {
+    ev.p = location.pathname;
+    q.push(ev);
+    if (q.length >= 20) return send();
+    if (!timer) timer = setTimeout(function () { timer = null; send(); }, 3000);
+  }
+  addEventListener("pagehide", send);
+  addEventListener("visibilitychange", function () { if (document.visibilityState === "hidden") send(); });
+
+  /* FNV-1a, 32 bit, hex. Enough to tell "changed" from "same"; never a secret. */
+  function h(str) {
+    var x = 2166136261;
+    for (var i = 0; i < str.length; i++) { x ^= str.charCodeAt(i); x = Math.imul(x, 16777619); }
+    return (x >>> 0).toString(16);
+  }
+  function keysOf(a) {
+    var out = [];
+    if (a && typeof a === "object" && !Array.isArray(a)) for (var k in a) { if (out.length < 24) out.push(String(k).slice(0, 64)); }
+    return out;
+  }
+  function errOf(e) {
+    return e && e.name && e.name !== "Error" ? e.name : String((e && e.message) || e || "error").slice(0, 80);
+  }
+
+  /* A. AI referrals and B. AI fetches: one view event; the server reads Referer and User-Agent. */
+  var ref = "";
+  try { ref = document.referrer ? new URL(document.referrer).host : ""; } catch (e) {}
+  var utm = "";
+  try { utm = new URLSearchParams(location.search).get("utm_source") || ""; } catch (e) {}
+  push({ k: "view", r: ref, u: utm });
+
+  /* C. WebMCP tool calls. */
+  function wrapTool(t, sim) {
+    if (!t || typeof t.execute !== "function" || t.__wmt) return t;
+    var name = String(t.name || "tool").slice(0, 128);
+    if (!sim) push({ k: "tool_registered", n: name, dh: h(String(t.description || "")), sh: h(JSON.stringify(t.inputSchema || null)) });
+    var exec = t.execute;
+    var wrapped = Object.assign({}, t, {
+      execute: function (args, ctx) {
+        var t0 = performance.now(), keys = keysOf(args);
+        try {
+          var r = exec.apply(this, arguments);
+          if (r && typeof r.then === "function") {
+            return r.then(function (v) {
+              push({ k: "tool_call", n: name, ms: Math.round(performance.now() - t0), ok: true, keys: keys, sim: sim });
+              return v;
+            }, function (e) {
+              push({ k: "tool_call", n: name, ms: Math.round(performance.now() - t0), ok: false, e: errOf(e), keys: keys, sim: sim });
+              throw e;
+            });
+          }
+          push({ k: "tool_call", n: name, ms: Math.round(performance.now() - t0), ok: true, keys: keys, sim: sim });
+          return r;
+        } catch (e) {
+          push({ k: "tool_call", n: name, ms: Math.round(performance.now() - t0), ok: false, e: errOf(e), keys: keys, sim: sim });
+          throw e;
+        }
+      }
+    });
+    wrapped.__wmt = 1;
+    return wrapped;
+  }
+  function instrument(mc) {
+    if (!mc || mc.__wmt) return;
+    mc.__wmt = 1;
+    var reg = mc.registerTool, prov = mc.provideContext;
+    if (typeof reg === "function") mc.registerTool = function (t, o) { return reg.call(mc, wrapTool(t), o); };
+    if (typeof prov === "function") mc.provideContext = function (c) {
+      if (c && Array.isArray(c.tools)) c = Object.assign({}, c, { tools: c.tools.map(function (t) { return wrapTool(t); }) });
+      return prov.call(mc, c);
+    };
+  }
+  /* A client can inject modelContext after first paint; poll, never trap the property. */
+  var tries = 0, poll = setInterval(function () {
+    var mc = document.modelContext || navigator.modelContext;
+    if (mc) { instrument(mc); clearInterval(poll); } else if (++tries > 60) clearInterval(poll);
+  }, 250);
+
+  /* Declarative tools: a form with a toolname attribute, submitted. */
+  addEventListener("submit", function (ev) {
+    var f = ev.target, n = f && f.getAttribute && f.getAttribute("toolname");
+    if (!n) return;
+    var keys = [];
+    try { new FormData(f).forEach(function (_, k) { if (keys.length < 24) keys.push(k); }); } catch (e) {}
+    push({ k: "tool_call", n: String(n).slice(0, 128), ok: true, d: 1, keys: keys });
+  }, true);
+
+  /* Conversions: any element with data-agent-goal, clicked or submitted. */
+  function goal(ev) {
+    var el = ev.target && ev.target.closest && ev.target.closest("[data-agent-goal]");
+    if (el) push({ k: "agent_conversion", n: String(el.getAttribute("data-agent-goal")).slice(0, 128) });
+  }
+  addEventListener("click", goal, true);
+  addEventListener("submit", goal, true);
+
+  /* The manifest, hashed once per visit: on the entry page (no referrer, or one from another host). */
+  /* Without storage that is the nearest thing to once per session, and a missing manifest logs one 404, not one per page. */
+  if (!ref || ref !== location.host) try {
+    fetch("/.well-known/webmcp", { cache: "force-cache", credentials: "omit" }).then(function (r) {
+      if (r.ok) return r.text().then(function (t) { push({ k: "manifest", h: h(t) }); });
+    }).catch(function () {});
+  } catch (e) {}
+
+  /* For a demo page only (data-demo on the script tag): run a tool as if an agent had, marked as simulated. */
+  if (s.hasAttribute("data-demo")) window.__wmtSimulate = function (t, args) { return wrapTool(t, 1).execute(args || {}, {}); };
+})();
