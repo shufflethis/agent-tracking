@@ -1,4 +1,5 @@
 import type { CSSProperties } from "react";
+import { preload } from "react-dom";
 
 /**
  * A photograph behind a page header.
@@ -15,6 +16,9 @@ import type { CSSProperties } from "react";
  * Put it inside a section carrying `withart`, as the first child.
  */
 export default function HeroArt({ name }: { name: string }) {
+  // The photograph is the largest element above the fold. As a CSS background the browser
+  // only discovers it after the stylesheet resolves; a preload hint fetches it with the HTML.
+  preload(`/hero/${name}.webp`, { as: "image", fetchPriority: "high" });
   return (
     <div
       className="heroart"

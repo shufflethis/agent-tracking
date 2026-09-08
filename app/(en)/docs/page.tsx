@@ -8,9 +8,9 @@ import { snippetFor } from "@/lib/tracking/snippet";
 import sources from "@/lib/tracking/ai-sources.json";
 import { CHECK_ORIGIN, CONTACT_EMAIL, GITHUB_URL, SITE_HOST, SITE_ORIGIN } from "@/lib/site";
 
-// Rendered per request, not at build: the host, the entity on the legal pages and the
-// snippet line come from the environment, and a self-hosted copy must print its own.
-export const dynamic = "force-dynamic";
+// Cached for an hour and re-rendered from the running server's environment after that, so
+// the host and the legal entity follow the installation while the page still caches.
+export const revalidate = 3600;
 
 const API_CURL = `curl -s ${SITE_ORIGIN}/api/stats/example.com?days=30 \\
   -H "Authorization: Bearer wmt_your_token"`;
@@ -55,9 +55,15 @@ const DECLARATIVE = `<form toolname="book_table" tooldescription="Book a table f
   <button type="submit" data-agent-goal="table_booked">Book</button>
 </form>`;
 
+const DOCS_LD = [
+  { "@context": "https://schema.org", "@type": "WebPage", "@id": `${SITE_ORIGIN}/docs#webpage`, url: `${SITE_ORIGIN}/docs`, name: "Agent Tracking documentation", inLanguage: "en", isPartOf: { "@id": `${SITE_ORIGIN}/#site` }, about: { "@id": `${SITE_ORIGIN}/#app` } },
+  { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: "Home", item: `${SITE_ORIGIN}/` }, { "@type": "ListItem", position: 2, name: "Documentation", item: `${SITE_ORIGIN}/docs` }] },
+];
+
 export default function Page() {
   return (
     <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(DOCS_LD) }} />
       <section className="shell section" style={{ paddingTop: 56, paddingBottom: 10 }}>
         <div className="pagehead">
           <p className="eyebrow">Agent Tracking</p>

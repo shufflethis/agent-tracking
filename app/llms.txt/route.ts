@@ -1,7 +1,7 @@
 import { GITHUB_URL, SITE_HOST, SITE_ORIGIN } from "@/lib/site";
 import { guides } from "@/lib/guides";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 3600;
 
 const BODY = `# ${SITE_HOST}
 

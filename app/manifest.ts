@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next";
 import { SITE_NAME } from "@/lib/site";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 3600;
 
 export default function manifest(): MetadataRoute.Manifest {
   return {

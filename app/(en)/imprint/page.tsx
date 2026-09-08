@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { alternatesFor } from "@/lib/i18n";
-import { LEGAL, SITE_HOST, SITE_ORIGIN } from "@/lib/site";
+import { LEGAL, SITE_HOST } from "@/lib/site";
 
-// Rendered per request, not at build: the host, the entity on the legal pages and the
-// snippet line come from the environment, and a self-hosted copy must print its own.
-export const dynamic = "force-dynamic";
+// Cached for an hour and re-rendered from the running server's environment after that, so
+// the host and the legal entity follow the installation while the page still caches.
+export const revalidate = 3600;
 
 export const metadata = {
   title: "Imprint",
@@ -28,19 +28,8 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
 }
 
 export default function Page() {
-  const LD = {
-    "@context": "https://schema.org",
-    "@type": "Organization",
-    "@id": `${SITE_ORIGIN}/#legal-entity`,
-    name: LEGAL.name,
-    legalName: LEGAL.name,
-    url: LEGAL.website,
-    email: LEGAL.email,
-    address: { "@type": "PostalAddress", streetAddress: LEGAL.addressLines[0], addressLocality: LEGAL.addressLines[1], addressCountry: LEGAL.addressLines[2] },
-  };
   return (
     <article className="shell doc" style={{ paddingTop: 56, paddingBottom: 20 }}>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(LD) }} />
       <div className="pagehead" style={{ marginBottom: 34 }}>
         <p className="eyebrow">Legal</p>
         <h1 style={{ fontSize: "clamp(27px,4.4vw,44px)", marginBottom: 16 }}>Imprint</h1>

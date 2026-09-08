@@ -6,6 +6,8 @@ COPY package.json package-lock.json ./
 RUN npm ci --no-audit --no-fund
 COPY . .
 # The fonts are fetched from Google at build time and served from this image afterwards.
+# A .env in the build context is read by the build, so the prerendered pages carry your
+# host and legal entity from the first request; the runtime env_file refreshes them hourly.
 RUN npm run build
 
 FROM node:22.22-alpine

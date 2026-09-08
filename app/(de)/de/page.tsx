@@ -8,14 +8,14 @@ import { PLANS, RAW_RETENTION_DAYS } from "@/lib/tracking/plans";
 import { snippetFor } from "@/lib/tracking/snippet";
 import { CHECK_ORIGIN, CONTACT_EMAIL, GITHUB_URL, LEGAL, SITE_ORIGIN } from "@/lib/site";
 
-// Rendered per request, not at build: the host, the entity on the legal pages and the
-// snippet line come from the environment, and a self-hosted copy must print its own.
-export const dynamic = "force-dynamic";
+// Cached for an hour and re-rendered from the running server's environment after that, so
+// the host and the legal entity follow the installation while the page still caches.
+export const revalidate = 3600;
 
 export const metadata: Metadata = {
   title: { absolute: "Agent Tracking: KI-Agenten-Analytics für deine Website" },
   description:
-    "Analytics für KI-Agenten: welche Assistenten Besucher schicken, welche Crawler deine Seiten lesen (verifiziert), welche MCP- und WebMCP-Tools Agenten aufrufen und ob sie ans Ziel kommen. Ein Script-Tag, keine Cookies, keine personenbezogenen Daten. Open Source, Hosting in Deutschland, kostenlose Pilotphase.",
+    "Sieh, welche KI-Assistenten Besucher schicken, welche Crawler deine Seiten lesen, welche MCP- und WebMCP-Tools Agenten aufrufen und ob sie ans Ziel kommen. Ein Script-Tag, keine Cookies.",
   alternates: alternatesForLocale("/", "de"),
   robots: { index: true, follow: true, "max-image-preview": "large", "max-snippet": -1 },
   openGraph: { title: "Agent Tracking: sieh, was KI-Agenten auf deiner Website tun", description: "KI-Referrals, verifizierte Crawler-Abrufe, MCP- und WebMCP-Tool-Aufrufe, Agenten-Conversions. Ein Script-Tag, keine Cookies. Open Source, Hosting in Deutschland.", url: "/de", type: "website" },
@@ -27,10 +27,11 @@ const PAGE_LD = {
   "@type": "WebPage",
   "@id": `${SITE_ORIGIN}/de#webpage`,
   url: `${SITE_ORIGIN}/de`,
-  name: "Agent Tracking: sieh, was KI-Agenten auf deiner Website tun",
+  name: "Agent Tracking: KI-Agenten-Analytics für deine Website",
+  description: "Sieh, welche KI-Assistenten Besucher schicken, welche Crawler deine Seiten lesen, welche MCP- und WebMCP-Tools Agenten aufrufen und ob sie ans Ziel kommen.",
   inLanguage: "de",
   dateModified: LEGAL.revised,
-  isPartOf: { "@id": `${SITE_ORIGIN}/#app` },
+  isPartOf: { "@id": `${SITE_ORIGIN}/#site` },
   about: { "@id": `${SITE_ORIGIN}/#app` },
 };
 
@@ -51,7 +52,10 @@ export default function Page() {
         <h1 style={{ fontSize: "clamp(30px,5.2vw,58px)", lineHeight: 1.05, maxWidth: "18ch", marginBottom: 20 }}>
           Miss die Agenten auf deiner Site.
         </h1>
-        <p style={{ fontSize: "clamp(17px,2.1vw,22px)", lineHeight: 1.55, color: "var(--ink-2)", maxWidth: "48ch", marginTop: 0, marginBottom: 28 }}>
+        <p style={{ fontSize: "clamp(17px,2.1vw,22px)", lineHeight: 1.55, color: "var(--ink)", maxWidth: "52ch", marginTop: 0, marginBottom: 14 }}>
+          Agent Tracking ist KI-Agenten-Analytics für Websites: Es erfasst, welche KI-Assistenten Besucher schicken, welche KI-Crawler deine Seiten lesen, welche MCP- und WebMCP-Tools ein Agent aufruft und ob der Agent ein Ziel erreicht.
+        </p>
+        <p style={{ fontSize: "clamp(15px,1.6vw,18px)", lineHeight: 1.55, color: "var(--ink-2)", maxWidth: "52ch", marginTop: 0, marginBottom: 28 }}>
           Deine Analytics zählt Menschen. Sie sieht nicht den Besucher, den ChatGPT geschickt hat, die Seite, die
           ClaudeBot abgerufen hat, oder das WebMCP-Tool, das ein Assistent im Browser aufgerufen hat. Eine Zeile
           Script sieht das und zeigt es in vier Ansichten.
@@ -70,6 +74,7 @@ export default function Page() {
       </section>
 
       <Positioning lang="de" />
+      <Positioning lang="de" part="faq" />
 
       <section className="shell section">
         <h2>Vier Ansichten, sonst nichts</h2>
@@ -196,7 +201,6 @@ export default function Page() {
           </button>
         </form>
       </section>
-      <Positioning lang="de" part="faq" />
     </>
   );
 }

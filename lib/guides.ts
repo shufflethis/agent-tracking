@@ -16,6 +16,8 @@ export type Guide = {
   sections: GuideSection[];
   faq: { q: string; a: string }[];
   related: string[];
+  /** ISO date of the last substantive change, for lastmod and datePublished. */
+  updated: string;
 };
 
 const SNIPPET = `<script defer data-domain="example.com" src="https://agenttracking.co/agent.js"></script>`;
@@ -51,6 +53,7 @@ const EN: Guide[] = [
       { q: "Does it slow the site down?", a: "The snippet is 4.5 KB, loads deferred and sends small batches with sendBeacon. Nothing blocks rendering." },
     ],
     related: ["see-whether-ai-agents-buy-on-your-site", "which-ai-assistants-send-visitors", "which-ai-crawlers-read-my-pages"],
+    updated: "2026-09-08",
   },
   {
     slug: "see-whether-ai-agents-buy-on-your-site",
@@ -70,6 +73,7 @@ const EN: Guide[] = [
       { q: "Can a person trigger an agent conversion?", a: "The conversion is attributed to an agent when the session was classified as one, from the referrer or user agent. A person arriving from ChatGPT who then buys is an AI referral conversion; a plain visitor is not counted as an agent." },
     ],
     related: ["track-mcp-and-webmcp-tool-calls", "measure-ai-agent-behaviour-on-your-website"],
+    updated: "2026-09-08",
   },
   {
     slug: "which-ai-assistants-send-visitors",
@@ -88,6 +92,7 @@ const EN: Guide[] = [
       { q: "Is the assistant's user identified?", a: "No. The session id is a daily-salted hash; the address is not stored, no cookie is set, and nothing about the person is recorded." },
     ],
     related: ["measure-ai-agent-behaviour-on-your-website", "which-ai-crawlers-read-my-pages"],
+    updated: "2026-09-08",
   },
   {
     slug: "which-ai-crawlers-read-my-pages",
@@ -106,6 +111,7 @@ const EN: Guide[] = [
       { q: "Is the address stored?", a: "No. It is used while the upload is processed, to group one agent's fetches and to check the range, and discarded when the request ends. The log file is not kept." },
     ],
     related: ["measure-ai-agent-behaviour-on-your-website", "which-ai-assistants-send-visitors"],
+    updated: "2026-09-08",
   },
   {
     slug: "track-mcp-and-webmcp-tool-calls",
@@ -124,6 +130,7 @@ const EN: Guide[] = [
       { q: "Can I test it without an agent?", a: "Yes. The demo page has two tools and a simulate button; simulated calls are marked and never counted as agents." },
     ],
     related: ["see-whether-ai-agents-buy-on-your-site", "measure-ai-agent-behaviour-on-your-website"],
+    updated: "2026-09-08",
   },
   {
     slug: "ai-agent-analytics-without-cookie-banner",
@@ -142,6 +149,7 @@ const EN: Guide[] = [
       { q: "Is this legal advice?", a: "No. It is a description of what the software does and the reasoning the design follows. Your own assessment, or your lawyer's, decides." },
     ],
     related: ["measure-ai-agent-behaviour-on-your-website"],
+    updated: "2026-09-08",
   },
 ];
 
@@ -164,6 +172,7 @@ const DE: Guide[] = [
       { q: "Bremst es die Site?", a: "Das Snippet hat 4,5 KB, lädt mit defer und schickt kleine Batches per sendBeacon. Nichts blockiert das Rendern." },
     ],
     related: ["sehen-ob-ki-agenten-auf-der-site-kaufen", "welche-ki-assistenten-schicken-besucher", "welche-ki-crawler-lesen-meine-seiten"],
+    updated: "2026-09-08",
   },
   {
     slug: "sehen-ob-ki-agenten-auf-der-site-kaufen",
@@ -183,6 +192,7 @@ const DE: Guide[] = [
       { q: "Kann ein Mensch eine Agenten-Conversion auslösen?", a: "Die Conversion wird einem Agenten zugeschrieben, wenn die Sitzung als solcher erkannt wurde, über Referrer oder User-Agent. Ein Mensch, der von ChatGPT kommt und kauft, ist eine KI-Referral-Conversion; ein normaler Besucher zählt nicht als Agent." },
     ],
     related: ["mcp-und-webmcp-tool-aufrufe-erfassen", "verhalten-von-ki-agenten-auf-der-website-messen"],
+    updated: "2026-09-08",
   },
   {
     slug: "welche-ki-assistenten-schicken-besucher",
@@ -201,6 +211,7 @@ const DE: Guide[] = [
       { q: "Wird der Nutzer des Assistenten identifiziert?", a: "Nein. Die Sitzungskennung ist ein täglich neu gesalzener Hash; die Adresse wird nicht gespeichert, kein Cookie gesetzt, nichts über die Person erfasst." },
     ],
     related: ["verhalten-von-ki-agenten-auf-der-website-messen", "welche-ki-crawler-lesen-meine-seiten"],
+    updated: "2026-09-08",
   },
   {
     slug: "welche-ki-crawler-lesen-meine-seiten",
@@ -219,6 +230,7 @@ const DE: Guide[] = [
       { q: "Wird die Adresse gespeichert?", a: "Nein. Sie wird während der Verarbeitung genutzt, um Abrufe eines Agenten zu gruppieren und den Bereich zu prüfen, und mit dem Ende der Anfrage verworfen. Die Logdatei wird nicht behalten." },
     ],
     related: ["verhalten-von-ki-agenten-auf-der-website-messen", "welche-ki-assistenten-schicken-besucher"],
+    updated: "2026-09-08",
   },
   {
     slug: "mcp-und-webmcp-tool-aufrufe-erfassen",
@@ -237,6 +249,7 @@ const DE: Guide[] = [
       { q: "Kann ich es ohne Agenten testen?", a: "Ja. Die Demo-Seite hat zwei Tools und einen Simulieren-Knopf; simulierte Aufrufe sind markiert und zählen nie als Agenten." },
     ],
     related: ["sehen-ob-ki-agenten-auf-der-site-kaufen", "verhalten-von-ki-agenten-auf-der-website-messen"],
+    updated: "2026-09-08",
   },
   {
     slug: "ki-agenten-analytics-ohne-cookie-banner",
@@ -255,6 +268,7 @@ const DE: Guide[] = [
       { q: "Ist das Rechtsberatung?", a: "Nein. Es ist eine Beschreibung dessen, was die Software tut, und der Überlegung, der das Design folgt. Deine eigene Bewertung, oder die deines Anwalts, entscheidet." },
     ],
     related: ["verhalten-von-ki-agenten-auf-der-website-messen"],
+    updated: "2026-09-08",
   },
 ];
 

@@ -16,8 +16,16 @@
     "typecheck": "tsc --noEmit",
     "cron:nightly": "tsx --no-warnings scripts/tracking-cron.ts",
     "cron:logs": "tsx --no-warnings scripts/log-import.ts",
-    "cron:digest": "tsx --no-warnings scripts/weekly-digest.ts"
+    "cron:digest": "tsx --no-warnings scripts/weekly-digest.ts",
+    "indexnow": "node --env-file-if-exists=.env.production --import tsx scripts/indexnow.ts"
   },
+  "browserslist": [
+    "chrome >= 111",
+    "edge >= 111",
+    "firefox >= 115",
+    "safari >= 16.4",
+    "not dead"
+  ],
   "dependencies": {
     "next": "^16.3.3",
     "react": "^19.2.8",

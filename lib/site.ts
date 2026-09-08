@@ -84,4 +84,30 @@ export const LEGAL = {
   revised: trim(process.env.LEGAL_REVISED) || "2026-09-08",
 };
 
+/** The address split the way schema.org wants it. Parsed from the second address line ("City, ST 12345" or "12345 City"), country as ISO alpha-2. */
+function structuredAddress(lines: string[]) {
+  const [street = "", cityLine = "", countryRaw = ""] = lines;
+  let locality = cityLine;
+  let region = "";
+  let postal = "";
+  const us = /^(.*?),?\s+([A-Z]{2})\s+(\d{5}(?:-\d{4})?)$/.exec(cityLine);
+  const eu = /^(\d{4,5})\s+(.+)$/.exec(cityLine);
+  if (us) [locality, region, postal] = [us[1], us[2], us[3]];
+  else if (eu) [postal, locality] = [eu[1], eu[2]];
+  const countryMap: Record<string, string> = { usa: "US", "united states": "US", germany: "DE", deutschland: "DE", austria: "AT", österreich: "AT", switzerland: "CH", schweiz: "CH" };
+  const country = countryRaw.length === 2 ? countryRaw.toUpperCase() : (countryMap[countryRaw.toLowerCase()] ?? countryRaw);
+  return { "@type": "PostalAddress", streetAddress: street, addressLocality: locality, ...(region ? { addressRegion: region } : {}), ...(postal ? { postalCode: postal } : {}), addressCountry: country };
+}
+export const LEGAL_ADDRESS_SCHEMA = structuredAddress(LEGAL.addressLines);
+
+/** The person behind the installation, for bylines and Article authorship. Empty means the organisation is the author. */
+export const AUTHOR = {
+  name: trim(process.env.AUTHOR_NAME),
+  url: trim(process.env.AUTHOR_URL),
+  sameAs: trim(process.env.AUTHOR_SAMEAS).split(",").map((s) => s.trim()).filter(Boolean),
+};
+
+/** IndexNow key (Bing, Yandex, Naver). Served at /indexnow-key.txt when set. */
+export const INDEXNOW_KEY = trim(process.env.INDEXNOW_KEY);
+
 export const LEGAL_LINE = [LEGAL.name, LEGAL.addressLines.join(", ")].filter(Boolean).join(" · ");

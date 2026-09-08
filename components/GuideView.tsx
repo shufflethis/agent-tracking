@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { counterpart, guides, type Guide } from "@/lib/guides";
-import { LEGAL, SITE_NAME, SITE_ORIGIN } from "@/lib/site";
+import { AUTHOR, SITE_ORIGIN } from "@/lib/site";
 import type { DashLang } from "@/lib/tracking/copy";
 
 /** One guide: question as h1, summary as the quotable answer, steps, FAQ, related. Article and FAQPage schema in the head. */
@@ -18,10 +18,22 @@ export default function GuideView({ lang, guide }: { lang: DashLang; guide: Guid
       description: guide.summary,
       inLanguage: lang,
       url,
-      dateModified: LEGAL.revised,
-      author: { "@type": "Organization", name: SITE_NAME, url: SITE_ORIGIN },
+      datePublished: guide.updated,
+      dateModified: guide.updated,
+      image: `${SITE_ORIGIN}/og/home.png`,
+      author: { "@id": AUTHOR.name ? `${SITE_ORIGIN}/#author` : `${SITE_ORIGIN}/#org` },
       publisher: { "@id": `${SITE_ORIGIN}/#org` },
-      isPartOf: { "@id": `${SITE_ORIGIN}/#app` },
+      isPartOf: { "@id": `${SITE_ORIGIN}/#site` },
+      mainEntityOfPage: url,
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        { "@type": "ListItem", position: 1, name: lang === "de" ? "Start" : "Home", item: `${SITE_ORIGIN}${lang === "de" ? "/de" : "/"}` },
+        { "@type": "ListItem", position: 2, name: "Guides", item: `${SITE_ORIGIN}${base}` },
+        { "@type": "ListItem", position: 3, name: guide.question, item: url },
+      ],
     },
     {
       "@context": "https://schema.org",
@@ -41,6 +53,22 @@ export default function GuideView({ lang, guide }: { lang: DashLang; guide: Guid
         </p>
         <h1 style={{ fontSize: "clamp(27px,4.4vw,44px)", marginBottom: 16 }}>{guide.question}</h1>
         <p style={{ fontSize: "var(--t-body-lg)", lineHeight: 1.55, color: "var(--ink)", maxWidth: "64ch", marginTop: 0, marginBottom: 0 }}>{guide.summary}</p>
+        <p style={{ fontSize: 13, color: "var(--muted)", marginTop: 12 }}>
+          {AUTHOR.name ? (
+            <>
+              {lang === "de" ? "Von" : "By"}{" "}
+              {AUTHOR.url ? (
+                <a href={AUTHOR.url} rel="author">
+                  {AUTHOR.name}
+                </a>
+              ) : (
+                AUTHOR.name
+              )}
+              {" · "}
+            </>
+          ) : null}
+          {lang === "de" ? "Stand" : "Updated"} {guide.updated}
+        </p>
         {other ? (
           <p style={{ fontSize: 13, color: "var(--muted)", marginTop: 12 }}>
             <Link href={`${lang === "de" ? "/guides" : "/de/guides"}/${other.slug}`} hrefLang={lang === "de" ? "en" : "de"}>

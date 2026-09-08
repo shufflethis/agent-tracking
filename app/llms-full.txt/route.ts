@@ -4,7 +4,7 @@ import { snippetFor } from "@/lib/tracking/snippet";
 import { PLANS, RAW_RETENTION_DAYS } from "@/lib/tracking/plans";
 import { SOURCES_VERSION } from "@/lib/tracking/classify";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 3600;
 
 /** The whole positioning and the essentials of the docs as one Markdown file, for agents that read rather than browse. */
 export function GET() {

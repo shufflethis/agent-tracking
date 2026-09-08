@@ -2,9 +2,9 @@ import Link from "next/link";
 import { alternatesForLocale } from "@/lib/i18n";
 import { LEGAL, SITE_HOST } from "@/lib/site";
 
-// Rendered per request, not at build: the host, the entity on the legal pages and the
-// snippet line come from the environment, and a self-hosted copy must print its own.
-export const dynamic = "force-dynamic";
+// Cached for an hour and re-rendered from the running server's environment after that, so
+// the host and the legal entity follow the installation while the page still caches.
+export const revalidate = 3600;
 
 export const metadata = {
   title: "Impressum",

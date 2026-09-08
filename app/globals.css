@@ -32,7 +32,7 @@
   /* Text */
   --ink: #f0f0f0;
   --ink-2: #c4c4c8;
-  --muted: #8a8a94;
+  --muted: #9a9aa4;
 
   /* Semantic — separate from the accent, so a verdict never reads as branding */
   --good: #6ee7a8;
@@ -296,8 +296,8 @@ td code {
 .navtoggle > summary {
   list-style: none;
   cursor: pointer;
-  width: 40px;
-  height: 40px;
+  width: 48px;
+  height: 48px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -362,6 +362,9 @@ td code {
   font-size: 16px;
   color: var(--ink-2);
   border: 0;
+  min-height: 48px;
+  display: flex;
+  align-items: center;
   padding: 12px 2px;
   border-bottom: 1px solid var(--rule);
 }
@@ -464,6 +467,7 @@ td code {
   font-size: 15px;
   letter-spacing: 0.01em;
   padding: 13px 24px;
+  min-height: 48px;
   border-radius: 8px;
   border: 0;
   cursor: pointer;

@@ -1,12 +1,13 @@
 import { SITE_HOST, SITE_ORIGIN } from "@/lib/site";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 3600;
 
 const BODY = `# ${SITE_HOST}
 # We measure what agents do on sites, so this file is written on purpose.
 
 User-agent: *
 Allow: /
+Disallow: /app
 Disallow: /app/
 Disallow: /login
 Disallow: /api/

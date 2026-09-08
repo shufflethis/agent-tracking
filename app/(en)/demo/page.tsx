@@ -6,6 +6,7 @@ export const metadata: Metadata = {
   title: "Agent Tracking demo",
   description: "A page with two WebMCP tools and the tracking snippet, so the dashboard has something to show.",
   robots: { index: false, follow: true },
+  alternates: { canonical: "/demo" },
 };
 
 /**

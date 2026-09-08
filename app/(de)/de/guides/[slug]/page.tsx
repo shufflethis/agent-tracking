@@ -1,11 +1,15 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import GuideView from "@/components/GuideView";
-import { counterpart, guideBySlug } from "@/lib/guides";
+import { counterpart, guideBySlug, guides } from "@/lib/guides";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 3600;
 
 type Params = { params: Promise<{ slug: string }> };
+
+export function generateStaticParams() {
+  return guides("de").map((g) => ({ slug: g.slug }));
+}
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { slug } = await params;

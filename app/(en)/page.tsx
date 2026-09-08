@@ -8,17 +8,17 @@ import { PLANS, RAW_RETENTION_DAYS } from "@/lib/tracking/plans";
 import { snippetFor } from "@/lib/tracking/snippet";
 import { CHECK_ORIGIN, CONTACT_EMAIL, GITHUB_URL, LEGAL, SITE_ORIGIN } from "@/lib/site";
 
-// Rendered per request, not at build: the host, the entity on the legal pages and the
-// snippet line come from the environment, and a self-hosted copy must print its own.
-export const dynamic = "force-dynamic";
+// Cached for an hour and re-rendered from the running server's environment after that, so
+// the host and the legal entity follow the installation while the page still caches.
+export const revalidate = 3600;
 
 export const metadata: Metadata = {
-  title: { absolute: "Agent Tracking: AI agent analytics for your website" },
+  title: { absolute: "Agent Tracking: AI agent analytics for websites" },
   description:
-    "Analytics for AI agents: which assistants send visitors, which crawlers read your pages (verified), which MCP and WebMCP tools agents call and whether they finish. One script tag, no cookies, no personal data. Open source, hosted in Germany, free pilot.",
+    "See which AI assistants send visitors, which crawlers read your pages, which MCP and WebMCP tools agents call and whether they finish. One script tag, no cookies. Open source.",
   alternates: alternatesFor("/"),
   robots: { index: true, follow: true, "max-image-preview": "large", "max-snippet": -1 },
-  openGraph: { title: "Agent Tracking: see what AI agents do on your website", description: "AI referrals, verified crawler fetches, MCP and WebMCP tool calls, agent conversions. One script tag, no cookies. Open source, hosted in Germany.", url: "/", type: "website" },
+  openGraph: { title: "Agent Tracking: AI agent analytics for websites", description: "AI referrals, verified crawler fetches, MCP and WebMCP tool calls, agent conversions. One script tag, no cookies. Open source, hosted in Germany.", url: "/", type: "website" },
   twitter: { card: "summary_large_image" },
 };
 
@@ -27,10 +27,11 @@ const PAGE_LD = {
   "@type": "WebPage",
   "@id": `${SITE_ORIGIN}/#webpage`,
   url: SITE_ORIGIN,
-  name: "Agent Tracking: see what AI agents do on your website",
+  name: "Agent Tracking: AI agent analytics for websites",
+  description: "See which AI assistants send visitors, which crawlers read your pages, which MCP and WebMCP tools agents call and whether they finish.",
   inLanguage: "en",
   dateModified: LEGAL.revised,
-  isPartOf: { "@id": `${SITE_ORIGIN}/#app` },
+  isPartOf: { "@id": `${SITE_ORIGIN}/#site` },
   about: { "@id": `${SITE_ORIGIN}/#app` },
 };
 
@@ -59,7 +60,10 @@ export default function Page() {
         <h1 style={{ fontSize: "clamp(30px,5.2vw,58px)", lineHeight: 1.05, maxWidth: "18ch", marginBottom: 20 }}>
           Measure agents on your site.
         </h1>
-        <p style={{ fontSize: "clamp(17px,2.1vw,22px)", lineHeight: 1.55, color: "var(--ink-2)", maxWidth: "48ch", marginTop: 0, marginBottom: 28 }}>
+        <p style={{ fontSize: "clamp(17px,2.1vw,22px)", lineHeight: 1.55, color: "var(--ink)", maxWidth: "52ch", marginTop: 0, marginBottom: 14 }}>
+          Agent Tracking is AI agent analytics for websites: it records which AI assistants send visitors, which AI crawlers read your pages, which MCP and WebMCP tools an agent calls, and whether the agent reaches a goal.
+        </p>
+        <p style={{ fontSize: "clamp(15px,1.6vw,18px)", lineHeight: 1.55, color: "var(--ink-2)", maxWidth: "52ch", marginTop: 0, marginBottom: 28 }}>
           Your analytics counts people. It does not see the visitor ChatGPT sent, the page ClaudeBot fetched, or
           the WebMCP tool an assistant called inside the browser. One line of script does, and shows it in four
           views.
@@ -77,6 +81,7 @@ export default function Page() {
       </section>
 
       <Positioning lang="en" />
+      <Positioning lang="en" part="faq" />
 
       <section className="shell section">
         <h2>Four views, nothing else</h2>
@@ -203,7 +208,6 @@ export default function Page() {
           </button>
         </form>
       </section>
-      <Positioning lang="en" part="faq" />
     </>
   );
 }
