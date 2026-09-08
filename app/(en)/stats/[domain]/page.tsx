@@ -128,7 +128,7 @@ export default async function Page({ params }: Params) {
         </div>
       </section>
       <section className="shell section" style={{ paddingTop: 0 }}>
-        <div className="card" style={{ padding: 28, maxWidth: 840 }}>
+        <div className="card mid" style={{ padding: 28, maxWidth: 840 }}>
           <h2 style={{ fontSize: 22, marginBottom: 14 }}>Share</h2>
           <ShareBar
             url={url}

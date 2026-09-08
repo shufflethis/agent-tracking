@@ -28,7 +28,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ n
         <h1 style={{ fontSize: "clamp(28px,4vw,40px)" }}>{c.title}</h1>
         <p className="dek" style={{ maxWidth: "56ch" }}>{c.dek}</p>
       </div>
-      <div className="card" style={{ padding: 28, maxWidth: 560 }}>
+      <div className="card mid" style={{ padding: 28, maxWidth: 560 }}>
         <LoginForm next={next} domain={domain} lang={lang} labels={{ emailLabel: c.emailLabel, placeholder: c.placeholder, sending: c.sending, submit: c.submit, failed: c.failed, checkInbox: c.checkInbox, onItsWay: c.onItsWay("{email}") }} />
       </div>
     </section>
