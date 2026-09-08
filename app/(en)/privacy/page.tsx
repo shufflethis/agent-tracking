@@ -70,7 +70,6 @@ export default function Page() {
             counts. The legal basis is our legitimate interest in knowing which pages are read (Art. 6 (1) (f) GDPR). It runs only on this site, never on a customer&apos;s.
           </p>
         ) : null}
-        </p>
 
         <h2 id="account">Accounts and sign-in</h2>
         <p>
