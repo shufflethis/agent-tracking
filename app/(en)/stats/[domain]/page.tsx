@@ -94,11 +94,11 @@ export default async function Page({ params }: Params) {
         <div className="grid2" style={{ gap: 18 }}>
           <div className="card" style={{ padding: 28 }}>
             <p className="smallcaps" style={{ marginBottom: 12 }}>Agents, 30 days</p>
-            {dash.agents.length === 0 ? (
+            {dash.agents.filter((a) => a.count > 0).length === 0 ? (
               <p style={{ color: "var(--muted)", margin: 0 }}>No agent seen yet.</p>
             ) : (
               <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 6 }}>
-                {dash.agents.slice(0, 8).map((a) => (
+                {dash.agents.filter((a) => a.count > 0).slice(0, 8).map((a) => (
                   <li key={a.id + a.kind} style={{ position: "relative", display: "flex", justifyContent: "space-between", gap: 12, padding: "7px 10px", fontSize: 14, borderRadius: 6, overflow: "hidden" }}>
                     <span aria-hidden="true" style={{ position: "absolute", inset: 0, width: `${Math.max(2, Math.round(a.share * 100))}%`, background: "var(--cyan-12)", borderRadius: 6 }} />
                     <span style={{ position: "relative" }}>

@@ -102,7 +102,7 @@ export default async function Page({ params }: Params) {
 
       <section className="shell section" style={{ paddingTop: 0 }}>
         <div className="grid2" style={{ gap: 18 }}>
-          <TopList title={c.topAgents} all={c.allAgents} href={`/app/${encodeURIComponent(site.domain)}/agents`} empty={c.noneYet} rows={dash.agents.slice(0, 6).map((a) => ({ label: a.label, value: a.count.toLocaleString(nl), share: a.share }))} />
+          <TopList title={c.topAgents} all={c.allAgents} href={`/app/${encodeURIComponent(site.domain)}/agents`} empty={c.noneYet} rows={dash.agents.filter((a) => a.count > 0).slice(0, 6).map((a) => ({ label: a.label, value: a.count.toLocaleString(nl), share: a.share }))} />
           <TopList title={c.topPages} all={c.allPages} href={`/app/${encodeURIComponent(site.domain)}/pages`} empty={c.noneYet} rows={dash.pages.slice(0, 6).map((p) => ({ label: p.path, value: (p.fetches + p.calls).toLocaleString(nl), share: dash.pages[0] ? (p.fetches + p.calls) / (dash.pages[0].fetches + dash.pages[0].calls) : 0 }))} />
         </div>
       </section>
