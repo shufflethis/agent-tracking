@@ -17,9 +17,17 @@ export function GET() {
   ].join("\n");
   const body = `# Agent Tracking (${SITE_HOST})
 
+Category: ${c.category}.
+
 > ${c.definition}
 
 ${c.definitionMore}
+
+## ${c.notTitle}
+
+${c.notDek}
+
+${rows(c.not)}
 
 Site: ${SITE_ORIGIN} · Docs: ${SITE_ORIGIN}/docs · Demo: ${SITE_ORIGIN}/demo · Source: ${GITHUB_URL} (AGPL-3.0) · German: ${SITE_ORIGIN}/de
 
@@ -28,6 +36,24 @@ Site: ${SITE_ORIGIN} · Docs: ${SITE_ORIGIN}/docs · Demo: ${SITE_ORIGIN}/demo �
 ${rows(c.sees)}
 
 ${c.seesScore}
+
+## ${c.fightTitle}
+
+${c.fightDek}
+
+${rows(c.fight)}
+
+## ${c.whoTitle}
+
+${rows(c.who)}
+
+## ${c.useTitle}
+
+${c.useDek}
+
+${rows(c.use)}
+
+Example questions an agent can answer with get_agent_stats: ${c.useAsk.map((q) => `"${q}"`).join(" ")}
 
 ## ${c.whyTitle}
 

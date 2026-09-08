@@ -55,6 +55,43 @@ and get four views: **Overview**, **Agents**, **Tools**, **Pages**. Plus the sam
 
 And, beside the numbers, the site's **Agent Readiness Score** from [webmcp-tool.com](https://webmcp-tool.com): how well the site itself can be used by agents, next to how much it actually is.
 
+## What it is not
+
+The name is shared with other things. Agent Tracking is **AI agent analytics for websites**: it measures agents other people run when they visit your site. It is not
+
+- **LLM observability or tracing** (AgentOps, LangSmith, Langfuse, OpenTelemetry for LLM apps): those trace the agents you build, from inside your code. Complementary, not the same.
+- **call-centre or support-agent workforce tracking**, **field-sales or GPS tracking**, or **parcel and air-waybill tracking**: nothing here records people, locations, shifts or shipments.
+- **a bot blocker**: it measures and never blocks. The only request it makes to your site is one fetch of the homepage to verify the snippet.
+
+## Win the fight for AI bot traffic
+
+Agents already decide which sites get cited, read and used. Most sites have no idea what agents do on them. Four steps, repeated:
+
+1. **Measure** every agent and every action: referrals, verified fetches, bursts, tool calls, goals. Actual events, agent named.
+2. **Understand** how MCP and WebMCP agents behave: which pages a crawler takes and how fast, which tool an assistant tries first, where it fails, which argument keys it sends, whether it reaches the goal.
+3. **Fix** the site, the tools, the manifest: rename the tool agents keep missing, fix the error class behind half the failures, open the page every fan-out lands on.
+4. **Verify** with the readiness score and real usage side by side. When both go up, you are winning.
+
+## Ask your agent, not a dashboard
+
+Every number is an MCP tool. Point the agent you already use at it and ask in words:
+
+| From | How |
+| --- | --- |
+| **Claude** Desktop and Claude Code | Add the MCP server with your token and ask: "Which agents read our site this week, and which tool failed most?" |
+| **ChatGPT** connectors and custom GPTs | The same endpoint as a connector; your GPT answers from your own agent data. |
+| **Cursor, Codex, Hermes, OpenClaw**, any MCP client | One JSON block in the client config (below). The agent that writes your code can read how agents use the result. |
+| **Scripts and BI** | `GET /api/stats` as JSON, CSV export, a Monday digest mail. |
+
+Questions that work: "Which of our WebMCP tools has the worst success rate, and what is the top error?", "Did any fetch burst look like a Perplexity fan-out on the pricing page?", "How many agent conversions did we have in the last 30 days, compared to the 30 before?"
+
+## Who it is for
+
+- **Marketing and GEO teams**: which assistants send visitors and which pages they cite, week over week. The number generative engine optimisation was missing.
+- **Developers publishing MCP and WebMCP tools**: production analytics for your tools. Calls, success rate, duration, errors, the tools nobody uses.
+- **Agencies**: unlimited sites on the Agency plan, a public stats page per client, a white-label badge, one API token for your reporting.
+- **European companies**: no consent banner, no transfer, a DPA on adding the site, hosting in Germany or your own server.
+
 ## Why it exists, and what makes it different
 
 Every tool on the market measures one of two things: **people** (Google Analytics, Plausible, Matomo) or **crawlers** (Cloudflare AI Audit, bot managers, log analyzers). Neither can see an agent that has already got past the door and is using your site: calling a tool, filling a form, finishing a booking on someone's behalf. That is the layer where the money and the risk are, and it is the layer nobody was measuring. Agent Tracking was built for it.

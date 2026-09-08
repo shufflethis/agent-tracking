@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { faqSchema, homeContent } from "@/lib/home-content";
-import { CHECK_ORIGIN, GITHUB_URL } from "@/lib/site";
+import { CHECK_ORIGIN, GITHUB_URL, SITE_ORIGIN } from "@/lib/site";
 import type { DashLang } from "@/lib/tracking/copy";
 
 /**
@@ -9,6 +9,29 @@ import type { DashLang } from "@/lib/tracking/copy";
  * rendered from lib/home-content.ts, no script; the FAQ is <details> so it
  * reads without JavaScript and is in the HTML for anything that crawls it.
  */
+function Cards({ rows, cols = 3 }: { rows: { k: string; t: string; d: string }[]; cols?: 2 | 3 | 4 }) {
+  return (
+    <div className={cols === 2 ? "grid2" : cols === 4 ? "grid4" : "grid3"} style={{ marginTop: 22, gap: 18 }}>
+      {rows.map((r) => (
+        <div className="card" style={{ padding: 22 }} key={r.k}>
+          <p className="smallcaps" style={{ marginBottom: 6 }}>{r.k}</p>
+          <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 8 }}>{r.t}</h3>
+          <p style={{ margin: 0, fontSize: 14, color: "var(--ink-2)", lineHeight: 1.55 }}>{r.d}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+const MCP_CONFIG = `{
+  "mcpServers": {
+    "agent-tracking": {
+      "url": "${SITE_ORIGIN}/api/mcp",
+      "headers": { "Authorization": "Bearer wmt_your_token" }
+    }
+  }
+}`;
+
 export default function Positioning({ lang, part = "top" }: { lang: DashLang; part?: "top" | "faq" }) {
   const c = homeContent(lang);
   const docs = lang === "de" ? "/de/docs" : "/docs";
@@ -45,9 +68,24 @@ export default function Positioning({ lang, part = "top" }: { lang: DashLang; pa
   return (
     <>
       <section className="shell section" id="what">
+        <p className="eyebrow">{c.category}</p>
         <h2>{c.definitionTitle}</h2>
         <p className="dek" style={{ maxWidth: "70ch", fontSize: "var(--t-body-lg)", color: "var(--ink)" }}>{c.definition}</p>
         <p className="dek" style={{ maxWidth: "70ch" }}>{c.definitionMore}</p>
+      </section>
+
+      <section className="shell section" id="not">
+        <h2>{c.notTitle}</h2>
+        <p className="dek" style={{ maxWidth: "70ch" }}>{c.notDek}</p>
+        <div className="grid3" style={{ marginTop: 22 }}>
+          {c.not.map((r) => (
+            <div className="card" style={{ padding: 22 }} key={r.k}>
+              <p className="smallcaps" style={{ marginBottom: 6 }}>{r.k}</p>
+              <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 8 }}>{r.t}</h3>
+              <p style={{ margin: 0, fontSize: 14, color: "var(--ink-2)", lineHeight: 1.55 }}>{r.d}</p>
+            </div>
+          ))}
+        </div>
       </section>
 
       <section className="shell section" id="sees">
@@ -72,6 +110,34 @@ export default function Positioning({ lang, part = "top" }: { lang: DashLang; pa
               ) : null}
             </p>
           </div>
+        </div>
+      </section>
+
+      <section className="shell section" id="win">
+        <h2>{c.fightTitle}</h2>
+        <p className="dek" style={{ maxWidth: "70ch" }}>{c.fightDek}</p>
+        <Cards rows={c.fight} cols={4} />
+      </section>
+
+      <section className="shell section" id="who">
+        <h2>{c.whoTitle}</h2>
+        <p className="dek" style={{ maxWidth: "70ch" }}>{c.whoDek}</p>
+        <Cards rows={c.who} cols={4} />
+      </section>
+
+      <section className="shell section" id="ask">
+        <h2>{c.useTitle}</h2>
+        <p className="dek" style={{ maxWidth: "70ch" }}>{c.useDek}</p>
+        <Cards rows={c.use} cols={4} />
+        <div className="grid2" style={{ gap: 18, marginTop: 22, alignItems: "start" }}>
+          <pre className="code" style={{ margin: 0 }}>{MCP_CONFIG}</pre>
+          <ul style={{ margin: 0, paddingLeft: 0, listStyle: "none", display: "grid", gap: 10 }}>
+            {c.useAsk.map((q) => (
+              <li key={q} className="card" style={{ padding: "12px 16px", fontSize: 14.5, color: "var(--ink-2)" }}>
+                &ldquo;{q}&rdquo;
+              </li>
+            ))}
+          </ul>
         </div>
       </section>
 

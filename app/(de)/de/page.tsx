@@ -13,7 +13,7 @@ import { CHECK_ORIGIN, CONTACT_EMAIL, GITHUB_URL, LEGAL, SITE_ORIGIN } from "@/l
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: { absolute: "Agent Tracking: sieh, was KI-Agenten auf deiner Website tun" },
+  title: { absolute: "Agent Tracking: KI-Agenten-Analytics für deine Website" },
   description:
     "Analytics für KI-Agenten: welche Assistenten Besucher schicken, welche Crawler deine Seiten lesen (verifiziert), welche MCP- und WebMCP-Tools Agenten aufrufen und ob sie ans Ziel kommen. Ein Script-Tag, keine Cookies, keine personenbezogenen Daten. Open Source, Hosting in Deutschland, kostenlose Pilotphase.",
   alternates: alternatesForLocale("/", "de"),

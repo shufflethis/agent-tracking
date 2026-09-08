@@ -1680,3 +1680,19 @@ td.num {
   max-width: 70ch;
   line-height: 1.6;
 }
+
+.grid4 {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: 1fr;
+}
+@media (min-width: 700px) {
+  .grid4 {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+@media (min-width: 1040px) {
+  .grid4 {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
