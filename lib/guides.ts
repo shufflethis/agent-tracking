@@ -151,6 +151,139 @@ const EN: Guide[] = [
     related: ["measure-ai-agent-behaviour-on-your-website"],
     updated: "2026-09-08",
   },
+  {
+    slug: "how-to-track-ai-agents-visiting-your-website",
+    question: "How do I track the AI agents that visit my website?",
+    title: "How to track the AI agents that visit your website",
+    summary:
+      "An AI agent visits a website in one of three ways: it sends a person (a referral from ChatGPT or Perplexity), it fetches pages itself (a crawler or a live assistant), or it operates the site through MCP and WebMCP tools. Tracking agents means catching all three, each from its own source: the referrer, the user agent verified against vendor IP ranges, and the browser's tool API.",
+    sections: [
+      { h: "The three ways an agent shows up", p: ["A referral looks like a normal visit with chatgpt.com or perplexity.ai as the referrer. A fetch is a request from GPTBot, ClaudeBot, PerplexityBot or a live assistant such as ChatGPT-User, most of which never run JavaScript. A tool call happens inside the visitor's browser when an assistant uses a WebMCP tool the page registered, and no server ever sees it.", "Ordinary analytics catches part of the first, none of the second and none of the third. That is why an agent tracker is a separate thing rather than a report inside your existing analytics."] },
+      { h: "Ten minutes of setup", p: ["Sign in with an email address, add the domain, paste one script tag on every page, press verify. The snippet is 4.5 KB, sets no cookie and stores no address. From that moment referrals and tool calls are counted, attributed to the assistant or agent by a published list."], code: SNIPPET, codeLang: "html" },
+      { h: "Add the server log for crawlers", p: ["Crawlers fetch HTML and leave. Upload your access log once on the settings page, or let a cron send it daily with the API token. Every line that claims a known crawler is checked against the address ranges the vendor publishes, so a fake GPTBot is shown as unverified rather than counted, and requests from one agent within seconds are grouped into a burst."], code: LOG, codeLang: "sh" },
+      { h: "What you can see afterwards", p: ["Which assistants send visitors and where they land. Which crawlers read which pages, how often, verified or not. Which tools agents call, how long they take, whether they fail. Whether an agent reaches a goal you marked. All of it per day, with a trend against the previous period, and the same numbers as JSON and as an MCP tool for your own agents."] },
+    ],
+    faq: [
+      { q: "Do I need to change my analytics setup?", a: "No. Agent Tracking runs beside Google Analytics, Plausible or Matomo and counts a different thing. Nothing about your existing setup changes." },
+      { q: "Will it slow the site or need a consent banner?", a: "The snippet loads deferred and sends small batches with sendBeacon. It stores nothing on the device, so there is nothing to consent to." },
+    ],
+    related: ["measure-ai-agent-behaviour-on-your-website", "which-ai-crawlers-read-my-pages", "tool-to-track-agentic-use-of-your-website"],
+    updated: "2026-09-08",
+  },
+  {
+    slug: "tool-to-track-agentic-use-of-your-website",
+    question: "Is there a tool that tracks only the agentic use of my website?",
+    title: "A tool that tracks only the agentic use of your website",
+    summary:
+      "Yes. Agent Tracking counts nothing but agents: the visitors assistants send, the pages crawlers read, the tools agents call and the goals they reach. Human traffic stays in your web analytics; this dashboard shows the agentic part of your site on its own, so the numbers are not diluted by everything else.",
+    sections: [
+      { h: "Why a separate tool rather than a segment", p: ["A segment in web analytics can isolate visits with an assistant referrer, and that is the only one of the four agent signals it can see. Crawler fetches never execute the analytics script, tool calls never leave the browser, and a conversion reached by an agent looks like any other conversion. A tool built for agents reads the other sources: the server log, the browser's model context API, and goal markers in the page."] },
+      { h: "What counts as agentic use", p: ["A visit from ChatGPT, Perplexity, Claude, Copilot or Gemini. A fetch by GPTBot, ClaudeBot, PerplexityBot, OAI-SearchBot, Google-Extended, Applebot-Extended or another named crawler, verified against the vendor's address ranges. A call to an MCP or WebMCP tool on the page. A goal reached in a session classified as an agent. Plain page views by people are recorded only as a total for context and never counted against the quota."] },
+      { h: "What it deliberately leaves out", p: ["No people analytics: no bounce rate, no funnels for humans, no heatmaps. No prompts, spans or token costs of agents you build yourself; that is LLM observability, a different product. No blocking: it measures and never interferes. The result is a small dashboard with four views that answers agent questions and nothing else."] },
+      { h: "Open source, or hosted", p: ["The software is AGPL-3.0 and runs on your own server with one compose file, or as a hosted service in Germany with a free pilot. Either way the data is one SQLite file and the code is public."] },
+    ],
+    faq: [
+      { q: "Does it count human visitors at all?", a: "Only as a daily total beside the agent numbers, so you can see the proportion. Human visits are not classified, not segmented and not charged." },
+      { q: "Can I get the numbers out?", a: "Yes: JSON through the stats API, CSV export, a weekly mail, and an MCP tool your own assistant can call." },
+    ],
+    related: ["how-to-track-ai-agents-visiting-your-website", "can-google-analytics-track-ai-agents", "measure-ai-agent-behaviour-on-your-website"],
+    updated: "2026-09-08",
+  },
+  {
+    slug: "see-chatgpt-referral-traffic",
+    question: "How do I see ChatGPT referral traffic to my website?",
+    title: "How to see ChatGPT referral traffic to your website",
+    summary:
+      "A click on a link inside ChatGPT arrives with the referrer chatgpt.com, sometimes with utm_source=chatgpt.com, and most analytics tools file it under Referral or Direct. Agent Tracking matches the referrer and the utm parameter against a maintained list and shows ChatGPT, Perplexity, Claude, Copilot and Gemini as their own rows, with landing pages and a week-over-week trend.",
+    sections: [
+      { h: "Where the signal is", p: ["ChatGPT sends chatgpt.com as the referrer for links a person clicks in an answer. Perplexity sends perplexity.ai, Claude sends claude.ai, Copilot copilot.microsoft.com, Gemini gemini.google.com. OpenAI additionally appends utm_source=chatgpt.com on many links. Both are visible to a script on your page and to nothing else."] },
+      { h: "Why Google Analytics undercounts it", p: ["GA4 groups these hosts under Referral without naming the assistant, and links opened in apps or in ways that strip the referrer land in Direct. You can build a segment by host name if you know the list, and you have to maintain it as assistants change domains. Agent Tracking keeps that list in one versioned file, applies it on the server, and shows the result per assistant."] },
+      { h: "Set it up", p: ["Add the site, paste the snippet, verify. From the first visit onward the Agents view lists each assistant as a referral row with count, share of agent traffic and trend; the Pages view shows where those visitors land, which is usually not the homepage."], code: SNIPPET, codeLang: "html" },
+      { h: "What to do with the number", p: ["Two weeks of referral rows tell you which content assistants cite and which they ignore. That is the feedback loop generative engine optimisation was missing: change a page, watch whether the assistant starts sending people to it. Read the same rows from the stats API or ask Claude or ChatGPT through the MCP tool."], code: MCP, codeLang: "json" },
+    ],
+    faq: [
+      { q: "Does every ChatGPT click carry a referrer?", a: "No. Some clients strip it. Those visits are counted as ordinary views, so the number is a floor, never an estimate." },
+      { q: "Is the person identified?", a: "No. The session id is a daily-salted hash, the address is not stored and no cookie is set." },
+    ],
+    related: ["which-ai-assistants-send-visitors", "how-to-track-ai-agents-visiting-your-website"],
+    updated: "2026-09-08",
+  },
+  {
+    slug: "can-google-analytics-track-ai-agents",
+    question: "Can Google Analytics or Plausible track AI agents?",
+    title: "Can Google Analytics or Plausible track AI agents?",
+    summary:
+      "Partly. Web analytics can show visits with an assistant referrer if you build and maintain the segment yourself. It cannot see crawlers, which never run its script; it cannot see MCP or WebMCP tool calls, which never leave the browser; and it cannot tell an agent's conversion from a person's. Agent Tracking covers those three and runs beside your analytics rather than replacing it.",
+    sections: [
+      { h: "What web analytics sees", p: ["A referral from chatgpt.com or perplexity.ai is a normal page view with a referrer, and GA4, Plausible and Matomo record it. Whether they name the assistant depends on you: GA4 needs a custom channel group, Plausible a filter on referrer, Matomo a segment. Each of them has to be updated when an assistant changes its domain."] },
+      { h: "What it cannot see", p: ["GPTBot, ClaudeBot and PerplexityBot fetch HTML and never execute JavaScript, so no analytics script fires; only the server log knows they were there. A WebMCP tool call happens inside the visitor's browser between the assistant and the page; no request reaches any analytics endpoint. And a purchase completed by an agent looks exactly like a purchase completed by a person, so nothing separates the two."] },
+      { h: "What Agent Tracking adds", p: ["Crawler fetches from the server log, verified against the vendors' published IP ranges and grouped into bursts. Tool calls with duration, success rate, error class and input key names. Conversions attributed to agents through a goal marker. And assistant referrals from a maintained list, so nobody has to build the segment."] },
+      { h: "Use both", p: ["Keep your analytics for people. Add one script tag for agents. The two do not overlap, and the agent dashboard stays small enough to read in a minute."], code: SNIPPET, codeLang: "html" },
+    ],
+    faq: [
+      { q: "Does Agent Tracking replace my analytics?", a: "No. It counts a different population. Human traffic appears only as a daily total for context." },
+      { q: "Can I build all of this in GA4 with enough work?", a: "The referral part, yes. The crawler part needs log processing outside GA4, and tool calls and agent conversions need code in the page that GA4 does not provide." },
+    ],
+    related: ["tool-to-track-agentic-use-of-your-website", "see-chatgpt-referral-traffic", "what-is-the-difference-to-agentops-and-langsmith"],
+    updated: "2026-09-08",
+  },
+  {
+    slug: "what-is-the-difference-to-agentops-and-langsmith",
+    question: "What is the difference between Agent Tracking and AgentOps or LangSmith?",
+    title: "Agent Tracking versus AgentOps, LangSmith and LLM observability",
+    summary:
+      "AgentOps, LangSmith, Langfuse and similar tools trace the agents you build, from inside your own code: prompts, spans, token costs, evaluation runs. Agent Tracking measures agents other people run when they visit your website, from the outside, through a script tag and your server log. One is observability for your product; the other is analytics for your site. A team that builds agents and runs a website may need both.",
+    sections: [
+      { h: "Where each one sits", p: ["Observability lives in your application: an SDK wraps your LLM calls and tool executions and sends traces to a dashboard. It answers why your agent produced an output and what it cost. Agent Tracking lives on your web pages: a script watches referrals and tool calls, a log import watches crawlers. It answers which agents use your site and what they achieve."] },
+      { h: "What only one of them can tell you", p: ["Only observability knows the prompt, the chain of thought and the token bill of your agent. Only Agent Tracking knows that ChatGPT sent 40 visitors to your pricing page this week, that PerplexityBot fetched 300 pages last night, or that an assistant called your booking tool six times and failed on a required field. The data never overlaps, because the agents are different: yours versus everyone else's."] },
+      { h: "Why the name collides", p: ["Both fields use the word agent, and both count tool calls. The difference is whose tool: observability counts calls your agent makes to its tools; Agent Tracking counts calls other agents make to your site's WebMCP tools. The confusion is common enough that this site says on its home page what it is not."] },
+      { h: "When you want both", p: ["If you publish WebMCP tools and also build agents, run an observability tool for the agents and Agent Tracking for the site. The stats API and the MCP tool make it easy to pull the site numbers into whatever dashboard your observability lives in."] },
+    ],
+    faq: [
+      { q: "Can Agent Tracking trace my own agent?", a: "No. It has no SDK, sees no prompts and no spans. Use AgentOps, LangSmith, Langfuse or OpenTelemetry for that." },
+      { q: "Can LangSmith see who visits my website?", a: "No. It has no presence on the page or in the server log; it only sees what your own code sends it." },
+    ],
+    related: ["can-google-analytics-track-ai-agents", "track-mcp-and-webmcp-tool-calls"],
+    updated: "2026-09-08",
+  },
+  {
+    slug: "cloudflare-ai-audit-or-agent-tracking",
+    question: "Do I need Cloudflare AI Audit if I have Agent Tracking, or the other way round?",
+    title: "Cloudflare AI Audit and Agent Tracking: what each one covers",
+    summary:
+      "Cloudflare AI Audit counts and controls crawlers at the edge, for sites behind Cloudflare, and can block or charge them. Agent Tracking measures referrals, fetches and tool calls in the page and from your own log, needs no CDN, verifies crawlers against vendor IP ranges and follows agents through to a goal. If you want to block crawlers, use Cloudflare. If you want to know what agents do on the site and whether they finish, use Agent Tracking. Many sites use both.",
+    sections: [
+      { h: "What a CDN bot audit does well", p: ["It sits in front of the site, so it sees every request including the ones your origin never gets, and it can act: allow, block, challenge, or charge per crawl. For a publisher whose main concern is training crawlers taking content, that control is the point."] },
+      { h: "What it does not see", p: ["A visitor sent by ChatGPT is a person to the CDN, not an agent. A WebMCP tool call happens inside the browser and never crosses the edge. Whether an agent completed a booking is invisible from a request log. And it only works if your DNS runs through Cloudflare."] },
+      { h: "What Agent Tracking covers instead", p: ["Referrals attributed to the assistant, crawler fetches from your own log verified against the vendors' address ranges and grouped into bursts, tool calls with success and duration, and conversions reached by agents. It never blocks; it measures. It works on any host, with one script tag and an optional log upload."] },
+      { h: "Using both", p: ["Let Cloudflare enforce your crawler policy at the edge. Let Agent Tracking tell you which assistants send business, which tools work and where agents give up. The crawler counts will roughly agree; the rest only exists on one side."] },
+    ],
+    faq: [
+      { q: "Can Agent Tracking block a crawler?", a: "No, by design. Blocking belongs in robots.txt or at the edge; this tool tells you what is happening so that decision is informed." },
+      { q: "Does Agent Tracking need Cloudflare?", a: "No. It needs a script tag on the page and, for crawlers, an access log from any web server." },
+    ],
+    related: ["which-ai-crawlers-read-my-pages", "can-google-analytics-track-ai-agents"],
+    updated: "2026-09-08",
+  },
+  {
+    slug: "analytics-for-webmcp-tools",
+    question: "How do I get analytics for WebMCP tools on my site?",
+    title: "Analytics for WebMCP tools: calls, success rate, errors, unused tools",
+    summary:
+      "WebMCP tools run inside the visitor's browser, so no server log and no web analytics ever sees a call. Agent Tracking's snippet wraps navigator.modelContext and document.modelContext, watches declarative forms, and records every registration and call: tool name, duration, success or failure, error class and the names of the input keys, never their values. The Tools view then shows what works, what fails and what nobody calls.",
+    sections: [
+      { h: "Why nothing else measures this", p: ["A WebMCP call is a function call between the assistant and the page. There is no HTTP request to log, no pixel to fire, no server involved. If the page does not report it, it did not happen as far as anyone can tell. The snippet reports it, with the argument key names and never the values."] },
+      { h: "Nothing to change in your tools", p: ["Register tools as the specification says. The snippet wraps registerTool before your code runs and catches declarative forms on submit. Registrations appear in the Tools view within a minute."], code: TOOL, codeLang: "js" },
+      { h: "The questions the Tools view answers", p: ["How many calls per tool, per day. What share succeeded and what the top three error messages were. How long a call took on average. Which tools were registered but never called, which usually means a description agents do not understand or a schema they cannot fill. When the manifest at /.well-known/webmcp last changed, and on paid plans an email when it does."] },
+      { h: "From calls to outcomes", p: ["Mark the goal with data-agent-goal or treat a tool as the goal, and the dashboard shows whether the agents that called your tools reached the end. The gap between calls and conversions is the number worth working on."], code: GOAL, codeLang: "html" },
+    ],
+    faq: [
+      { q: "Does this cover remote MCP servers too?", a: "Not their server-side logs; those have their own. Agent Tracking sees tools called in the page through the browser's model context API and, through the MCP endpoint, lets you read the numbers." },
+      { q: "Are argument values recorded?", a: "Never. Only the names of the input keys, so you can see which fields agents send and which they skip." },
+    ],
+    related: ["track-mcp-and-webmcp-tool-calls", "see-whether-ai-agents-buy-on-your-site"],
+    updated: "2026-09-08",
+  },
 ];
 
 const DE: Guide[] = [
@@ -268,6 +401,139 @@ const DE: Guide[] = [
       { q: "Ist das Rechtsberatung?", a: "Nein. Es ist eine Beschreibung dessen, was die Software tut, und der Überlegung, der das Design folgt. Deine eigene Bewertung, oder die deines Anwalts, entscheidet." },
     ],
     related: ["verhalten-von-ki-agenten-auf-der-website-messen"],
+    updated: "2026-09-08",
+  },
+  {
+    slug: "ki-agenten-auf-der-website-tracken",
+    question: "Wie tracke ich die KI-Agenten, die meine Website besuchen?",
+    title: "KI-Agenten tracken, die deine Website besuchen",
+    summary:
+      "Ein KI-Agent kommt auf drei Wegen auf eine Website: Er schickt einen Menschen (ein Referral von ChatGPT oder Perplexity), er holt Seiten selbst (ein Crawler oder ein Live-Assistent), oder er bedient die Site über MCP- und WebMCP-Tools. Agenten tracken heißt, alle drei zu erfassen, jeden aus seiner eigenen Quelle: dem Referrer, dem gegen Anbieter-IP-Bereiche verifizierten User-Agent und der Tool-API des Browsers.",
+    sections: [
+      { h: "Die drei Arten, wie ein Agent auftaucht", p: ["Ein Referral sieht aus wie ein normaler Besuch mit chatgpt.com oder perplexity.ai als Referrer. Ein Abruf ist eine Anfrage von GPTBot, ClaudeBot, PerplexityBot oder einem Live-Assistenten wie ChatGPT-User, und die meisten davon führen kein JavaScript aus. Ein Tool-Aufruf passiert im Browser des Besuchers, wenn ein Assistent ein WebMCP-Tool nutzt, das die Seite registriert hat, und kein Server sieht ihn je.", "Normale Analytics erfasst einen Teil des Ersten, nichts vom Zweiten und nichts vom Dritten. Darum ist ein Agenten-Tracker ein eigenes Werkzeug und kein Report im bestehenden Analytics."] },
+      { h: "Zehn Minuten Einrichtung", p: ["Per E-Mail anmelden, Domain hinzufügen, ein Script-Tag auf jede Seite, Prüfen drücken. Das Snippet hat 4,5 KB, setzt kein Cookie und speichert keine Adresse. Ab diesem Moment werden Referrals und Tool-Aufrufe gezählt und über eine veröffentlichte Liste dem Assistenten oder Agenten zugeordnet."], code: SNIPPET, codeLang: "html" },
+      { h: "Das Server-Log für Crawler dazunehmen", p: ["Crawler holen HTML und gehen. Lade das Access-Log einmal auf der Einstellungsseite hoch oder lass es täglich per Cron mit dem API-Token schicken. Jede Zeile, die einen bekannten Crawler behauptet, wird gegen die veröffentlichten Adressbereiche des Anbieters geprüft; ein falscher GPTBot erscheint als unverifiziert statt gezählt, und Anfragen eines Agenten innerhalb weniger Sekunden werden zu einem Burst gruppiert."], code: LOG, codeLang: "sh" },
+      { h: "Was du danach siehst", p: ["Welche Assistenten Besucher schicken und wo sie landen. Welche Crawler welche Seiten lesen, wie oft, verifiziert oder nicht. Welche Tools Agenten aufrufen, wie lange sie brauchen, ob sie scheitern. Ob ein Agent ein markiertes Ziel erreicht. Alles pro Tag, mit Trend zur Vorperiode, und dieselben Zahlen als JSON und als MCP-Tool für deine eigenen Agenten."] },
+    ],
+    faq: [
+      { q: "Muss ich mein Analytics umbauen?", a: "Nein. Agent Tracking läuft neben Google Analytics, Plausible oder Matomo und zählt etwas anderes. An deinem bestehenden Setup ändert sich nichts." },
+      { q: "Bremst es die Site oder braucht es ein Consent-Banner?", a: "Das Snippet lädt mit defer und schickt kleine Batches per sendBeacon. Es speichert nichts auf dem Gerät, also gibt es nichts, dem man zustimmen müsste." },
+    ],
+    related: ["verhalten-von-ki-agenten-auf-der-website-messen", "welche-ki-crawler-lesen-meine-seiten", "tool-fuer-agentische-nutzung-der-website"],
+    updated: "2026-09-08",
+  },
+  {
+    slug: "tool-fuer-agentische-nutzung-der-website",
+    question: "Gibt es ein Tool, das nur die agentische Nutzung meiner Website misst?",
+    title: "Ein Tool, das nur die agentische Nutzung deiner Website misst",
+    summary:
+      "Ja. Agent Tracking zählt nichts als Agenten: die Besucher, die Assistenten schicken, die Seiten, die Crawler lesen, die Tools, die Agenten aufrufen, und die Ziele, die sie erreichen. Menschlicher Traffic bleibt in deinem Web-Analytics; dieses Dashboard zeigt den agentischen Teil deiner Site für sich, damit die Zahlen nicht von allem anderen verwässert werden.",
+    sections: [
+      { h: "Warum ein eigenes Tool statt eines Segments", p: ["Ein Segment im Web-Analytics kann Besuche mit Assistenten-Referrer isolieren, und das ist das einzige der vier Agentensignale, das es sehen kann. Crawler-Abrufe führen das Analytics-Script nie aus, Tool-Aufrufe verlassen den Browser nie, und eine von einem Agenten erreichte Conversion sieht aus wie jede andere. Ein für Agenten gebautes Tool liest die anderen Quellen: das Server-Log, die Model-Context-API des Browsers und Zielmarker in der Seite."] },
+      { h: "Was als agentische Nutzung zählt", p: ["Ein Besuch von ChatGPT, Perplexity, Claude, Copilot oder Gemini. Ein Abruf durch GPTBot, ClaudeBot, PerplexityBot, OAI-SearchBot, Google-Extended, Applebot-Extended oder einen anderen benannten Crawler, verifiziert gegen die Adressbereiche des Anbieters. Ein Aufruf eines MCP- oder WebMCP-Tools auf der Seite. Ein erreichtes Ziel in einer als Agent erkannten Sitzung. Reine Seitenaufrufe von Menschen werden nur als Summe zur Einordnung erfasst und nie auf das Kontingent angerechnet."] },
+      { h: "Was es bewusst weglässt", p: ["Kein Menschen-Analytics: keine Absprungrate, keine Funnels für Menschen, keine Heatmaps. Keine Prompts, Spans oder Token-Kosten von Agenten, die du selbst baust; das ist LLM-Observability, ein anderes Produkt. Kein Blockieren: Es misst und greift nie ein. Das Ergebnis ist ein kleines Dashboard mit vier Ansichten, das Agentenfragen beantwortet und sonst nichts."] },
+      { h: "Open Source oder gehostet", p: ["Die Software ist AGPL-3.0 und läuft mit einer Compose-Datei auf deinem eigenen Server, oder als gehosteter Dienst in Deutschland mit kostenloser Pilotphase. So oder so sind die Daten eine SQLite-Datei und der Code ist öffentlich."] },
+    ],
+    faq: [
+      { q: "Zählt es menschliche Besucher überhaupt?", a: "Nur als Tagessumme neben den Agentenzahlen, damit du das Verhältnis siehst. Menschliche Besuche werden nicht klassifiziert, nicht segmentiert und nicht berechnet." },
+      { q: "Bekomme ich die Zahlen raus?", a: "Ja: JSON über die Stats-API, CSV-Export, eine wöchentliche Mail und ein MCP-Tool, das dein eigener Assistent aufrufen kann." },
+    ],
+    related: ["ki-agenten-auf-der-website-tracken", "kann-google-analytics-ki-agenten-messen", "verhalten-von-ki-agenten-auf-der-website-messen"],
+    updated: "2026-09-08",
+  },
+  {
+    slug: "chatgpt-referral-traffic-sehen",
+    question: "Wie sehe ich ChatGPT-Referral-Traffic auf meiner Website?",
+    title: "ChatGPT-Referral-Traffic auf deiner Website sehen",
+    summary:
+      "Ein Klick auf einen Link in ChatGPT kommt mit dem Referrer chatgpt.com, manchmal mit utm_source=chatgpt.com, und die meisten Analytics-Werkzeuge legen ihn unter Referral oder Direct ab. Agent Tracking gleicht Referrer und utm-Parameter mit einer gepflegten Liste ab und zeigt ChatGPT, Perplexity, Claude, Copilot und Gemini als eigene Zeilen, mit Landingpages und Trend Woche für Woche.",
+    sections: [
+      { h: "Wo das Signal steckt", p: ["ChatGPT sendet chatgpt.com als Referrer für Links, die jemand in einer Antwort anklickt. Perplexity sendet perplexity.ai, Claude claude.ai, Copilot copilot.microsoft.com, Gemini gemini.google.com. OpenAI hängt an viele Links zusätzlich utm_source=chatgpt.com. Beides sieht ein Script auf deiner Seite, und sonst nichts."] },
+      { h: "Warum Google Analytics zu wenig zählt", p: ["GA4 fasst diese Hosts unter Referral zusammen, ohne den Assistenten zu nennen, und Links, die in Apps oder ohne Referrer geöffnet werden, landen unter Direct. Du kannst ein Segment nach Hostname bauen, wenn du die Liste kennst, und musst es pflegen, wenn Assistenten ihre Domains ändern. Agent Tracking hält diese Liste in einer versionierten Datei, wendet sie auf dem Server an und zeigt das Ergebnis je Assistent."] },
+      { h: "Einrichten", p: ["Site hinzufügen, Snippet einbauen, prüfen. Ab dem ersten Besuch listet die Agenten-Ansicht jeden Assistenten als Referral-Zeile mit Anzahl, Anteil am Agententraffic und Trend; die Seiten-Ansicht zeigt, wo diese Besucher landen, und das ist meist nicht die Startseite."], code: SNIPPET, codeLang: "html" },
+      { h: "Was du mit der Zahl machst", p: ["Zwei Wochen Referral-Zeilen zeigen, welche Inhalte Assistenten zitieren und welche sie ignorieren. Das ist die Rückkopplung, die Generative Engine Optimization gefehlt hat: Seite ändern, beobachten, ob der Assistent anfängt, Menschen dorthin zu schicken. Dieselben Zeilen kommen aus der Stats-API, oder frag Claude oder ChatGPT über das MCP-Tool."], code: MCP, codeLang: "json" },
+    ],
+    faq: [
+      { q: "Trägt jeder ChatGPT-Klick einen Referrer?", a: "Nein. Manche Clients entfernen ihn. Diese Besuche zählen als normale Aufrufe, die Zahl ist also eine Untergrenze, nie eine Schätzung." },
+      { q: "Wird die Person identifiziert?", a: "Nein. Die Sitzungskennung ist ein täglich neu gesalzener Hash, die Adresse wird nicht gespeichert, kein Cookie gesetzt." },
+    ],
+    related: ["welche-ki-assistenten-schicken-besucher", "ki-agenten-auf-der-website-tracken"],
+    updated: "2026-09-08",
+  },
+  {
+    slug: "kann-google-analytics-ki-agenten-messen",
+    question: "Kann Google Analytics oder Plausible KI-Agenten messen?",
+    title: "Kann Google Analytics oder Plausible KI-Agenten messen?",
+    summary:
+      "Teilweise. Web-Analytics kann Besuche mit Assistenten-Referrer zeigen, wenn du das Segment selbst baust und pflegst. Es sieht keine Crawler, die sein Script nie ausführen; es sieht keine MCP- oder WebMCP-Tool-Aufrufe, die den Browser nie verlassen; und es kann die Conversion eines Agenten nicht von der eines Menschen unterscheiden. Agent Tracking deckt diese drei ab und läuft neben deinem Analytics, nicht statt dessen.",
+    sections: [
+      { h: "Was Web-Analytics sieht", p: ["Ein Referral von chatgpt.com oder perplexity.ai ist ein normaler Seitenaufruf mit Referrer, und GA4, Plausible und Matomo erfassen ihn. Ob sie den Assistenten benennen, hängt von dir ab: GA4 braucht eine eigene Channel-Gruppe, Plausible einen Filter auf den Referrer, Matomo ein Segment. Jedes davon muss aktualisiert werden, wenn ein Assistent seine Domain ändert."] },
+      { h: "Was es nicht sehen kann", p: ["GPTBot, ClaudeBot und PerplexityBot holen HTML und führen nie JavaScript aus, also feuert kein Analytics-Script; nur das Server-Log weiß, dass sie da waren. Ein WebMCP-Tool-Aufruf passiert im Browser des Besuchers zwischen Assistent und Seite; keine Anfrage erreicht einen Analytics-Endpunkt. Und ein von einem Agenten abgeschlossener Kauf sieht genau aus wie einer von einem Menschen, nichts trennt die beiden."] },
+      { h: "Was Agent Tracking ergänzt", p: ["Crawler-Abrufe aus dem Server-Log, gegen die veröffentlichten IP-Bereiche der Anbieter verifiziert und zu Bursts gruppiert. Tool-Aufrufe mit Dauer, Erfolgsquote, Fehlerklasse und Feldnamen. Über einen Zielmarker Agenten zugeschriebene Conversions. Und Assistenten-Referrals aus einer gepflegten Liste, damit niemand das Segment bauen muss."] },
+      { h: "Beides nutzen", p: ["Behalte dein Analytics für Menschen. Ergänze ein Script-Tag für Agenten. Die beiden überschneiden sich nicht, und das Agenten-Dashboard bleibt klein genug, um es in einer Minute zu lesen."], code: SNIPPET, codeLang: "html" },
+    ],
+    faq: [
+      { q: "Ersetzt Agent Tracking mein Analytics?", a: "Nein. Es zählt eine andere Population. Menschlicher Traffic erscheint nur als Tagessumme zur Einordnung." },
+      { q: "Kann ich das alles mit genug Aufwand in GA4 bauen?", a: "Den Referral-Teil, ja. Der Crawler-Teil braucht Log-Verarbeitung außerhalb von GA4, und Tool-Aufrufe und Agenten-Conversions brauchen Code in der Seite, den GA4 nicht liefert." },
+    ],
+    related: ["tool-fuer-agentische-nutzung-der-website", "chatgpt-referral-traffic-sehen", "unterschied-zu-agentops-und-langsmith"],
+    updated: "2026-09-08",
+  },
+  {
+    slug: "unterschied-zu-agentops-und-langsmith",
+    question: "Was ist der Unterschied zwischen Agent Tracking und AgentOps oder LangSmith?",
+    title: "Agent Tracking gegenüber AgentOps, LangSmith und LLM-Observability",
+    summary:
+      "AgentOps, LangSmith, Langfuse und ähnliche Werkzeuge tracen die Agenten, die du baust, von innen aus deinem eigenen Code: Prompts, Spans, Token-Kosten, Evaluationsläufe. Agent Tracking misst Agenten, die andere betreiben, wenn sie deine Website besuchen, von außen, über ein Script-Tag und dein Server-Log. Das eine ist Observability für dein Produkt, das andere Analytics für deine Site. Ein Team, das Agenten baut und eine Website betreibt, braucht womöglich beides.",
+    sections: [
+      { h: "Wo beides sitzt", p: ["Observability lebt in deiner Anwendung: Ein SDK umhüllt deine LLM-Aufrufe und Tool-Ausführungen und schickt Traces in ein Dashboard. Es beantwortet, warum dein Agent eine Ausgabe erzeugt hat und was sie gekostet hat. Agent Tracking lebt auf deinen Webseiten: Ein Script beobachtet Referrals und Tool-Aufrufe, ein Log-Import beobachtet Crawler. Es beantwortet, welche Agenten deine Site nutzen und was sie erreichen."] },
+      { h: "Was nur eines von beiden weiß", p: ["Nur Observability kennt den Prompt, die Gedankenkette und die Token-Rechnung deines Agenten. Nur Agent Tracking weiß, dass ChatGPT diese Woche 40 Besucher auf deine Preisseite geschickt hat, dass PerplexityBot letzte Nacht 300 Seiten geholt hat oder dass ein Assistent dein Buchungs-Tool sechsmal aufgerufen hat und an einem Pflichtfeld gescheitert ist. Die Daten überschneiden sich nie, weil die Agenten andere sind: deine gegen die aller anderen."] },
+      { h: "Warum der Name kollidiert", p: ["Beide Felder benutzen das Wort Agent, und beide zählen Tool-Aufrufe. Der Unterschied ist, wessen Tool: Observability zählt Aufrufe, die dein Agent an seine Tools macht; Agent Tracking zählt Aufrufe, die fremde Agenten an die WebMCP-Tools deiner Site machen. Die Verwechslung ist häufig genug, dass diese Site auf der Startseite sagt, was sie nicht ist."] },
+      { h: "Wenn du beides willst", p: ["Wenn du WebMCP-Tools veröffentlichst und auch Agenten baust, betreib ein Observability-Werkzeug für die Agenten und Agent Tracking für die Site. Stats-API und MCP-Tool machen es leicht, die Site-Zahlen in das Dashboard zu ziehen, in dem deine Observability lebt."] },
+    ],
+    faq: [
+      { q: "Kann Agent Tracking meinen eigenen Agenten tracen?", a: "Nein. Es hat kein SDK, sieht keine Prompts und keine Spans. Nimm dafür AgentOps, LangSmith, Langfuse oder OpenTelemetry." },
+      { q: "Kann LangSmith sehen, wer meine Website besucht?", a: "Nein. Es ist weder auf der Seite noch im Server-Log; es sieht nur, was dein eigener Code ihm schickt." },
+    ],
+    related: ["kann-google-analytics-ki-agenten-messen", "mcp-und-webmcp-tool-aufrufe-erfassen"],
+    updated: "2026-09-08",
+  },
+  {
+    slug: "cloudflare-ai-audit-oder-agent-tracking",
+    question: "Brauche ich Cloudflare AI Audit, wenn ich Agent Tracking habe, oder umgekehrt?",
+    title: "Cloudflare AI Audit und Agent Tracking: was beide abdecken",
+    summary:
+      "Cloudflare AI Audit zählt und steuert Crawler am Netzrand, für Sites hinter Cloudflare, und kann sie blockieren oder Geld verlangen. Agent Tracking misst Referrals, Abrufe und Tool-Aufrufe in der Seite und aus deinem eigenen Log, braucht kein CDN, verifiziert Crawler gegen Anbieter-IP-Bereiche und folgt Agenten bis zum Ziel. Wer Crawler blockieren will, nimmt Cloudflare. Wer wissen will, was Agenten auf der Site tun und ob sie ans Ziel kommen, nimmt Agent Tracking. Viele Sites nutzen beides.",
+    sections: [
+      { h: "Was ein CDN-Bot-Audit gut kann", p: ["Es sitzt vor der Site, sieht also jede Anfrage, auch die, die dein Origin nie bekommt, und es kann handeln: erlauben, blockieren, prüfen oder pro Crawl abrechnen. Für einen Verlag, dem es vor allem um Trainings-Crawler geht, die Inhalte abgreifen, ist diese Kontrolle der Punkt."] },
+      { h: "Was es nicht sieht", p: ["Ein von ChatGPT geschickter Besucher ist für das CDN ein Mensch, kein Agent. Ein WebMCP-Tool-Aufruf passiert im Browser und überquert nie den Netzrand. Ob ein Agent eine Buchung abgeschlossen hat, ist aus einem Anfrage-Log unsichtbar. Und es funktioniert nur, wenn dein DNS über Cloudflare läuft."] },
+      { h: "Was Agent Tracking stattdessen abdeckt", p: ["Dem Assistenten zugeordnete Referrals, Crawler-Abrufe aus deinem eigenen Log, gegen die Adressbereiche der Anbieter verifiziert und zu Bursts gruppiert, Tool-Aufrufe mit Erfolg und Dauer und von Agenten erreichte Conversions. Es blockiert nie; es misst. Es läuft auf jedem Host, mit einem Script-Tag und einem optionalen Log-Upload."] },
+      { h: "Beides nutzen", p: ["Lass Cloudflare deine Crawler-Regeln am Netzrand durchsetzen. Lass Agent Tracking dir sagen, welche Assistenten Geschäft schicken, welche Tools funktionieren und wo Agenten aufgeben. Die Crawler-Zahlen werden ungefähr übereinstimmen; der Rest existiert nur auf einer Seite."] },
+    ],
+    faq: [
+      { q: "Kann Agent Tracking einen Crawler blockieren?", a: "Nein, mit Absicht. Blockieren gehört in die robots.txt oder an den Netzrand; dieses Tool sagt dir, was passiert, damit die Entscheidung informiert ist." },
+      { q: "Braucht Agent Tracking Cloudflare?", a: "Nein. Es braucht ein Script-Tag auf der Seite und, für Crawler, ein Access-Log von irgendeinem Webserver." },
+    ],
+    related: ["welche-ki-crawler-lesen-meine-seiten", "kann-google-analytics-ki-agenten-messen"],
+    updated: "2026-09-08",
+  },
+  {
+    slug: "analytics-fuer-webmcp-tools",
+    question: "Wie bekomme ich Analytics für WebMCP-Tools auf meiner Site?",
+    title: "Analytics für WebMCP-Tools: Aufrufe, Erfolgsquote, Fehler, ungenutzte Tools",
+    summary:
+      "WebMCP-Tools laufen im Browser des Besuchers, also sieht kein Server-Log und kein Web-Analytics je einen Aufruf. Das Snippet von Agent Tracking umhüllt navigator.modelContext und document.modelContext, beobachtet deklarative Formulare und erfasst jede Registrierung und jeden Aufruf: Toolname, Dauer, Erfolg oder Fehlschlag, Fehlerklasse und die Namen der Eingabefelder, nie deren Werte. Die Tools-Ansicht zeigt dann, was funktioniert, was scheitert und was niemand aufruft.",
+    sections: [
+      { h: "Warum nichts anderes das misst", p: ["Ein WebMCP-Aufruf ist ein Funktionsaufruf zwischen Assistent und Seite. Es gibt keine HTTP-Anfrage zum Loggen, keinen Pixel, der feuert, keinen beteiligten Server. Wenn die Seite ihn nicht meldet, ist er für alle anderen nie passiert. Das Snippet meldet ihn, mit den Namen der Argument-Felder und nie den Werten."] },
+      { h: "Nichts an deinen Tools ändern", p: ["Registriere Tools wie in der Spezifikation. Das Snippet umhüllt registerTool, bevor dein Code läuft, und fängt deklarative Formulare beim Absenden. Registrierungen erscheinen innerhalb einer Minute in der Tools-Ansicht."], code: TOOL, codeLang: "js" },
+      { h: "Die Fragen, die die Tools-Ansicht beantwortet", p: ["Wie viele Aufrufe je Tool, je Tag. Welcher Anteil erfolgreich war und was die drei häufigsten Fehlermeldungen waren. Wie lange ein Aufruf im Schnitt dauerte. Welche Tools registriert, aber nie aufgerufen wurden, was meist eine Beschreibung bedeutet, die Agenten nicht verstehen, oder ein Schema, das sie nicht füllen können. Wann sich das Manifest unter /.well-known/webmcp zuletzt geändert hat, und in bezahlten Plänen eine Mail, wenn es passiert."] },
+      { h: "Von Aufrufen zu Ergebnissen", p: ["Markiere das Ziel mit data-agent-goal oder behandle ein Tool als Ziel, und das Dashboard zeigt, ob die Agenten, die deine Tools aufgerufen haben, bis zum Ende gekommen sind. Der Abstand zwischen Aufrufen und Conversions ist die Zahl, an der sich Arbeit lohnt."], code: GOAL, codeLang: "html" },
+    ],
+    faq: [
+      { q: "Deckt das auch entfernte MCP-Server ab?", a: "Nicht deren serverseitige Logs; die haben ihre eigenen. Agent Tracking sieht Tools, die in der Seite über die Model-Context-API des Browsers aufgerufen werden, und lässt dich über den MCP-Endpunkt die Zahlen lesen." },
+      { q: "Werden Argumentwerte erfasst?", a: "Nie. Nur die Namen der Eingabefelder, damit du siehst, welche Felder Agenten schicken und welche sie auslassen." },
+    ],
+    related: ["mcp-und-webmcp-tool-aufrufe-erfassen", "sehen-ob-ki-agenten-auf-der-site-kaufen"],
     updated: "2026-09-08",
   },
 ];
