@@ -8,6 +8,10 @@ import { dashCopy, dashLang, numberLocale } from "@/lib/tracking/copy";
 import { interactions, loadDashboard } from "@/lib/tracking/dashboard";
 import { planFor } from "@/lib/tracking/plans";
 
+// Rendered per request, not at build: the host, the entity on the legal pages and the
+// snippet line come from the environment, and a self-hosted copy must print its own.
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = { title: "Overview", robots: { index: false, follow: false } };
 export const runtime = "nodejs";
 

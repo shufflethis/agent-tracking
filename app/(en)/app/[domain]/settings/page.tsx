@@ -10,6 +10,10 @@ import { PLANS, planFor, priceIdFor } from "@/lib/tracking/plans";
 import { snippetFor } from "@/lib/tracking/snippet";
 import { SITE_ORIGIN } from "@/lib/site";
 
+// Rendered per request, not at build: the host, the entity on the legal pages and the
+// snippet line come from the environment, and a self-hosted copy must print its own.
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = { title: "Settings", robots: { index: false, follow: false } };
 export const runtime = "nodejs";
 

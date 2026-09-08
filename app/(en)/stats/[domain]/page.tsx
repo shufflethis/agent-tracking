@@ -9,6 +9,10 @@ import { interactions, loadDashboard } from "@/lib/tracking/dashboard";
 import { getSite } from "@/lib/tracking/db";
 import { snippetFor } from "@/lib/tracking/snippet";
 
+// Rendered per request, not at build: the host, the entity on the legal pages and the
+// snippet line come from the environment, and a self-hosted copy must print its own.
+export const dynamic = "force-dynamic";
+
 export const runtime = "nodejs";
 export const revalidate = 600;
 

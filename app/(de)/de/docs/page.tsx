@@ -8,6 +8,10 @@ import { snippetFor } from "@/lib/tracking/snippet";
 import sources from "@/lib/tracking/ai-sources.json";
 import { CONTACT_EMAIL, GITHUB_URL, SITE_HOST, SITE_ORIGIN } from "@/lib/site";
 
+// Rendered per request, not at build: the host, the entity on the legal pages and the
+// snippet line come from the environment, and a self-hosted copy must print its own.
+export const dynamic = "force-dynamic";
+
 const API_CURL = `curl -s ${SITE_ORIGIN}/api/stats/example.com?days=30 \\
   -H "Authorization: Bearer wmt_dein_token"`;
 

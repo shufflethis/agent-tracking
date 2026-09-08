@@ -3,6 +3,10 @@ import { alternatesForLocale } from "@/lib/i18n";
 import { CONTACT_EMAIL, LEGAL, SITE_HOST } from "@/lib/site";
 import { PLANS, RAW_RETENTION_DAYS } from "@/lib/tracking/plans";
 
+// Rendered per request, not at build: the host, the entity on the legal pages and the
+// snippet line come from the environment, and a self-hosted copy must print its own.
+export const dynamic = "force-dynamic";
+
 export const metadata = {
   title: "Allgemeine Geschäftsbedingungen",
   description: `Die Bedingungen für den gehosteten Dienst Agent Tracking auf ${SITE_HOST}: Leistung, Pläne, Pflichten, Verfügbarkeit, Haftung, Laufzeit, Recht.`,

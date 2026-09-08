@@ -2,7 +2,7 @@ import type { MetadataRoute } from "next";
 import { href, LOCALES, pathsIn } from "@/lib/i18n";
 import { SITE_ORIGIN } from "@/lib/site";
 
-export const dynamic = "force-static";
+export const dynamic = "force-dynamic";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const out: MetadataRoute.Sitemap = [];

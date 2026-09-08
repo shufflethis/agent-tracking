@@ -1,6 +1,6 @@
 import { GITHUB_URL, SITE_HOST, SITE_ORIGIN } from "@/lib/site";
 
-export const dynamic = "force-static";
+export const dynamic = "force-dynamic";
 
 const BODY = `# ${SITE_HOST}
 

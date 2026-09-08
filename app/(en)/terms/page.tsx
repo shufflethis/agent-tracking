@@ -3,6 +3,10 @@ import { alternatesFor } from "@/lib/i18n";
 import { CONTACT_EMAIL, LEGAL, SITE_HOST } from "@/lib/site";
 import { PLANS, RAW_RETENTION_DAYS } from "@/lib/tracking/plans";
 
+// Rendered per request, not at build: the host, the entity on the legal pages and the
+// snippet line come from the environment, and a self-hosted copy must print its own.
+export const dynamic = "force-dynamic";
+
 export const metadata = {
   title: "Terms of service",
   description: `The terms for the hosted Agent Tracking service at ${SITE_HOST}: the service, plans, your obligations, availability, liability, term and law.`,

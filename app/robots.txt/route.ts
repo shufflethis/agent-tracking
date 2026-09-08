@@ -1,6 +1,6 @@
 import { SITE_HOST, SITE_ORIGIN } from "@/lib/site";
 
-export const dynamic = "force-static";
+export const dynamic = "force-dynamic";
 
 const BODY = `# ${SITE_HOST}
 # We measure what agents do on sites, so this file is written on purpose.

@@ -3,6 +3,10 @@ import { alternatesFor } from "@/lib/i18n";
 import { CONTACT_EMAIL, LEGAL, SITE_HOST } from "@/lib/site";
 import { RAW_RETENTION_DAYS } from "@/lib/tracking/plans";
 
+// Rendered per request, not at build: the host, the entity on the legal pages and the
+// snippet line come from the environment, and a self-hosted copy must print its own.
+export const dynamic = "force-dynamic";
+
 export const metadata = {
   title: "Privacy notice",
   description: `What ${SITE_HOST} records about visitors of this site, about account holders, and on customers' sites on their behalf. No cookies, no third-party scripts, no advertising.`,
