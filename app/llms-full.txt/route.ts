@@ -29,6 +29,8 @@ ${c.notDek}
 
 ${rows(c.not)}
 
+${c.notNamesTitle}: ${c.notNames.map((n) => `${n.name}, ${n.what}`).join("; ")}.
+
 Site: ${SITE_ORIGIN} · Docs: ${SITE_ORIGIN}/docs · Demo: ${SITE_ORIGIN}/demo · Source: ${GITHUB_URL} (AGPL-3.0) · German: ${SITE_ORIGIN}/de
 
 ## ${c.seesTitle}

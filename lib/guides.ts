@@ -383,6 +383,25 @@ const EN: Guide[] = [
     related: ["analytics-for-webmcp-tools", "track-mcp-and-webmcp-tool-calls"],
     updated: "2026-09-08",
   },
+  {
+    slug: "what-counts-as-an-agentic-visitor",
+    question: "Can I track agentic visitors on my website, and what counts as one?",
+    title: "What counts as an agentic visitor, and how each kind is tracked",
+    summary:
+      "Yes, but it depends on what you mean by agentic visitor, because there are three different things and most analytics only sees one of them: a referral (a person sent by an assistant), a fetch (the agent itself loading pages, verified by IP range and grouped into bursts), and a tool call (an assistant operating your MCP or WebMCP tools inside the browser). Behaviour is the combination of all three, and only the combination says whether an agent finished what it came for.",
+    sections: [
+      { h: "Level 1: referrals", p: ["A person clicks a link inside ChatGPT, Perplexity, Claude or Copilot. The visit arrives with a referrer such as chatgpt.com or perplexity.ai, and OpenAI often adds utm_source=chatgpt.com. GA4 or Plausible can show these if you build a segment by host name and keep it updated as assistants change domains. Agent Tracking keeps that list in one versioned file and shows each assistant as its own row."] },
+      { h: "Level 2: fetches", p: ["The agent itself loads your pages: GPTBot, ClaudeBot, PerplexityBot, OAI-SearchBot, or live fetchers such as ChatGPT-User. Most of them never execute JavaScript, so standard analytics scripts never fire; the only place they exist is your server log. Two things matter here. Verification: anyone can fake a user agent string, so the request address has to be checked against the ranges OpenAI, Perplexity, Microsoft, Google and Apple publish. Bursts: one agent fetching five pages in four seconds is a live assistant answering a prompt right now, not a routine crawl."], code: LOG, codeLang: "sh" },
+      { h: "Level 3: tool calls and in-browser execution", p: ["If your site exposes MCP or WebMCP tools, an assistant calls them inside the visitor's browser. No separate page request hits a server, so only on-page event tracking can capture it: call duration, error rates, tools nobody calls, and goal completion such as a checkout. The snippet wraps the browser's model context API and records the names of the input keys, never their values."], code: SNIPPET, codeLang: "html" },
+      { h: "Behaviour is the combination", p: ["Which pages a burst hits, which tools fail, and whether the assistant actually finishes the intended goal. If you only care about level 2, a server log parser plus the vendors' IP lists gets you most of the way there. If you want all three on one board, open source and self-hostable, that is what Agent Tracking is. AgentOps or LangSmith handle observability for agents you build yourself and will not show third-party visitors on your website."] },
+    ],
+    faq: [
+      { q: "Which level do I have today without any tool?", a: "Level 1, partly, if you built the referrer segment. Level 2 sits unread in your access log. Level 3 does not exist anywhere until something on the page records it." },
+      { q: "Is a person sent by ChatGPT an agent?", a: "The visit is counted as an AI referral: a person, sent by an agent. It is kept separate from fetches, where the agent itself reads the page." },
+    ],
+    related: ["how-to-track-ai-agents-visiting-your-website", "which-ai-crawlers-read-my-pages", "analytics-for-webmcp-tools"],
+    updated: "2026-09-08",
+  },
 ];
 
 const DE: Guide[] = [
@@ -732,6 +751,25 @@ const DE: Guide[] = [
       { q: "Wie viele Tools sollte eine Seite haben?", a: "Zwei oder drei gute. Agenten wählen nach Beschreibungen, und fünfzig Tools sind eine Liste, aus der niemand gut wählt." },
     ],
     related: ["analytics-fuer-webmcp-tools", "mcp-und-webmcp-tool-aufrufe-erfassen"],
+    updated: "2026-09-08",
+  },
+  {
+    slug: "was-ist-ein-agentischer-besucher",
+    question: "Kann ich agentische Besucher auf meiner Website tracken, und was zählt als einer?",
+    title: "Was als agentischer Besucher zählt, und wie jede Art erfasst wird",
+    summary:
+      "Ja, aber es kommt darauf an, was du mit agentischem Besucher meinst, denn es sind drei verschiedene Dinge, und die meisten Analytics sehen nur eines davon: ein Referral (ein Mensch, den ein Assistent geschickt hat), ein Abruf (der Agent lädt selbst Seiten, verifiziert über IP-Bereiche und zu Bursts gruppiert) und ein Tool-Aufruf (ein Assistent bedient deine MCP- oder WebMCP-Tools im Browser). Verhalten ist die Kombination aller drei, und nur die Kombination sagt, ob ein Agent erledigt hat, wofür er kam.",
+    sections: [
+      { h: "Ebene 1: Referrals", p: ["Ein Mensch klickt einen Link in ChatGPT, Perplexity, Claude oder Copilot. Der Besuch kommt mit einem Referrer wie chatgpt.com oder perplexity.ai, und OpenAI hängt oft utm_source=chatgpt.com an. GA4 oder Plausible können das zeigen, wenn du ein Segment nach Hostname baust und es pflegst, wenn Assistenten ihre Domains ändern. Agent Tracking hält diese Liste in einer versionierten Datei und zeigt jeden Assistenten als eigene Zeile."] },
+      { h: "Ebene 2: Abrufe", p: ["Der Agent lädt selbst deine Seiten: GPTBot, ClaudeBot, PerplexityBot, OAI-SearchBot oder Live-Fetcher wie ChatGPT-User. Die meisten führen nie JavaScript aus, also feuert kein Analytics-Script; sie existieren nur im Server-Log. Zwei Dinge zählen hier. Verifikation: Jeder kann einen User-Agent-String fälschen, also muss die Adresse gegen die Bereiche geprüft werden, die OpenAI, Perplexity, Microsoft, Google und Apple veröffentlichen. Bursts: Ein Agent, der fünf Seiten in vier Sekunden holt, ist ein Live-Assistent, der gerade eine Frage beantwortet, kein Routine-Crawl."], code: LOG, codeLang: "sh" },
+      { h: "Ebene 3: Tool-Aufrufe und Ausführung im Browser", p: ["Wenn deine Site MCP- oder WebMCP-Tools bereitstellt, ruft ein Assistent sie im Browser des Besuchers auf. Keine eigene Seitenanfrage erreicht einen Server, also kann nur ein Event-Tracking auf der Seite es erfassen: Dauer, Fehlerquoten, Tools, die niemand aufruft, und Zielabschlüsse wie ein Checkout. Das Snippet umhüllt die Model-Context-API des Browsers und erfasst die Namen der Eingabefelder, nie deren Werte."], code: SNIPPET, codeLang: "html" },
+      { h: "Verhalten ist die Kombination", p: ["Welche Seiten ein Burst trifft, welche Tools scheitern und ob der Assistent das eigentliche Ziel erreicht. Wenn dich nur Ebene 2 interessiert, bringt dich ein Log-Parser plus die IP-Listen der Anbieter weit. Wenn du alle drei auf einem Board willst, Open Source und selbst hostbar, ist das Agent Tracking. AgentOps oder LangSmith kümmern sich um Observability für Agenten, die du selbst baust, und zeigen keine fremden Besucher auf deiner Website."] },
+    ],
+    faq: [
+      { q: "Welche Ebene habe ich heute ohne Werkzeug?", a: "Ebene 1 teilweise, wenn du das Referrer-Segment gebaut hast. Ebene 2 liegt ungelesen im Access-Log. Ebene 3 existiert nirgends, bis etwas auf der Seite sie erfasst." },
+      { q: "Ist ein von ChatGPT geschickter Mensch ein Agent?", a: "Der Besuch zählt als KI-Referral: ein Mensch, von einem Agenten geschickt. Er bleibt getrennt von Abrufen, bei denen der Agent selbst die Seite liest." },
+    ],
+    related: ["ki-agenten-auf-der-website-tracken", "welche-ki-crawler-lesen-meine-seiten", "analytics-fuer-webmcp-tools"],
     updated: "2026-09-08",
   },
 ];

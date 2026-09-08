@@ -78,6 +78,15 @@ export default function Positioning({ lang, part = "top" }: { lang: DashLang; pa
       <section className="shell section centered" id="not">
         <h2>{c.notTitle}</h2>
         <p className="dek" style={{ maxWidth: "70ch" }}>{c.notDek}</p>
+        <p className="dek" style={{ maxWidth: "70ch", marginTop: 18, fontSize: 15 }}>
+          <b style={{ color: "var(--ink)" }}>{c.notNamesTitle}:</b>{" "}
+          {c.notNames.map((n, i) => (
+            <span key={n.name}>
+              {n.name}, {n.what}
+              {i < c.notNames.length - 1 ? "; " : "."}
+            </span>
+          ))}
+        </p>
         <div className="grid3" style={{ marginTop: 22 }}>
           {c.not.map((r) => (
             <div className="card" style={{ padding: 22 }} key={r.k}>

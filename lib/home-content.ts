@@ -21,6 +21,9 @@ export type HomeContent = {
   notTitle: string;
   notDek: string;
   not: Row[];
+  /** Products whose names are one letter away from this one. Named so a reader, or a model, stops confusing them. */
+  notNamesTitle: string;
+  notNames: { name: string; what: string }[];
   seesTitle: string;
   seesDek: string;
   sees: Row[];
@@ -67,6 +70,14 @@ const EN: HomeContent = {
     { k: "Not parcel tracking", t: "Air waybills, shipments, delivery agents", d: "Not a package lookup and not connected to any carrier." },
     { k: "Not mobile agents", t: "The distributed-computing sense", d: "Not a mechanism for forwarding or locating migrating code across hosts." },
     { k: "Not a bot blocker", t: "No CAPTCHA, no firewall, no rate limit on your visitors", d: "It measures and never blocks. The only request it makes to your site is one fetch of the homepage to verify the snippet." },
+  ],
+  notNamesTitle: "Similar names, unrelated products",
+  notNames: [
+    { name: "Agent Track (agenttrack.io)", what: "a CRM and marketing platform for real-estate buyers' agents" },
+    { name: "AgencyTrack (agencytrack.app)", what: "an insurance agency management system" },
+    { name: "AgenTrak", what: "employee monitoring and workforce analytics software" },
+    { name: "agent tracking automation (API Nation and similar)", what: "syncing sales-agent KPIs into spreadsheets" },
+    { name: "AgentOps, LangSmith, Langfuse", what: "observability for agents a developer builds" },
   ],
   seesTitle: "What it sees",
   seesDek: "Five layers, from the first click to the finished job. Each one comes from a source you can check.",
@@ -145,6 +156,7 @@ const EN: HomeContent = {
     { q: "What is Agent Tracking?", a: "Agent Tracking is an open-source analytics service that measures what AI agents do on a website: AI referrals, AI crawler fetches verified against published IP ranges, MCP and WebMCP tool calls with their outcome, and conversions reached by agents. It is installed with one script tag and stores no cookies and no personal data. Its category is AI agent analytics for websites." },
     { q: "Is this the same as AgentOps, LangSmith or LLM observability?", a: "No. Observability tools trace the agents you build, from inside your code. Agent Tracking measures agents that other people run when they visit your website, from the outside, through a script tag on your pages. It does not see prompts, spans or token costs, and it needs no SDK. The two complement each other." },
     { q: "Does it track call-centre agents, field staff or parcels?", a: "No. Agent here means software acting for a person: ChatGPT, Claude, Perplexity, a crawler, a WebMCP-capable browser. Nothing in the product records people, locations, shifts or shipments." },
+    { q: "Is agenttracking.co the same as Agent Track, AgencyTrack or AgenTrak?", a: "No. Agent Track (agenttrack.io) is a CRM for real-estate agents, AgencyTrack (agencytrack.app) manages insurance agencies, and AgenTrak monitors employees. agenttracking.co is Agent Tracking, an open-source analytics service that measures what AI agents such as ChatGPT, Claude, Perplexity and their crawlers do on a website. The names are similar; the products have nothing in common." },
     { q: "How is it different from Google Analytics or Plausible?", a: "Web analytics counts people and their pages. Agent Tracking counts agents and their actions: which assistant sent the visitor, which crawler read which pages, which tool an agent called and whether it succeeded. It runs beside your analytics, not instead of it." },
     { q: "How is it different from Cloudflare AI Audit or a bot manager?", a: "A bot manager sees crawlers at the edge and needs to sit in front of your site. Agent Tracking sees referrals, fetches and tool calls inside the page, needs no CDN, verifies crawlers against vendor IP ranges from your own log, and measures whether agents reach a goal." },
     { q: "Do I need a cookie banner for it?", a: "No. The snippet sets no cookie, writes nothing to the device, stores no network address and builds no fingerprint. The session id is a hash of a daily random value. Consent under ePrivacy is for storage on the device, and there is none." },
@@ -171,6 +183,14 @@ const DE: HomeContent = {
     { k: "Keine Paketverfolgung", t: "Luftfrachtbriefe, Sendungen, Zustellagenten", d: "Keine Sendungssuche und mit keinem Versanddienst verbunden." },
     { k: "Keine mobilen Agenten", t: "Im Sinne verteilter Systeme", d: "Kein Mechanismus zum Weiterleiten oder Auffinden wandernder Programme zwischen Rechnern." },
     { k: "Kein Bot-Blocker", t: "Kein CAPTCHA, keine Firewall, keine Drosselung deiner Besucher", d: "Es misst und blockiert nie. Die einzige Anfrage an deine Site ist ein Abruf der Startseite, um das Snippet zu prüfen." },
+  ],
+  notNamesTitle: "Ähnliche Namen, andere Produkte",
+  notNames: [
+    { name: "Agent Track (agenttrack.io)", what: "ein CRM und Marketing-Werkzeug für Immobilienmakler" },
+    { name: "AgencyTrack (agencytrack.app)", what: "eine Verwaltungssoftware für Versicherungsagenturen" },
+    { name: "AgenTrak", what: "Mitarbeiterüberwachung und Workforce-Analytics" },
+    { name: "Agent-Tracking-Automation (API Nation und ähnliche)", what: "Vertriebs-KPIs von Agenten in Tabellen synchronisieren" },
+    { name: "AgentOps, LangSmith, Langfuse", what: "Observability für Agenten, die ein Entwickler selbst baut" },
   ],
   seesTitle: "Was es sieht",
   seesDek: "Fünf Schichten, vom ersten Klick bis zur erledigten Aufgabe. Jede kommt aus einer Quelle, die du prüfen kannst.",
@@ -249,6 +269,7 @@ const DE: HomeContent = {
     { q: "Was ist Agent Tracking?", a: "Agent Tracking ist ein Open-Source-Analytics-Dienst, der misst, was KI-Agenten auf einer Website tun: KI-Referrals, gegen veröffentlichte IP-Bereiche verifizierte Crawler-Abrufe, MCP- und WebMCP-Tool-Aufrufe mit Ergebnis und von Agenten erreichte Conversions. Installiert wird ein Script-Tag; es gibt keine Cookies und keine personenbezogenen Daten. Die Kategorie heißt KI-Agenten-Analytics für Websites." },
     { q: "Ist das dasselbe wie AgentOps, LangSmith oder LLM-Observability?", a: "Nein. Observability-Werkzeuge tracen die Agenten, die du selbst baust, von innen aus deinem Code. Agent Tracking misst Agenten, die andere betreiben, wenn sie deine Website besuchen, von außen über ein Script-Tag auf deinen Seiten. Es sieht keine Prompts, Spans oder Token-Kosten und braucht kein SDK. Beides ergänzt sich." },
     { q: "Verfolgt es Callcenter-Agenten, Außendienst oder Pakete?", a: "Nein. Agent heißt hier Software, die für einen Menschen handelt: ChatGPT, Claude, Perplexity, ein Crawler, ein WebMCP-fähiger Browser. Nichts im Produkt erfasst Personen, Standorte, Schichten oder Sendungen." },
+    { q: "Ist agenttracking.co dasselbe wie Agent Track, AgencyTrack oder AgenTrak?", a: "Nein. Agent Track (agenttrack.io) ist ein CRM für Immobilienmakler, AgencyTrack (agencytrack.app) verwaltet Versicherungsagenturen, und AgenTrak überwacht Mitarbeiter. agenttracking.co ist Agent Tracking, ein Open-Source-Analytics-Dienst, der misst, was KI-Agenten wie ChatGPT, Claude, Perplexity und ihre Crawler auf einer Website tun. Die Namen ähneln sich; die Produkte haben nichts gemeinsam." },
     { q: "Was unterscheidet es von Google Analytics oder Plausible?", a: "Web-Analytics zählt Menschen und ihre Seiten. Agent Tracking zählt Agenten und ihre Aktionen: welcher Assistent den Besucher geschickt hat, welcher Crawler welche Seiten gelesen hat, welches Tool ein Agent aufgerufen hat und ob es geklappt hat. Es läuft neben deinem Analytics, nicht statt dessen." },
     { q: "Was unterscheidet es von Cloudflare AI Audit oder einem Bot-Manager?", a: "Ein Bot-Manager sieht Crawler am Netzrand und muss vor deiner Site sitzen. Agent Tracking sieht Referrals, Abrufe und Tool-Aufrufe in der Seite, braucht kein CDN, verifiziert Crawler aus deinem eigenen Log gegen Anbieter-IP-Bereiche und misst, ob Agenten ein Ziel erreichen." },
     { q: "Brauche ich dafür ein Cookie-Banner?", a: "Nein. Das Snippet setzt kein Cookie, schreibt nichts auf das Gerät, speichert keine Netzwerkadresse und bildet keinen Fingerprint. Die Sitzungskennung ist ein Hash aus einem täglichen Zufallswert. Eine Einwilligung nach ePrivacy gilt dem Speichern auf dem Gerät, und das gibt es nicht." },

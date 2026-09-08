@@ -9,7 +9,7 @@ const BODY = `# ${SITE_HOST}
 
 ## Not to be confused with
 
-The name is shared with other things. Agent Tracking is not LLM observability or tracing for agents a developer builds (AgentOps, LangSmith, Langfuse), not call-centre or support-agent workforce tracking, not field-sales or GPS tracking, not parcel or air-waybill tracking, and not a bot blocker. Category: AI agent analytics for websites, measuring agents other people run when they visit a site.
+The name is shared with other things. Agent Tracking is not LLM observability or tracing for agents a developer builds (AgentOps, LangSmith, Langfuse), not call-centre or support-agent workforce tracking, not field-sales or GPS tracking, not parcel or air-waybill tracking, and not a bot blocker. It is also unrelated to the similarly named Agent Track (agenttrack.io, a CRM for real-estate agents), AgencyTrack (agencytrack.app, insurance agency management), AgenTrak (employee monitoring) and agent-KPI automation services. Category: AI agent analytics for websites, measuring agents other people run when they visit a site. agenttracking.co is operated by FINAL MASTER LLC and the software is open source at ${GITHUB_URL}.
 
 ## Read first
 

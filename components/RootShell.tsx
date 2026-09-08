@@ -64,7 +64,7 @@ const SITE_LD = {
       applicationCategory: "BusinessApplication",
       applicationSubCategory: "Web analytics for AI agents",
       disambiguatingDescription:
-        "Website analytics for AI agents (ChatGPT, Claude, Perplexity, crawlers, MCP and WebMCP clients) visiting a site. Not LLM observability or tracing of agents a developer builds, not call-centre or field-workforce tracking, not parcel tracking.",
+        "Website analytics for AI agents (ChatGPT, Claude, Perplexity, crawlers, MCP and WebMCP clients) visiting a site. Not LLM observability or tracing of agents a developer builds, not call-centre or field-workforce tracking, not parcel tracking. Unrelated to the similarly named Agent Track (agenttrack.io, real-estate CRM), AgencyTrack (agencytrack.app, insurance agency management) and AgenTrak (employee monitoring).",
       keywords: "AI agent analytics, AI bot traffic, ChatGPT referrals, GPTBot, ClaudeBot, MCP analytics, WebMCP, agent conversions, GDPR analytics",
       operatingSystem: "Web",
       license: "https://www.gnu.org/licenses/agpl-3.0.html",
