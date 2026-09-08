@@ -60,14 +60,15 @@ export default function Page() {
           ClaudeBot abgerufen hat, oder das WebMCP-Tool, das ein Assistent im Browser aufgerufen hat. Eine Zeile
           Script sieht das und zeigt es in vier Ansichten.
         </p>
-        <form className="scanform" action="/login" method="get" style={{ maxWidth: 560 }}>
+        <form className="scanform" action="/login" method="get" style={{ maxWidth: 560 }} {...{ toolname: "start_free_pilot", tooldescription: "Startet die kostenlose Agent-Tracking-Pilotphase für eine Domain: öffnet die Anmeldeseite mit vorausgefüllter Domain." }}>
           <input type="hidden" name="lang" value="de" />
-          <input type="text" name="domain" inputMode="url" placeholder="example.com" aria-label="Deine Domain" required />
+          <label htmlFor="domain" className="sr-only">Deine Domain</label>
+          <input id="domain" type="text" name="domain" inputMode="url" autoComplete="url" placeholder="example.com" aria-describedby="pilot-note" required />
           <button className="btn" type="submit">
             Pilotphase starten
           </button>
         </form>
-        <p className="formnote" style={{ marginTop: 10 }}>
+        <p id="pilot-note" className="formnote" style={{ marginTop: 10 }}>
           Anmeldung per E-Mail, eine Zeile einfügen, fertig. Keine Karte, keine Cookies bei deinen Besuchern, keine
           personenbezogenen Daten. Vorher die <Link href="/demo">Demo-Seite</Link> ansehen geht auch.
         </p>
@@ -184,7 +185,7 @@ export default function Page() {
           der Pilotphase ist jedes Konto im Free-Plan: {free.domains} Site, {free.eventsPerMonth.toLocaleString("de-DE")}{" "}
           Agenten-Ereignisse im Monat, {free.windowDays} Tage Verlauf. Reine Seitenaufrufe zählen nicht.
         </p>
-        <p className="dek" style={{ maxWidth: "62ch" }}>
+        <p id="pilot-terms" className="dek" style={{ maxWidth: "62ch" }}>
           Brauchst du während der Pilotphase mehr? Schreib an <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>,
           wir stellen dein Konto von Hand um. Bezahlte Pläne kommen, wenn das Produkt sie verdient hat, und an deinem
           Konto ändert sich nichts ohne 30 Tage Vorlauf per E-Mail.
@@ -195,7 +196,8 @@ export default function Page() {
         </p>
         <form className="scanform" action="/login" method="get" style={{ maxWidth: 560, marginTop: 22 }}>
           <input type="hidden" name="lang" value="de" />
-          <input type="text" name="domain" inputMode="url" placeholder="example.com" aria-label="Deine Domain" required />
+          <label htmlFor="domain-2" className="sr-only">Deine Domain</label>
+          <input id="domain-2" type="text" name="domain" inputMode="url" autoComplete="url" placeholder="example.com" aria-describedby="pilot-terms" required />
           <button className="btn" type="submit">
             Pilotphase starten
           </button>

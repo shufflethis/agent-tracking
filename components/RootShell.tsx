@@ -68,13 +68,28 @@ const SITE_LD = {
       keywords: "AI agent analytics, AI bot traffic, ChatGPT referrals, GPTBot, ClaudeBot, MCP analytics, WebMCP, agent conversions, GDPR analytics",
       operatingSystem: "Web",
       license: "https://www.gnu.org/licenses/agpl-3.0.html",
-      offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+      isAccessibleForFree: true,
       publisher: { "@id": `${SITE_ORIGIN}/#org` },
       sameAs: [GITHUB_URL],
       inLanguage: ["en", "de"],
     },
   ],
 };
+
+
+/**
+ * This site's own WebMCP tools, registered from an inline script so they are
+ * in the served HTML and run after agent.js has wrapped registerTool (deferred
+ * scripts execute before DOMContentLoaded). Both are read-only: one orients an
+ * agent, one reads the public stats endpoint. They register only where the
+ * browser or a polyfill provides modelContext.
+ */
+const WEBMCP_TOOLS = `addEventListener("DOMContentLoaded",function(){var mc=document.modelContext||navigator.modelContext;if(!mc||typeof mc.registerTool!=="function")return;
+var text=function(v){return{content:[{type:"text",text:typeof v==="string"?v:JSON.stringify(v,null,2)}]}};
+var origin=${JSON.stringify(SITE_ORIGIN)};
+mc.registerTool({name:"get_site_overview",description:"What ${SITE_HOST} is (AI agent analytics for websites) and where its documentation, guides, demo, public stats, MCP server and API live. Read-only. Call this first to orient.",inputSchema:{type:"object",properties:{},required:[]},annotations:{readOnlyHint:true},execute:async function(){return text({name:"Agent Tracking",category:"AI agent analytics for websites",what:"Measures which AI assistants send visitors to a site, which crawlers read its pages (verified against vendor IP ranges), which MCP and WebMCP tools agents call and whether they reach a goal. One script tag, no cookies, no personal data. Open source, AGPL-3.0.",docs:origin+"/docs",guides:origin+"/guides",demo:origin+"/demo",publicStats:origin+"/stats/${SITE_HOST}",mcp:origin+"/api/mcp",openapi:origin+"/openapi.json",llms:origin+"/llms-full.txt",source:${JSON.stringify(GITHUB_URL)}})}});
+mc.registerTool({name:"get_public_agent_stats",description:"Published 30-day agent statistics of a site whose owner switched its public stats page on: totals, agents with verification, busiest pages. Defaults to this site. Read-only; returns 404 for sites without a public page.",inputSchema:{type:"object",properties:{domain:{type:"string",description:"Bare host of the tracked site, for example ${SITE_HOST}"}},required:[]},annotations:{readOnlyHint:true},execute:async function(args,ctx){var d=(args&&args.domain)||${JSON.stringify(SITE_HOST)};var r=await fetch("/api/public-stats/"+encodeURIComponent(d),{signal:ctx&&ctx.signal});return text(await r.json())}});
+});`;
 
 /**
  * The document shell, shared by both locales' root layouts. Each locale tree
@@ -108,6 +123,7 @@ export default function RootShell({ locale, children }: { locale: Locale; childr
       <body>
         <SiteChrome locale={locale}>{children}</SiteChrome>
         {process.env.SELF_TRACK !== "0" ? <script defer data-domain={SITE_HOST} data-demo="" src={`${SITE_ORIGIN}/agent.js`} /> : null}
+        <script dangerouslySetInnerHTML={{ __html: WEBMCP_TOOLS }} />
       </body>
     </html>
   );

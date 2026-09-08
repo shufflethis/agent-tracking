@@ -68,13 +68,14 @@ export default function Page() {
           the WebMCP tool an assistant called inside the browser. One line of script does, and shows it in four
           views.
         </p>
-        <form className="scanform" action="/login" method="get" style={{ maxWidth: 560 }}>
-          <input type="text" name="domain" inputMode="url" placeholder="example.com" aria-label="Your domain" required />
+        <form className="scanform" action="/login" method="get" style={{ maxWidth: 560 }} {...{ toolname: "start_free_pilot", tooldescription: "Start the free Agent Tracking pilot for a domain: opens the sign-in page with the domain prefilled." }}>
+          <label htmlFor="domain" className="sr-only">Your domain</label>
+          <input id="domain" type="text" name="domain" inputMode="url" autoComplete="url" placeholder="example.com" aria-describedby="pilot-note" required />
           <button className="btn" type="submit">
             Start the free pilot
           </button>
         </form>
-        <p className="formnote" style={{ marginTop: 10 }}>
+        <p id="pilot-note" className="formnote" style={{ marginTop: 10 }}>
           Sign in by email, paste one line, done. No card, no cookies on your visitors, no personal data.{" "}
           <Link href="/demo">See the demo page</Link> first if you like.
         </p>
@@ -192,7 +193,7 @@ export default function Page() {
           account is on the Free plan: {free.domains} site, {free.eventsPerMonth.toLocaleString("en-GB")} agent events a
           month, {free.windowDays} days of history. Plain page views are not counted.
         </p>
-        <p className="dek" style={{ maxWidth: "62ch" }}>
+        <p id="pilot-terms" className="dek" style={{ maxWidth: "62ch" }}>
           Need more than that while the pilot runs? Write to <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>{" "}
           and we switch your account by hand. Paid plans follow when the product has earned them, and nothing about
           your account changes without 30 days&apos; notice by email.
@@ -202,7 +203,8 @@ export default function Page() {
           believe. That is what the pilot is for.
         </p>
         <form className="scanform" action="/login" method="get" style={{ maxWidth: 560, marginTop: 22 }}>
-          <input type="text" name="domain" inputMode="url" placeholder="example.com" aria-label="Your domain" required />
+          <label htmlFor="domain-2" className="sr-only">Your domain</label>
+          <input id="domain-2" type="text" name="domain" inputMode="url" autoComplete="url" placeholder="example.com" aria-describedby="pilot-terms" required />
           <button className="btn" type="submit">
             Start the free pilot
           </button>

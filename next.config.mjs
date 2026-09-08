@@ -44,6 +44,11 @@ const nextConfig = {
           { key: "X-Frame-Options", value: "DENY" },
           { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(), payment=(), usb=()" },
           { key: "Content-Security-Policy", value: CSP },
+          // Where the machine-readable descriptions are, for clients that read headers before bodies.
+          {
+            key: "Link",
+            value: '</.well-known/mcp.json>; rel="service-desc"; type="application/json", </openapi.json>; rel="service-desc"; type="application/vnd.oai.openapi+json", </.well-known/api-catalog>; rel="api-catalog"; type="application/linkset+json", </llms.txt>; rel="alternate"; type="text/markdown"',
+          },
         ],
       },
     ];

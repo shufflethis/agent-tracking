@@ -78,7 +78,7 @@ export default function SiteChrome({ locale, children }: { locale: Locale; child
         <div className="shell">
           <div className="foot-grid">
             <div>
-              <h4>{d.foot.product}</h4>
+              <p className="foot-title">{d.foot.product}</p>
               <ul>
                 <li>
                   <Link href={L("/docs")}>{d.foot.docs}</Link>
@@ -104,7 +104,7 @@ export default function SiteChrome({ locale, children }: { locale: Locale; child
               </ul>
             </div>
             <div>
-              <h4>Open source</h4>
+              <p className="foot-title">Open source</p>
               <ul>
                 <li>
                   <a href={GITHUB_URL} rel="noopener">
@@ -131,7 +131,7 @@ export default function SiteChrome({ locale, children }: { locale: Locale; child
               </ul>
             </div>
             <div>
-              <h4>{d.foot.legal}</h4>
+              <p className="foot-title">{d.foot.legal}</p>
               <ul>
                 <li>
                   <Link href={L("/imprint")}>{d.foot.imprint}</Link>

@@ -1347,7 +1347,8 @@ td.num {
     gap: 30px;
   }
 }
-.foot-grid h4 {
+.foot-grid h4,
+.foot-grid .foot-title {
   font-family: var(--mono);
   font-size: 11px;
   letter-spacing: 0.14em;
