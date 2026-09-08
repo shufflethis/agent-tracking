@@ -284,6 +284,105 @@ const EN: Guide[] = [
     related: ["track-mcp-and-webmcp-tool-calls", "see-whether-ai-agents-buy-on-your-site"],
     updated: "2026-09-08",
   },
+  {
+    slug: "how-much-ai-bot-traffic-does-a-website-get",
+    question: "How much AI bot traffic does a typical website get?",
+    title: "How much AI bot traffic a website gets, and how to measure yours",
+    summary:
+      "Nobody can tell you a reliable number for a typical site, because it depends on what the site is: a documentation site is fetched by crawlers every night, a shop sees live assistants answering product questions, a blog sees referrals after it is cited. What you can do is measure your own in a day: crawler fetches from the server log, verified against vendor address ranges, plus assistant referrals and tool calls from a script tag.",
+    sections: [
+      { h: "Why the published averages do not help", p: ["Industry reports count requests at the edge across millions of sites, which says something about the internet and nothing about you. A crawler that reads 400 pages of a documentation site every night is normal there and alarming on a five-page brochure site. The useful number is yours, split by agent and by page, with a trend."] },
+      { h: "The three components", p: ["Crawler fetches: GPTBot, ClaudeBot, PerplexityBot, OAI-SearchBot, Google-Extended and their kind, visible only in the server log because they run no JavaScript. Live fetches: ChatGPT-User, Perplexity-User and other assistants answering a question about you right now, usually three to ten pages in a few seconds. Referrals: people arriving from an assistant that cited you. Most sites have the first two long before the third."] },
+      { h: "Measure it in a day", p: ["Add the site, paste the snippet, upload yesterday's access log. The dashboard shows fetches per agent with verification, bursts, referrals and pages within minutes, and a trend after a week. One public example is this site's own live stats page, updated daily, and it is small because the domain is new."], code: LOG, codeLang: "sh" },
+      { h: "Reading the result", p: ["A high, steady fetch count from one crawler is training or indexing; whether you want that is a robots.txt decision. Bursts of a few pages in seconds are questions being answered about you; those pages are what assistants consider relevant. Referrals are the part that turns into business, and they usually lag the other two by weeks. Unverified lines claiming a known bot are impostors and worth a look."] },
+    ],
+    faq: [
+      { q: "Can you share benchmarks from your customers?", a: "Not yet, and not without their consent. The pilot is days old. When there are enough sites and owners agree, aggregate ranges by site type will be published here." },
+      { q: "Do page views by people count against my quota?", a: "No. Only agent events count. Plain page views appear as a total for context." },
+    ],
+    related: ["which-ai-crawlers-read-my-pages", "how-to-track-ai-agents-visiting-your-website"],
+    updated: "2026-09-08",
+  },
+  {
+    slug: "which-pages-do-ai-assistants-cite",
+    question: "Which pages do AI assistants cite from my site?",
+    title: "How to find out which pages AI assistants cite from your site",
+    summary:
+      "Two signals answer this. Referrals show which page a person landed on after an assistant cited it, per assistant. Fetch bursts show which pages an assistant pulled together to answer a question, before anyone clicked. Agent Tracking records both, so the Pages view lists the pages assistants actually use, not the ones you hoped they would.",
+    sections: [
+      { h: "Citations leave two traces", p: ["When ChatGPT or Perplexity cites you, two things happen. First the assistant fetches the page, often together with two or three related pages, within seconds: a burst. Later, maybe, a person clicks the citation and arrives with the assistant as referrer. The burst tells you what was considered; the referral tells you what was chosen."] },
+      { h: "Where to look", p: ["The Pages view lists pages by agent fetches and tool calls. The Agents view lists recent bursts with the pages in each one. The referral rows in the Agents view, combined with the Pages view, show landing pages per assistant. Compare the three: a page that is fetched in bursts but never referred to is cited without a click, or considered and dropped."] },
+      { h: "Set it up", p: ["Referrals need the snippet on every page. Bursts need the server log, uploaded once or sent daily. Both together take about ten minutes."], code: SNIPPET, codeLang: "html" },
+      { h: "Turning it into a loop", p: ["Change a page assistants keep fetching but never send people to, and watch the referral row for two weeks. That is generative engine optimisation with a measurement in it. Ask the same question from Claude or ChatGPT through the MCP tool if you prefer words to tables."], code: MCP, codeLang: "json" },
+    ],
+    faq: [
+      { q: "Can I see the exact question the assistant answered?", a: "No. Neither the referrer nor the fetch carries the prompt, and the tool records no content. The pages in a burst are the closest signal." },
+      { q: "Does this work for Google AI Overviews?", a: "Fetches by Google-Extended and Google's user-triggered fetchers are counted from the log. Referrals from AI Overviews arrive as ordinary Google referrals and cannot be separated by referrer alone." },
+    ],
+    related: ["see-chatgpt-referral-traffic", "which-ai-assistants-send-visitors", "which-ai-crawlers-read-my-pages"],
+    updated: "2026-09-08",
+  },
+  {
+    slug: "is-this-request-really-gptbot",
+    question: "How do I know whether a request claiming to be GPTBot is real?",
+    title: "How to verify that a request claiming to be GPTBot really comes from OpenAI",
+    summary:
+      "The user agent string is free text and anyone can send it. OpenAI publishes the IP address ranges its crawlers use, as do Perplexity, Microsoft, Google and Apple. A request is real when its address falls in the published range for that crawler; otherwise it is an impostor, whatever the string says. Agent Tracking does this check for every log line and lists impostors as unverified instead of counting them.",
+    sections: [
+      { h: "Why the string is not enough", p: ["Scrapers copy the GPTBot user agent because sites tend to allow it. A robots.txt rule or a rate limit keyed on the string therefore treats the copy the same as the original. The only reliable signal is the network address, which the vendors publish precisely so that sites can tell."] },
+      { h: "Where the ranges come from", p: ["OpenAI publishes separate JSON lists for GPTBot, ChatGPT-User and OAI-SearchBot. Perplexity, Microsoft, Google and Apple publish theirs. The lists change; Agent Tracking refreshes them nightly and checks each log line against the list for the crawler it claims."] },
+      { h: "Doing it by hand", p: ["Take the address from the log line, fetch the vendor's list, and test whether the address is inside any of the CIDR blocks. For one line that is a minute; for a night's log it is a script. The log import does it for every line and shows the result per agent as verified and unverified counts."], code: LOG, codeLang: "sh" },
+      { h: "What to do with an impostor", p: ["Nothing automatic; the tool never blocks. But an agent whose unverified count is a large share of its total is worth a rule at the edge or in robots.txt, and the verified share tells you how much real crawler traffic you would keep."] },
+    ],
+    faq: [
+      { q: "Do all crawlers publish ranges?", a: "No. Where a vendor publishes none, the row is marked as not verifiable, and the fetches are counted from the string alone with that caveat." },
+      { q: "Is reverse DNS an alternative?", a: "For Googlebot and Bingbot, yes. OpenAI and Perplexity rely on published ranges instead, which is why the check uses ranges throughout." },
+    ],
+    related: ["which-ai-crawlers-read-my-pages", "how-much-ai-bot-traffic-does-a-website-get"],
+    updated: "2026-09-08",
+  },
+  {
+    slug: "do-ai-agents-complete-purchases-on-websites",
+    question: "Do AI agents complete purchases on websites yet?",
+    title: "Do AI agents complete purchases on websites yet, and how would you know?",
+    summary:
+      "Some do, most do not, and the honest answer for your site is a measurement rather than an opinion. Browser-driving assistants can fill forms and press buttons today; WebMCP lets a site offer the checkout as a tool instead of a guessing game; the payment rails for unattended purchases are young. Mark the goal with one attribute and Agent Tracking shows conversions reached by agents, separately from people, so you know for your shop.",
+    sections: [
+      { h: "What agents can do today", p: ["Assistants with browser control navigate pages, fill forms and click, the way a person would, and fail where a person would not: hidden required fields, CAPTCHAs, layouts that only make sense visually. Sites that register WebMCP tools give the assistant a documented function instead, which is faster and fails less. Payment without a human at the keyboard needs a rail such as the Agentic Commerce Protocol, the Universal Commerce Protocol or x402, and adoption is early."] },
+      { h: "How to measure it on your site", p: ["Put data-agent-goal on the element that means done: the order button, the booking confirmation. Register the checkout as a tool if you have WebMCP. The overview then shows conversions per day and the Tools view shows where calls fail. A session is attributed to an agent from the referrer or user agent, so a purchase by a person sent from ChatGPT counts as an AI referral conversion, and a purchase driven by an assistant in the browser counts as an agent conversion."], code: GOAL, codeLang: "html" },
+      { h: "Reading the gap", p: ["Tool calls without conversions mean agents try and do not finish; the error class in the Tools view usually says why. Conversions without tool calls are people. Neither number appears anywhere else, because a purchase by an agent looks like any other purchase to a shop system."] },
+      { h: "What this site will publish", p: ["Aggregate rates by site type, once enough shops run the pilot and their owners agree. Until then the number that matters is your own, and it takes one attribute to get."] },
+    ],
+    faq: [
+      { q: "Can Agent Tracking see the order value?", a: "No. A conversion carries the goal name, the page and the agent class. Revenue stays in your shop system; join it by time if you need it." },
+      { q: "Do I need WebMCP for this?", a: "No. data-agent-goal works on any button or form. WebMCP adds the tool layer, which shows where agents fail before the goal." },
+    ],
+    related: ["see-whether-ai-agents-buy-on-your-site", "analytics-for-webmcp-tools"],
+    updated: "2026-09-08",
+  },
+  {
+    slug: "add-a-webmcp-tool-in-ten-minutes",
+    question: "How do I add a WebMCP tool to my site in ten minutes?",
+    title: "How to add your first WebMCP tool to a site in ten minutes",
+    summary:
+      "Pick the one action an assistant would most want to take on your site, describe it in a sentence, give it a typed input schema, and register it with document.modelContext.registerTool. A polyfill makes it work in browsers that do not ship the API yet. Start read-only, then measure whether agents call it, and only then add a tool that changes state.",
+    sections: [
+      { h: "Pick the action", p: ["Search the catalogue, check availability, look up an order status, get a quote. One tool, the thing a person asks about most. A tool that reads is safe to expose without confirmation; a tool that books or buys needs a human step, and the specification's own threat model is the reason."] },
+      { h: "Register it", p: ["Name it in the permitted character set, describe what it returns and when to prefer it, type every input property with a description, and mark it read-only. The execute function calls the endpoint your site already has."], code: TOOL, codeLang: "js" },
+      { h: "Or annotate a form", p: ["If the action already exists as a form, the declarative route needs no JavaScript at all: a toolname and a description on the form, and the browser derives the schema from the fields you already ship. Attribute names are still settling in the specification; check the current text before rolling it out widely."], code: `<form toolname="request_quote" tooldescription="Request a quote for a product and quantity." action="/quote" method="post">
+  <label for="sku">Product</label><input id="sku" name="sku" required>
+  <label for="qty">Quantity</label><input id="qty" name="qty" type="number" min="1" required>
+  <button type="submit">Request quote</button>
+</form>`, codeLang: "html" },
+      { h: "Ship, then measure", p: ["Add the polyfill so the API exists where the browser has not shipped it, deploy, and run the readiness check on webmcp-tool.com to see the tool recognised. With the Agent Tracking snippet on the page, the Tools view shows calls, duration, success rate and errors from the first agent onward, which is the only way to know whether the description works."], code: SNIPPET, codeLang: "html" },
+    ],
+    faq: [
+      { q: "Which browsers support WebMCP?", a: "Chrome ships it behind an origin trial; the @mcp-b polyfill covers the rest. Register through document.modelContext and fall back to navigator.modelContext for older builds." },
+      { q: "How many tools should a page have?", a: "Two or three good ones. Agents choose by reading descriptions, and fifty tools is a list nobody chooses well from." },
+    ],
+    related: ["analytics-for-webmcp-tools", "track-mcp-and-webmcp-tool-calls"],
+    updated: "2026-09-08",
+  },
 ];
 
 const DE: Guide[] = [
@@ -534,6 +633,105 @@ const DE: Guide[] = [
       { q: "Werden Argumentwerte erfasst?", a: "Nie. Nur die Namen der Eingabefelder, damit du siehst, welche Felder Agenten schicken und welche sie auslassen." },
     ],
     related: ["mcp-und-webmcp-tool-aufrufe-erfassen", "sehen-ob-ki-agenten-auf-der-site-kaufen"],
+    updated: "2026-09-08",
+  },
+  {
+    slug: "wie-viel-ki-bot-traffic-hat-eine-website",
+    question: "Wie viel KI-Bot-Traffic hat eine typische Website?",
+    title: "Wie viel KI-Bot-Traffic eine Website hat, und wie du deinen misst",
+    summary:
+      "Eine verlässliche Zahl für eine typische Site gibt es nicht, weil es davon abhängt, was die Site ist: Eine Dokumentationssite wird jede Nacht von Crawlern gelesen, ein Shop sieht Live-Assistenten, die Produktfragen beantworten, ein Blog sieht Referrals, nachdem er zitiert wurde. Was du tun kannst: deinen eigenen an einem Tag messen, Crawler-Abrufe aus dem Server-Log, gegen Anbieter-Adressbereiche verifiziert, plus Assistenten-Referrals und Tool-Aufrufe über ein Script-Tag.",
+    sections: [
+      { h: "Warum veröffentlichte Durchschnitte nicht helfen", p: ["Branchenberichte zählen Anfragen am Netzrand über Millionen Sites, was etwas über das Internet sagt und nichts über dich. Ein Crawler, der jede Nacht 400 Seiten einer Dokumentationssite liest, ist dort normal und auf einer Fünf-Seiten-Broschüre alarmierend. Die nützliche Zahl ist deine, nach Agent und Seite, mit Trend."] },
+      { h: "Die drei Bestandteile", p: ["Crawler-Abrufe: GPTBot, ClaudeBot, PerplexityBot, OAI-SearchBot, Google-Extended und Co., nur im Server-Log sichtbar, weil sie kein JavaScript ausführen. Live-Abrufe: ChatGPT-User, Perplexity-User und andere Assistenten, die gerade eine Frage über dich beantworten, meist drei bis zehn Seiten in wenigen Sekunden. Referrals: Menschen, die von einem Assistenten kommen, der dich zitiert hat. Die meisten Sites haben die ersten beiden lange vor dem dritten."] },
+      { h: "An einem Tag messen", p: ["Site hinzufügen, Snippet einbauen, das Access-Log von gestern hochladen. Das Dashboard zeigt innerhalb von Minuten Abrufe je Agent mit Verifikation, Bursts, Referrals und Seiten, nach einer Woche einen Trend. Ein öffentliches Beispiel ist die Live-Stats-Seite dieser Site, täglich aktualisiert, und sie ist klein, weil die Domain neu ist."], code: LOG, codeLang: "sh" },
+      { h: "Das Ergebnis lesen", p: ["Ein hoher, gleichmäßiger Abrufwert eines Crawlers ist Training oder Indexierung; ob du das willst, ist eine robots.txt-Entscheidung. Bursts von wenigen Seiten in Sekunden sind Fragen, die über dich beantwortet werden; diese Seiten hält der Assistent für relevant. Referrals sind der Teil, der zu Geschäft wird, und sie hinken den anderen beiden meist um Wochen hinterher. Unverifizierte Zeilen, die einen bekannten Bot behaupten, sind Nachahmer und einen Blick wert."] },
+    ],
+    faq: [
+      { q: "Könnt ihr Benchmarks eurer Kunden teilen?", a: "Noch nicht, und nicht ohne deren Zustimmung. Die Pilotphase ist Tage alt. Wenn es genug Sites gibt und die Betreiber einverstanden sind, erscheinen hier aggregierte Spannen je Site-Typ." },
+      { q: "Zählen Seitenaufrufe von Menschen auf mein Kontingent?", a: "Nein. Nur Agenten-Ereignisse zählen. Reine Seitenaufrufe erscheinen als Summe zur Einordnung." },
+    ],
+    related: ["welche-ki-crawler-lesen-meine-seiten", "ki-agenten-auf-der-website-tracken"],
+    updated: "2026-09-08",
+  },
+  {
+    slug: "welche-seiten-zitieren-ki-assistenten",
+    question: "Welche Seiten zitieren KI-Assistenten von meiner Site?",
+    title: "Herausfinden, welche Seiten KI-Assistenten von deiner Site zitieren",
+    summary:
+      "Zwei Signale beantworten das. Referrals zeigen, auf welcher Seite ein Mensch gelandet ist, nachdem ein Assistent sie zitiert hat, je Assistent. Abruf-Bursts zeigen, welche Seiten ein Assistent zusammengezogen hat, um eine Frage zu beantworten, bevor jemand geklickt hat. Agent Tracking erfasst beides, sodass die Seiten-Ansicht die Seiten listet, die Assistenten wirklich nutzen, nicht die, von denen du es gehofft hast.",
+    sections: [
+      { h: "Zitate hinterlassen zwei Spuren", p: ["Wenn ChatGPT oder Perplexity dich zitiert, passieren zwei Dinge. Zuerst holt der Assistent die Seite, oft zusammen mit zwei oder drei verwandten Seiten, innerhalb von Sekunden: ein Burst. Später, vielleicht, klickt ein Mensch das Zitat und kommt mit dem Assistenten als Referrer. Der Burst sagt, was erwogen wurde; das Referral sagt, was gewählt wurde."] },
+      { h: "Wo du hinschaust", p: ["Die Seiten-Ansicht listet Seiten nach Agenten-Abrufen und Tool-Aufrufen. Die Agenten-Ansicht listet die jüngsten Bursts mit ihren Seiten. Die Referral-Zeilen der Agenten-Ansicht zeigen zusammen mit der Seiten-Ansicht die Landingpages je Assistent. Vergleich die drei: Eine Seite, die in Bursts geholt, aber nie verlinkt wird, wird ohne Klick zitiert, oder erwogen und verworfen."] },
+      { h: "Einrichten", p: ["Referrals brauchen das Snippet auf jeder Seite. Bursts brauchen das Server-Log, einmal hochgeladen oder täglich geschickt. Beides zusammen dauert etwa zehn Minuten."], code: SNIPPET, codeLang: "html" },
+      { h: "Daraus eine Schleife machen", p: ["Ändere eine Seite, die Assistenten ständig holen, aber nie Menschen hinschicken, und beobachte die Referral-Zeile zwei Wochen. Das ist Generative Engine Optimization mit einer Messung darin. Stell dieselbe Frage Claude oder ChatGPT über das MCP-Tool, wenn dir Worte lieber sind als Tabellen."], code: MCP, codeLang: "json" },
+    ],
+    faq: [
+      { q: "Sehe ich die genaue Frage, die der Assistent beantwortet hat?", a: "Nein. Weder Referrer noch Abruf tragen den Prompt, und das Tool erfasst keine Inhalte. Die Seiten in einem Burst sind das nächste Signal." },
+      { q: "Funktioniert das für Google AI Overviews?", a: "Abrufe durch Google-Extended und Googles nutzerausgelöste Fetcher werden aus dem Log gezählt. Referrals aus AI Overviews kommen als normale Google-Referrals und lassen sich über den Referrer allein nicht trennen." },
+    ],
+    related: ["chatgpt-referral-traffic-sehen", "welche-ki-assistenten-schicken-besucher", "welche-ki-crawler-lesen-meine-seiten"],
+    updated: "2026-09-08",
+  },
+  {
+    slug: "ist-diese-anfrage-wirklich-gptbot",
+    question: "Wie erkenne ich, ob eine Anfrage, die sich als GPTBot ausgibt, echt ist?",
+    title: "Prüfen, ob eine Anfrage, die sich als GPTBot ausgibt, wirklich von OpenAI kommt",
+    summary:
+      "Der User-Agent-String ist freier Text, und jeder kann ihn senden. OpenAI veröffentlicht die IP-Adressbereiche seiner Crawler, ebenso Perplexity, Microsoft, Google und Apple. Eine Anfrage ist echt, wenn ihre Adresse im veröffentlichten Bereich dieses Crawlers liegt; sonst ist sie ein Nachahmer, egal was der String sagt. Agent Tracking macht diese Prüfung für jede Log-Zeile und listet Nachahmer als unverifiziert, statt sie zu zählen.",
+    sections: [
+      { h: "Warum der String nicht reicht", p: ["Scraper kopieren den GPTBot-User-Agent, weil Sites ihn meist erlauben. Eine robots.txt-Regel oder eine Drosselung auf den String behandelt die Kopie also wie das Original. Das einzige verlässliche Signal ist die Netzwerkadresse, die die Anbieter genau deshalb veröffentlichen."] },
+      { h: "Woher die Bereiche kommen", p: ["OpenAI veröffentlicht getrennte JSON-Listen für GPTBot, ChatGPT-User und OAI-SearchBot. Perplexity, Microsoft, Google und Apple veröffentlichen ihre. Die Listen ändern sich; Agent Tracking aktualisiert sie nächtlich und prüft jede Log-Zeile gegen die Liste des Crawlers, den sie behauptet."] },
+      { h: "Von Hand", p: ["Nimm die Adresse aus der Log-Zeile, hol die Liste des Anbieters und prüf, ob die Adresse in einem der CIDR-Blöcke liegt. Für eine Zeile ist das eine Minute; für das Log einer Nacht ein Script. Der Log-Import macht es für jede Zeile und zeigt das Ergebnis je Agent als verifizierte und unverifizierte Zahlen."], code: LOG, codeLang: "sh" },
+      { h: "Was du mit einem Nachahmer machst", p: ["Nichts Automatisches; das Tool blockiert nie. Aber ein Agent, dessen unverifizierter Anteil groß ist, ist eine Regel am Netzrand oder in der robots.txt wert, und der verifizierte Anteil sagt dir, wie viel echten Crawler-Traffic du behalten würdest."] },
+    ],
+    faq: [
+      { q: "Veröffentlichen alle Crawler Bereiche?", a: "Nein. Wo ein Anbieter keine veröffentlicht, ist die Zeile als nicht verifizierbar markiert, und die Abrufe werden mit diesem Vorbehalt allein nach dem String gezählt." },
+      { q: "Ist Reverse DNS eine Alternative?", a: "Für Googlebot und Bingbot ja. OpenAI und Perplexity setzen stattdessen auf veröffentlichte Bereiche, darum prüft das Tool durchgehend über Bereiche." },
+    ],
+    related: ["welche-ki-crawler-lesen-meine-seiten", "wie-viel-ki-bot-traffic-hat-eine-website"],
+    updated: "2026-09-08",
+  },
+  {
+    slug: "kaufen-ki-agenten-schon-auf-websites-ein",
+    question: "Kaufen KI-Agenten schon auf Websites ein?",
+    title: "Kaufen KI-Agenten schon auf Websites ein, und woher wüsstest du das?",
+    summary:
+      "Manche ja, die meisten nicht, und die ehrliche Antwort für deine Site ist eine Messung statt einer Meinung. Browser-steuernde Assistenten können heute Formulare füllen und Knöpfe drücken; WebMCP lässt eine Site den Checkout als Tool anbieten statt als Rätsel; die Zahlungswege für unbeaufsichtigte Käufe sind jung. Markiere das Ziel mit einem Attribut, und Agent Tracking zeigt von Agenten erreichte Conversions getrennt von Menschen, damit du es für deinen Shop weißt.",
+    sections: [
+      { h: "Was Agenten heute können", p: ["Assistenten mit Browsersteuerung navigieren Seiten, füllen Formulare und klicken, wie ein Mensch, und scheitern, wo ein Mensch nicht scheitern würde: versteckte Pflichtfelder, CAPTCHAs, Layouts, die nur visuell Sinn ergeben. Sites, die WebMCP-Tools registrieren, geben dem Assistenten stattdessen eine dokumentierte Funktion, schneller und mit weniger Fehlern. Zahlen ohne Mensch an der Tastatur braucht einen Weg wie das Agentic Commerce Protocol, das Universal Commerce Protocol oder x402, und die Verbreitung ist früh."] },
+      { h: "Wie du es auf deiner Site misst", p: ["Setze data-agent-goal auf das Element, das fertig bedeutet: den Bestellknopf, die Buchungsbestätigung. Registriere den Checkout als Tool, wenn du WebMCP hast. Der Überblick zeigt dann Conversions pro Tag und die Tools-Ansicht, wo Aufrufe scheitern. Eine Sitzung wird über Referrer oder User-Agent einem Agenten zugeordnet, sodass ein Kauf eines von ChatGPT geschickten Menschen als KI-Referral-Conversion zählt und ein von einem Assistenten im Browser gesteuerter Kauf als Agenten-Conversion."], code: GOAL, codeLang: "html" },
+      { h: "Die Lücke lesen", p: ["Tool-Aufrufe ohne Conversions heißen: Agenten versuchen es und kommen nicht ans Ende; die Fehlerklasse in der Tools-Ansicht sagt meist warum. Conversions ohne Tool-Aufrufe sind Menschen. Keine der beiden Zahlen gibt es sonst irgendwo, weil ein Kauf eines Agenten für ein Shopsystem aussieht wie jeder andere."] },
+      { h: "Was diese Site veröffentlichen wird", p: ["Aggregierte Raten je Site-Typ, sobald genug Shops in der Pilotphase laufen und ihre Betreiber zustimmen. Bis dahin zählt die eigene Zahl, und die kostet ein Attribut."] },
+    ],
+    faq: [
+      { q: "Sieht Agent Tracking den Bestellwert?", a: "Nein. Eine Conversion trägt Zielname, Seite und Agentenklasse. Umsatz bleibt in deinem Shopsystem; verknüpfe ihn zeitlich, wenn du ihn brauchst." },
+      { q: "Brauche ich dafür WebMCP?", a: "Nein. data-agent-goal funktioniert auf jedem Knopf und Formular. WebMCP ergänzt die Tool-Schicht, die zeigt, wo Agenten vor dem Ziel scheitern." },
+    ],
+    related: ["sehen-ob-ki-agenten-auf-der-site-kaufen", "analytics-fuer-webmcp-tools"],
+    updated: "2026-09-08",
+  },
+  {
+    slug: "webmcp-tool-in-zehn-minuten-einbauen",
+    question: "Wie baue ich in zehn Minuten ein WebMCP-Tool in meine Site ein?",
+    title: "Dein erstes WebMCP-Tool in zehn Minuten in eine Site einbauen",
+    summary:
+      "Wähl die eine Aktion, die ein Assistent auf deiner Site am ehesten ausführen will, beschreib sie in einem Satz, gib ihr ein typisiertes Eingabeschema und registriere sie mit document.modelContext.registerTool. Ein Polyfill lässt es in Browsern laufen, die die API noch nicht mitbringen. Fang nur lesend an, miss dann, ob Agenten es aufrufen, und ergänze erst danach ein Tool, das etwas ändert.",
+    sections: [
+      { h: "Die Aktion wählen", p: ["Katalog durchsuchen, Verfügbarkeit prüfen, Bestellstatus nachsehen, Angebot holen. Ein Tool, das, wonach Menschen am häufigsten fragen. Ein Tool, das liest, ist ohne Bestätigung sicher; ein Tool, das bucht oder kauft, braucht einen menschlichen Schritt, und das Bedrohungsmodell der Spezifikation ist der Grund."] },
+      { h: "Registrieren", p: ["Benenn es im erlaubten Zeichensatz, beschreib, was es zurückgibt und wann es zu bevorzugen ist, typisiere jede Eingabe mit Beschreibung und markiere es als nur lesend. Die execute-Funktion ruft den Endpunkt auf, den deine Site ohnehin hat."], code: TOOL, codeLang: "js" },
+      { h: "Oder ein Formular annotieren", p: ["Wenn die Aktion schon als Formular existiert, braucht der deklarative Weg gar kein JavaScript: ein toolname und eine Beschreibung am Formular, und der Browser leitet das Schema aus den Feldern ab, die du ohnehin ausspielst. Die Attributnamen sind in der Spezifikation noch in Bewegung; prüf den aktuellen Text, bevor du es breit ausrollst."], code: `<form toolname="request_quote" tooldescription="Angebot für ein Produkt und eine Menge anfordern." action="/quote" method="post">
+  <label for="sku">Produkt</label><input id="sku" name="sku" required>
+  <label for="qty">Menge</label><input id="qty" name="qty" type="number" min="1" required>
+  <button type="submit">Angebot anfordern</button>
+</form>`, codeLang: "html" },
+      { h: "Ausliefern, dann messen", p: ["Ergänze das Polyfill, damit die API existiert, wo der Browser sie noch nicht mitbringt, deploye, und lass den Readiness-Check auf webmcp-tool.com laufen, um das Tool erkannt zu sehen. Mit dem Agent-Tracking-Snippet auf der Seite zeigt die Tools-Ansicht ab dem ersten Agenten Aufrufe, Dauer, Erfolgsquote und Fehler, und nur so weißt du, ob die Beschreibung funktioniert."], code: SNIPPET, codeLang: "html" },
+    ],
+    faq: [
+      { q: "Welche Browser unterstützen WebMCP?", a: "Chrome liefert es hinter einem Origin Trial; das @mcp-b-Polyfill deckt den Rest ab. Registriere über document.modelContext und fall für ältere Builds auf navigator.modelContext zurück." },
+      { q: "Wie viele Tools sollte eine Seite haben?", a: "Zwei oder drei gute. Agenten wählen nach Beschreibungen, und fünfzig Tools sind eine Liste, aus der niemand gut wählt." },
+    ],
+    related: ["analytics-fuer-webmcp-tools", "mcp-und-webmcp-tool-aufrufe-erfassen"],
     updated: "2026-09-08",
   },
 ];
