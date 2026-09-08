@@ -1,7 +1,7 @@
 import { DM_Mono, Jost, Open_Sans } from "next/font/google";
 import SiteChrome from "@/components/SiteChrome";
 import { HTML_LANG, type Locale } from "@/lib/i18n";
-import { AUTHOR, CHECK_ORIGIN, GITHUB_URL, LEGAL, LEGAL_ADDRESS_SCHEMA, PLAUSIBLE_SCRIPT, SITE_HOST, SITE_NAME, SITE_ORIGIN } from "@/lib/site";
+import { AUTHOR, CHECK_ORIGIN, GITHUB_URL, LEGAL, LEGAL_ADDRESS_SCHEMA, PLAUSIBLE_SCRIPT, SITE_HOST, SITE_NAME, SITE_ORIGIN, VERIFY } from "@/lib/site";
 import "@/app/globals.css";
 
 /*
@@ -106,6 +106,8 @@ export default function RootShell({ locale, children }: { locale: Locale; childr
   return (
     <html lang={HTML_LANG[locale]} className={`${jost.variable} ${openSans.variable} ${dmMono.variable}`}>
       <head>
+        {VERIFY.bing ? <meta name="msvalidate.01" content={VERIFY.bing} /> : null}
+        {VERIFY.google ? <meta name="google-site-verification" content={VERIFY.google} /> : null}
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(SITE_LD) }} />
         {PLAUSIBLE_SCRIPT ? (
           <>

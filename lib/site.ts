@@ -107,6 +107,12 @@ export const AUTHOR = {
   sameAs: trim(process.env.AUTHOR_SAMEAS).split(",").map((s) => s.trim()).filter(Boolean),
 };
 
+/** Site verification codes for the search consoles, printed as meta tags when set. Bing also gets /BingSiteAuth.xml. */
+export const VERIFY = {
+  bing: trim(process.env.BING_SITE_VERIFICATION),
+  google: trim(process.env.GOOGLE_SITE_VERIFICATION),
+};
+
 /** IndexNow key (Bing, Yandex, Naver). Served at /indexnow-key.txt when set. */
 export const INDEXNOW_KEY = trim(process.env.INDEXNOW_KEY);
 
