@@ -81,8 +81,9 @@ export default function Page() {
           </p>
           <p>If the Processor considers an instruction unlawful, it informs the Controller without delay and may suspend carrying it out until the Controller confirms or changes it.</p>
           <p>
-            The Processor does not process the data for its own purposes. In particular the data is not used for advertising, profiling or the training of models, and is not
-            passed to third parties unless a law requires it; in that case the Processor informs the Controller before processing, where the law allows.
+            The Processor does not process the data for its own purposes. In particular the data is not used for advertising, profiling or the training of models, and, apart
+            from the bot user agent strings described in section 5, is not passed to third parties unless a law requires it; in that case the Processor informs the Controller
+            before processing, where the law allows.
           </p>
         </Clause>
 
@@ -120,6 +121,19 @@ export default function Page() {
           <p>
             No other sub-processors are used. In particular the data is not transmitted to providers of email, payment or analytics services; messages to the Controller itself
             contain no data of data subjects.
+          </p>
+          <p>
+            <b>Bot user agent strings.</b> A line in an uploaded server log whose user agent matches no entry on the Processor&apos;s published list of AI agents is counted
+            towards nothing. The user agent string itself is retained, deduplicated, and where it carries an explicit bot marker &mdash; a product name ending in
+            &ldquo;Bot&rdquo; or &ldquo;Crawler&rdquo;, a known HTTP library, or the <code>+https://</code> address by which a crawler points at its own documentation &mdash; it
+            is transmitted to TypeSafe AI, Inc., United States, to be classified as an AI agent or not. Nothing is transmitted with it: no network address, no page, no time, no
+            site, no session and no record of the Controller. A browser&apos;s user agent carries none of those markers and is never transmitted.
+          </p>
+          <p>
+            The Processor treats this as processing for its own purpose under Art. 6 (1) (f) GDPR and not as processing on behalf of the Controller, because the string
+            identifies software rather than a person, and because the result changes only the Processor&apos;s published list of AI agents &mdash; never a figure in the
+            Controller&apos;s dashboard, which moves only once a person has added an entry to that list. TypeSafe is therefore not a sub-processor under this agreement. The
+            transfer to the United States rests on the standard contractual clauses of the European Commission, which the Processor&apos;s agreement with TypeSafe incorporates.
           </p>
           <p>
             <b>Transfer to the Processor.</b> The Processor is established in the United States. All data under this agreement is stored and processed on the server in{" "}
@@ -198,10 +212,12 @@ export default function Page() {
           <p>
             <b>Server log lines</b> the Controller uploads or sends by script: from a line, the day, the agent name and the page path are taken over. The network address is used
             while the request is processed only to group one agent&apos;s fetches and to check the agent against its vendor&apos;s published address ranges, and is discarded when
-            the request ends. The log file itself is not stored.
+            the request ends. The log file itself is not stored. From a line whose user agent matches no entry on the published list, nothing is taken over into any figure; the
+            user agent string alone is kept, deduplicated and without reference to the site, the page, the time or the address, as described in section 5.
           </p>
           <p>
-            <b>Duration:</b> raw data {RAW_RETENTION_DAYS} days; daily totals, tool registry and manifest hash until the site is removed. <b>Location:</b> a server in{" "}
+            <b>Duration:</b> raw data {RAW_RETENTION_DAYS} days; daily totals, tool registry and manifest hash until the site is removed; unplaced bot user agent strings, at
+            most 500 of them and the busiest first, without a deletion period, because the list they feed is the point of keeping them. <b>Location:</b> a server in{" "}
             {LEGAL.hostingCountry}.
           </p>
         </section>

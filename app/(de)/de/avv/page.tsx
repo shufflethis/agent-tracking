@@ -78,8 +78,8 @@ export default function Page() {
           <p>Hält der Auftragsverarbeiter eine Weisung für rechtswidrig, teilt er das dem Verantwortlichen unverzüglich mit und darf die Ausführung aussetzen, bis der Verantwortliche sie bestätigt oder ändert.</p>
           <p>
             Der Auftragsverarbeiter verarbeitet die Daten nicht für eigene Zwecke. Insbesondere werden sie nicht für Werbung, Profilbildung oder das Training von Modellen genutzt
-            und nicht an Dritte weitergegeben, es sei denn, ein Gesetz verlangt es; dann informiert der Auftragsverarbeiter den Verantwortlichen vor der Verarbeitung, soweit das
-            Gesetz es erlaubt.
+            und, abgesehen von den in § 5 beschriebenen Bot-User-Agent-Zeichenketten, nicht an Dritte weitergegeben, es sei denn, ein Gesetz verlangt es; dann informiert der
+            Auftragsverarbeiter den Verantwortlichen vor der Verarbeitung, soweit das Gesetz es erlaubt.
           </p>
         </Clause>
 
@@ -117,6 +117,21 @@ export default function Page() {
           <p>
             Weitere Unterauftragsverarbeiter werden nicht eingesetzt. Insbesondere werden die Daten nicht an Anbieter von E-Mail-, Zahlungs- oder Analysediensten übermittelt;
             Nachrichten an den Verantwortlichen selbst enthalten keine Daten betroffener Personen.
+          </p>
+          <p>
+            <b>Bot-User-Agent-Zeichenketten.</b> Eine Zeile aus einem hochgeladenen Server-Log, deren User-Agent zu keinem Eintrag der veröffentlichten Liste von KI-Agenten
+            passt, zählt zu nichts. Die User-Agent-Zeichenkette selbst wird aufbewahrt, dedupliziert, und soweit sie ein ausdrückliches Bot-Merkmal trägt &mdash; ein
+            Produktname, der auf &bdquo;Bot&ldquo; oder &bdquo;Crawler&ldquo; endet, eine bekannte HTTP-Bibliothek, oder die <code>+https://</code>-Adresse, mit der ein Crawler
+            auf seine eigene Dokumentation zeigt &mdash; an die TypeSafe AI, Inc., Vereinigte Staaten, übermittelt, um als KI-Agent eingeordnet zu werden oder nicht. Es wird
+            nichts mit ihr übermittelt: keine Netzwerkadresse, keine Seite, keine Zeit, keine Site, keine Sitzung und kein Datensatz des Verantwortlichen. Der User-Agent eines
+            Browsers trägt keines dieser Merkmale und wird nie übermittelt.
+          </p>
+          <p>
+            Der Auftragsverarbeiter behandelt das als Verarbeitung zu eigenem Zweck nach Art. 6 Abs. 1 lit. f DSGVO und nicht als Verarbeitung im Auftrag, weil die Zeichenkette
+            Software bezeichnet und keine Person, und weil das Ergebnis allein die veröffentlichte Liste von KI-Agenten verändert &mdash; nie eine Zahl im Dashboard des
+            Verantwortlichen, die sich erst bewegt, nachdem ein Mensch einen Eintrag in diese Liste aufgenommen hat. TypeSafe ist deshalb kein Unterauftragsverarbeiter im Sinne
+            dieses Vertrags. Die Übermittlung in die Vereinigten Staaten stützt sich auf die Standardvertragsklauseln der Europäischen Kommission, die der Vertrag mit TypeSafe
+            einbezieht.
           </p>
           <p>
             <b>Übermittlung an den Auftragsverarbeiter.</b> Der Auftragsverarbeiter ist in den Vereinigten Staaten niedergelassen. Alle Daten dieses Vertrags werden auf dem Server
@@ -199,10 +214,14 @@ export default function Page() {
           <p>
             <b>Server-Log-Zeilen</b>, die der Verantwortliche hochlädt oder per Script sendet: Aus einer Zeile werden Tag, Agentenname und Seitenpfad übernommen. Die Netzwerkadresse
             wird während der Verarbeitung nur genutzt, um Abrufe eines Agenten zu gruppieren und den Agenten gegen die veröffentlichten Adressbereiche seines Anbieters zu prüfen,
-            und mit dem Ende der Anfrage verworfen. Die Logdatei selbst wird nicht gespeichert.
+            und mit dem Ende der Anfrage verworfen. Die Logdatei selbst wird nicht gespeichert. Aus einer Zeile, deren User-Agent zu keinem Eintrag der veröffentlichten Liste
+            passt, wird nichts in irgendeine Zahl übernommen; allein die User-Agent-Zeichenkette wird aufbewahrt, dedupliziert und ohne Bezug zu Site, Seite, Zeit oder Adresse,
+            wie in § 5 beschrieben.
           </p>
           <p>
-            <b>Dauer:</b> Rohdaten {RAW_RETENTION_DAYS} Tage; Tagessummen, Tool-Register und Manifest-Hash bis zum Entfernen der Site. <b>Ort:</b> ein Server in {country}.
+            <b>Dauer:</b> Rohdaten {RAW_RETENTION_DAYS} Tage; Tagessummen, Tool-Register und Manifest-Hash bis zum Entfernen der Site; unplatzierte Bot-User-Agent-Zeichenketten,
+            höchstens 500 und die häufigsten zuerst, ohne Löschfrist, weil die Liste, die sie speisen, gerade der Zweck ihrer Aufbewahrung ist. <b>Ort:</b> ein Server in{" "}
+            {country}.
           </p>
         </section>
 
