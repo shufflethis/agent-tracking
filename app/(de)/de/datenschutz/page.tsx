@@ -96,8 +96,18 @@ export default function Page() {
           der Anfrage verworfen.
         </p>
         <p>
+          Eine Logzeile, deren User-Agent zu keinem Eintrag unserer veröffentlichten Liste passt, wurde bisher verworfen &mdash; so bleibt ein neuer KI-Agent monatelang unsichtbar.
+          Eine solche Zeile zählt weiterhin zu nichts, die <b>User-Agent-Zeichenkette selbst</b> wird aber aufbewahrt, dedupliziert, und einmal pro Nacht werden diejenigen, die
+          ein ausdrückliches Bot-Merkmal tragen &mdash; ein Name, der auf <code>Bot</code> oder <code>Crawler</code> endet, eine HTTP-Bibliothek, oder die <code>+https://</code>-Adresse,
+          mit der ein Crawler auf seine eigene Dokumentation zeigt &mdash; an die TypeSafe AI, Inc. zur Beurteilung übermittelt: Ist das ein KI-Agent, und welcher Art. Der
+          User-Agent eines Browsers trägt keines dieser Merkmale und wird nie übermittelt, und es geht nichts mit der Zeichenkette mit: keine Netzwerkadresse, keine Seite, keine
+          Zeit, keine Site, keine Sitzung. Die Antworten sind <b>Vorschläge für unsere veröffentlichte Liste</b>, die ein Mensch liest und übernimmt oder verwirft; keine Zahl in
+          irgendeinem Dashboard bewegt sich, bevor das geschehen ist. <b>Rechtsgrundlage:</b> Art. 6 Abs. 1 lit. f DSGVO; das berechtigte Interesse ist, neue KI-Agenten überhaupt
+          zu erkennen. TypeSafe gibt an, die übermittelten Inhalte nicht zum Training von Modellen zu verwenden.
+        </p>
+        <p>
           Für diese Datensätze ist der Site-Betreiber Verantwortlicher, wir verarbeiten sie als Auftragsverarbeiter nach seiner Weisung; wir nutzen sie nicht für eigene Zwecke
-          und geben sie an niemanden weiter. Der <Link href="/de/avv">Auftragsverarbeitungsvertrag</Link> regelt das förmlich. Fragen zum Tracking auf einer bestimmten Site gehen
+          und geben sie, abgesehen von den oben beschriebenen Bot-User-Agent-Zeichenketten, an niemanden weiter. Der <Link href="/de/avv">Auftragsverarbeitungsvertrag</Link> regelt das förmlich. Fragen zum Tracking auf einer bestimmten Site gehen
           an deren Betreiber; wir helfen bei der Antwort.
         </p>
 
@@ -136,6 +146,11 @@ export default function Page() {
           </li>
           <li>
             <b>Stripe, Inc.</b>, USA: Zahlung, nur bei bezahlten Plänen, unter dem EU-US Data Privacy Framework und den Standardvertragsklauseln von Stripe.
+          </li>
+          <li>
+            <b>TypeSafe AI, Inc.</b>, USA: beurteilt Bot-User-Agent-Zeichenketten, die zu keinem Eintrag unserer veröffentlichten Liste passen, damit neue KI-Agenten erkannt
+            werden können. Daten über Besucher, Site oder Anfrage gehen dabei nicht mit. Die Übermittlung stützt sich auf die Standardvertragsklauseln der Europäischen
+            Kommission, die der Vertrag mit TypeSafe einbezieht.
           </li>
           <li>
             <b>Der Verantwortliche selbst</b> sitzt in den Vereinigten Staaten. Der administrative Zugang zum Server von dort ist durch Verschlüsselung und Schlüssel geschützt.

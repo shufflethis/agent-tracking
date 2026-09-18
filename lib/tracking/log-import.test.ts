@@ -33,6 +33,30 @@ describe("parseLine", () => {
 });
 
 describe("importLines", () => {
+  /**
+   * The counted numbers must not move when an unknown agent shows up, or every
+   * addition to ai-sources.json would rewrite history. The string is kept
+   * beside them, deduplicated, and only when it looks like a bot at all.
+   */
+  it("tallies bot-shaped strings it cannot place without counting them", () => {
+    const UNKNOWN = "Mozilla/5.0 (compatible; ExampleAI-Bot/1.2; +https://example.ai/bot)";
+    const lines = [
+      line("1.1.1.1", "08/Sep/2026:06:00:00 +0200", "/", GPT),
+      line("3.3.3.3", "08/Sep/2026:06:00:01 +0200", "/", UNKNOWN),
+      line("3.3.3.3", "08/Sep/2026:06:00:02 +0200", "/pricing", UNKNOWN),
+      line("3.3.3.3", "08/Sep/2026:06:00:03 +0200", "/style.css", UNKNOWN),
+      line("3.3.3.3", "08/Sep/2026:06:00:04 +0200", "/gone", UNKNOWN, 404),
+      line("4.4.4.4", "08/Sep/2026:06:00:05 +0200", "/", HUMAN),
+    ];
+    const { fetches, unknown } = importLines(lines);
+
+    assert.deepEqual(fetches.map((f) => f.agent), ["chatgpt-user"]);
+    // Two page GETs, not the asset and not the 404; the browser never appears.
+    assert.equal(unknown.length, 1);
+    assert.equal(unknown[0].ua, UNKNOWN);
+    assert.equal(unknown[0].hits, 2);
+  });
+
   it("keeps successful page GETs by known agents and finds bursts per agent and address", () => {
     const lines = [
       line("1.1.1.1", "08/Sep/2026:06:00:00 +0200", "/", GPT),

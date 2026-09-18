@@ -97,8 +97,17 @@ export default function Page() {
           processed only to group one agent&apos;s fetches and to check the agent against its vendor&apos;s published address ranges, and is discarded when the request ends.
         </p>
         <p>
-          The site owner is the controller for these records and we process them as processor on their instruction; we do not use them for our own purposes and do not pass them to
-          anyone else. The <Link href="/dpa">data processing agreement</Link> sets this out formally. Questions about the tracking on a particular site go to that site&apos;s
+          A log line whose user agent matches no entry on our published list used to be discarded, which is how a new AI agent stays invisible for months. Such a line is now
+          counted towards nothing, but the <b>user agent string itself</b> is kept, deduplicated, and once a night the ones that carry an explicit bot marker &mdash; a name ending
+          in <code>Bot</code> or <code>Crawler</code>, an HTTP library, or the <code>+https://</code> address a crawler uses to point at its own documentation &mdash; are sent to
+          TypeSafe AI, Inc. to be judged: is this an AI agent, and of what kind. A browser&apos;s user agent carries none of those markers and is never sent, and nothing travels
+          with the string: no network address, no page, no time, no site, no session. The answers are <b>suggestions for our published list</b> that a person reads and accepts or
+          ignores; no number in any dashboard moves until somebody does. <b>Legal basis:</b> Art. 6 (1) (f) GDPR; the legitimate interest is recognising new AI agents at all.
+          TypeSafe states that input is not used to train models.
+        </p>
+        <p>
+          The site owner is the controller for these records and we process them as processor on their instruction; we do not use them for our own purposes and, apart from the
+          bot user agent strings described above, do not pass them to anyone else. The <Link href="/dpa">data processing agreement</Link> sets this out formally. Questions about the tracking on a particular site go to that site&apos;s
           owner; we help them answer.
         </p>
 
@@ -139,6 +148,11 @@ export default function Page() {
           </li>
           <li>
             <b>Stripe, Inc.</b>, USA: payment, only for paid plans, under the EU-US Data Privacy Framework and Stripe&apos;s standard contractual clauses.
+          </li>
+          <li>
+            <b>TypeSafe AI, Inc.</b>, USA: judges bot user agent strings that match no entry on our published list, so that new AI agents can be recognised. No data about a
+            visitor, a site or a request goes with them. The transfer rests on the standard contractual clauses of the European Commission, which TypeSafe&apos;s agreement
+            incorporates.
           </li>
           <li>
             <b>The controller itself</b> is in the United States. Administrative access to the server from there is protected by encryption and keys. For customers in the EU

@@ -2,6 +2,7 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 import { emailConfigured, sendMail } from "../lib/email";
 import { fetchRanges, loadRanges, rangesFile } from "../lib/tracking/bot-ranges";
+import { loadStore, markTriaged, pending, saveStore, saveSuggestions, suggestionsFile, triage } from "../lib/tracking/agent-triage";
 import { button, layout, paragraph } from "../lib/email-layout";
 import { fetchScore } from "../lib/tracking/score";
 import { SITE_ORIGIN } from "../lib/site";
@@ -19,6 +20,9 @@ import { planFor } from "../lib/tracking/plans";
  *      the check page. The score comes from the check service over HTTP.
  *   3. Tell Pro and Agency owners when their manifest changed since the last
  *      run, once per change.
+ *   4. Ask about the user agents the log import could not place, and write the
+ *      answers out as suggested entries for ai-sources.json. Suggestions only:
+ *      nothing here is counted, and without TYPESAFE_API_KEY nothing is asked.
  *
  * Crontab line (not installed by this script):
  *   40 7 * * * /bin/bash /root/agent-tracking/scripts/tracking-cron.sh
@@ -27,6 +31,8 @@ import { planFor } from "../lib/tracking/plans";
 
 const say = (msg: string) => console.log(`[${new Date().toISOString()}] ${msg}`);
 const MONTH = 30 * 86_400_000;
+/** A ceiling on a nightly bill that nobody is watching. */
+const TRIAGE_PER_NIGHT = Number(process.env.AGENT_TRIAGE_LIMIT ?? 40);
 
 async function main() {
   const now = Date.now();
@@ -74,6 +80,28 @@ async function main() {
         ledger: { family: "manifest-alert", host: site.domain },
       });
       say(sent.ok ? `manifest alert sent for ${site.domain}` : `MAIL FAILED ${site.domain}: ${sent.reason}`);
+    }
+  }
+
+  // The agents nobody has added to the list yet. Dozens of requests at most,
+  // one per string, deduplicated across every site and every quarter-hourly
+  // import since the last run. See lib/tracking/agent-triage.ts for what does
+  // and does not leave this server.
+  const store = loadStore();
+  const waiting = pending(store, TRIAGE_PER_NIGHT);
+  if (waiting.length === 0) {
+    say(`agent triage: nothing unplaced (${store.agents.length} string(s) on file)`);
+  } else {
+    const outcome = await triage(waiting);
+    if (!outcome) {
+      say(`agent triage: ${waiting.length} string(s) waiting, no TYPESAFE_API_KEY configured`);
+    } else {
+      saveSuggestions(outcome.suggestions);
+      saveStore(markTriaged(store, outcome.suggestions.map((s) => s.ua), now));
+      const proposed = outcome.suggestions.filter((s) => s.propose);
+      say(`agent triage: asked about ${outcome.asked}, ${proposed.length} worth adding to ai-sources.json → ${suggestionsFile()}`);
+      for (const s of proposed) say(`  ${s.kind} p=${s.agentProbability} token=${s.token ?? "?"} hits=${s.hits} ${s.ua.slice(0, 80)}`);
+      for (const f of outcome.failures) say(`  SKIP ${f}`);
     }
   }
 

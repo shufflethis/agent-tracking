@@ -178,6 +178,8 @@ Everything is configured through the environment; see [`.env.example`](.env.exam
 | `LEGAL_NAME`, `LEGAL_ADDRESS`, `LEGAL_EMAIL`, ... | The entity on the imprint, privacy notice, terms and DPA. **These pages are templates. Set your own entity; once `LEGAL_NAME` is set, none of the cloud operator's details are used.** |
 | `CHECK_ORIGIN` | The readiness score beside the numbers, from webmcp-tool.com. Empty disables it. |
 | `LOG_IMPORT_SOURCES` | `path=domain` pairs for server logs on the same machine. |
+| `TYPESAFE_API_KEY` | Enables the nightly triage of unplaced user agents (below). Empty means the tally still builds and nothing is sent. |
+| `AGENT_TRIAGE_LIMIT` | How many unplaced strings one night may ask about. Default 40. |
 | `STRIPE_*` | Only if you sell plans. Absent means every account is Free. |
 
 Plan limits live in [`lib/tracking/plans.ts`](lib/tracking/plans.ts). `deploy/` holds the systemd unit, nginx vhost and crontab the cloud uses.
@@ -214,9 +216,37 @@ server log ──upload or cron──▶ POST /api/logs ──▶ verify against
 - `snippet/agent.src.js`: the tracker. Batches events, sends them with `sendBeacon`, wraps the model context API, watches forms and goals. Built to `public/agent.js`; a test keeps it under 5 KB.
 - `lib/tracking/`: classification, storage (`node:sqlite`, aggregation at write time), the four views, the stats API, log import, crawler IP ranges, digest.
 - `app/api/`: ingest, sign-in by magic link, sites, tokens, logs, stats, export, MCP, billing.
-- `scripts/`: the nightly run (prune, refresh IP ranges, monthly re-score, manifest alerts), log import, weekly digest, encrypted backup.
+- `scripts/`: the nightly run (prune, refresh IP ranges, monthly re-score, manifest alerts, triage of unplaced user agents), log import, weekly digest, encrypted backup.
 
 Classification is server-side and versioned in one file. Missing an agent? Open a pull request against [`lib/tracking/ai-sources.json`](lib/tracking/ai-sources.json) with a link to the vendor's documentation of the user agent or referrer. Contributions welcome; see [CONTRIBUTING.md](CONTRIBUTING.md).
+
+### Finding the agents nobody has added yet
+
+That list only works if somebody notices a new bot, and the log import used to
+drop every user agent it could not place — a vendor could ship a fetcher, hit
+your pages for a month, and the dashboard would report that the web went quiet.
+
+So the import now keeps a tally of the strings it could not place, and the
+nightly run asks a System One model (TypeSafe's Jev) two questions about each:
+whether it is an AI agent at all, and which of the three kinds it is. The
+answers land in `.data/agent-suggestions.json` as **proposed entries** for
+`ai-sources.json`, busiest first, for a person to accept or ignore.
+
+What that costs in privacy is bounded on purpose, and by code rather than by
+intention:
+
+- Only strings carrying an explicit bot marker are eligible — a name ending in
+  `Bot` or `Crawler`, an HTTP library, or the `+https://…` a crawler uses to
+  point at its own documentation. A browser's user agent contains none of these
+  and is never sent. See `botShaped` in [`lib/tracking/agent-triage.ts`](lib/tracking/agent-triage.ts).
+- Deduplicated, so a million fetches are one string, and nothing travels with
+  it: no address, no path, no time, no site, no visitor.
+- Nothing suggested is ever counted. `lib/tracking/bot-ranges.ts` refuses to
+  count a vendor claim it cannot verify against published address ranges, and a
+  probability is a weaker thing than a claim. Only what a person puts into
+  `ai-sources.json` moves a number.
+- Without `TYPESAFE_API_KEY` the tally still builds and nothing is sent, which
+  is how a self-hosted installation runs until somebody decides otherwise.
 
 ## Development
 

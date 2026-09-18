@@ -1,6 +1,7 @@
 import { closeSync, existsSync, fstatSync, mkdirSync, openSync, readFileSync, readSync, statSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 import { AGENT_LABELS } from "../lib/tracking/classify";
+import { loadStore, mergeUnknown, saveStore } from "../lib/tracking/agent-triage";
 import { closeDb, getSite, recordBursts, recordLogFetches, setLogSource } from "../lib/tracking/db";
 import { loadRanges } from "../lib/tracking/bot-ranges";
 import { importLines } from "../lib/tracking/log-import";
@@ -105,7 +106,7 @@ function importOne(FILE: string, DOMAIN: string, state: State) {
   }
 
   const ranges = loadRanges();
-  const { fetches, unverified, bursts, scanned, lastT } = importLines(lines, { ranges });
+  const { fetches, unverified, bursts, scanned, lastT, unknown } = importLines(lines, { ranges });
   recordLogFetches(DOMAIN, fetches, unverified, site.owner);
   recordBursts(DOMAIN, bursts);
   setLogSource(DOMAIN, Date.now(), lastT);
@@ -113,10 +114,15 @@ function importOne(FILE: string, DOMAIN: string, state: State) {
   mkdirSync(dirname(STATE), { recursive: true });
   writeFileSync(STATE, JSON.stringify(state));
 
+  // Kept, not counted. The nightly run asks about these; see
+  // lib/tracking/agent-triage.ts. Nothing here reaches the dashboard.
+  if (unknown.length) saveStore(mergeUnknown(loadStore(), unknown, Date.now()));
+
   const byAgent = new Map<string, number>();
   for (const f of fetches) byAgent.set(f.agent, (byAgent.get(f.agent) ?? 0) + 1);
   const summary = [...byAgent.entries()].map(([id, n]) => `${AGENT_LABELS[id] ?? id} ${n}`).join(", ");
-  say(`${DOMAIN}: ${scanned} line(s) scanned, ${fetches.length} agent fetch(es)${summary ? ` (${summary})` : ""}, ${unverified.length} unverified, ${bursts.length} burst(s)${ranges ? "" : " (no range file yet: nothing verified)"}`);
+  const unplaced = unknown.length ? `, ${unknown.length} unplaced bot string(s)` : "";
+  say(`${DOMAIN}: ${scanned} line(s) scanned, ${fetches.length} agent fetch(es)${summary ? ` (${summary})` : ""}, ${unverified.length} unverified, ${bursts.length} burst(s)${unplaced}${ranges ? "" : " (no range file yet: nothing verified)"}`);
   for (const b of bursts) say(`  burst: ${AGENT_LABELS[b.agent] ?? b.agent} fetched ${b.paths.length} page(s) in ${Math.round(b.ms / 1000)}s starting ${new Date(b.start).toISOString()}`);
 }
 

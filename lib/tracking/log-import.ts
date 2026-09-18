@@ -1,3 +1,4 @@
+import { botShaped } from "./agent-triage";
 import { verifyAgent, type Ranges } from "./bot-ranges";
 import { matchAgent } from "./classify";
 import { dayKey } from "./db";
@@ -69,12 +70,37 @@ export type ImportOptions = {
   since?: number | null;
 };
 
-export type ImportResult = { fetches: LogFetch[]; unverified: LogFetch[]; bursts: Burst[]; scanned: number; skipped: number; lastT: number | null };
+/**
+ * A user agent this import could not place, and how often it appeared.
+ *
+ * Deduplicated here rather than stored line by line: the string is the whole
+ * content, and one fetcher hammering a site is one unanswered question, not ten
+ * thousand. See lib/tracking/agent-triage.ts for what is done with these.
+ */
+export type UnknownAgent = { ua: string; hits: number };
+
+export type ImportResult = {
+  fetches: LogFetch[];
+  unverified: LogFetch[];
+  bursts: Burst[];
+  scanned: number;
+  skipped: number;
+  lastT: number | null;
+  /**
+   * Bot-shaped strings that matched no entry in ai-sources.json.
+   *
+   * Collected, never counted: a line from an unknown agent is not a fetch and
+   * must not become one, or the totals would move every time this list grew.
+   * The dashboard is unaffected by anything in here.
+   */
+  unknown: UnknownAgent[];
+};
 
 export function importLines(lines: Iterable<string>, options: ImportOptions = {}): ImportResult {
   const fetches: LogFetch[] = [];
   const unverified: LogFetch[] = [];
   const perKey = new Map<string, { agent: string; hits: { t: number; path: string }[] }>();
+  const unknown = new Map<string, { ua: string; hits: number }>();
   let scanned = 0;
   let skipped = 0;
   let lastT: number | null = null;
@@ -89,7 +115,17 @@ export function importLines(lines: Iterable<string>, options: ImportOptions = {}
     if (lastT === null || line.t > lastT) lastT = line.t;
     if (line.method !== "GET" || line.status >= 400 || !isPagePath(line.path)) continue;
     const agent = matchAgent(line.ua);
-    if (!agent) continue;
+    if (!agent) {
+      // Same bar as a counted fetch: a successful GET of a page. Anything that
+      // would not have been a fetch is not an unanswered question either.
+      if (botShaped(line.ua)) {
+        const key = line.ua.toLowerCase();
+        const entry = unknown.get(key) ?? { ua: line.ua.trim().slice(0, 512), hits: 0 };
+        entry.hits += 1;
+        unknown.set(key, entry);
+      }
+      continue;
+    }
     const path = cleanPath(line.path);
     if (verifyAgent(agent.id, line.ip, options.ranges ?? null) === false) {
       unverified.push({ day: dayKey(line.t), agent: agent.id, path });
@@ -118,5 +154,5 @@ export function importLines(lines: Iterable<string>, options: ImportOptions = {}
     }
     flush();
   }
-  return { fetches, unverified, bursts, scanned, skipped, lastT };
+  return { fetches, unverified, bursts, scanned, skipped, lastT, unknown: [...unknown.values()].sort((a, b) => b.hits - a.hits) };
 }
