@@ -9,6 +9,7 @@ import { actionStrings, dashCopy, dashLang, numberLocale } from "@/lib/tracking/
 import { PLANS, planFor, priceIdFor } from "@/lib/tracking/plans";
 import { snippetFor } from "@/lib/tracking/snippet";
 import { SITE_ORIGIN } from "@/lib/site";
+import { hasFreshLogSource, logSourceStates } from "@/lib/tracking/db";
 
 // Rendered per request, not at build: the host, the entity on the legal pages and the
 // snippet line come from the environment, and a self-hosted copy must print its own.
@@ -32,6 +33,8 @@ export default async function Page({ params, searchParams }: { params: Promise<{
   const plan = planFor(account.plan);
   const snippet = snippetFor(site.domain);
   const docsHref = lang === "de" ? "/de/docs" : "/docs";
+  const logSources = logSourceStates(site.domain);
+  const logFresh = hasFreshLogSource(site.domain);
   const extras = `${plan.manifestAlerts ? `, ${c.manifestAlerts}` : ""}${plan.whiteLabelBadge ? `, ${c.whiteLabel}` : ""}`;
 
   return (
@@ -139,6 +142,8 @@ export default async function Page({ params, searchParams }: { params: Promise<{
             ) : null}
           </p>
           <LogUpload domain={site.domain} c={a} lang={lang} />
+          {(site.log_since || logSources.length > 0) && <p role="status" style={{ fontSize: 13, color: logFresh ? "var(--muted)" : "var(--warn)" }}>{logFresh ? c.logFresh : c.logStale}</p>}
+          {logSources.length > 0 && <ul style={{ fontSize: 12, color: "var(--muted)" }}>{logSources.slice(0, 8).map((s) => <li key={`${s.sourceId}:${s.generation}`}>{c.logSourceRow(s.sourceId, s.generation, s.records, s.lastImportAt ? new Date(s.lastImportAt).toISOString() : "-")}</li>)}</ul>}
           <pre className="code" style={{ whiteSpace: "pre-wrap", wordBreak: "break-all", marginTop: 14, marginBottom: 10 }}>{logCurl(site.domain, c.logCurlComment)}</pre>
           <p style={{ fontSize: 13, color: "var(--muted)", margin: 0 }}>{c.logProxyNote}</p>
         </div>

@@ -1,26 +1,11 @@
-import { closeSync, existsSync, fstatSync, mkdirSync, openSync, readFileSync, readSync, statSync, writeFileSync } from "node:fs";
-import { dirname } from "node:path";
-import { AGENT_LABELS } from "../lib/tracking/classify";
+import { createHash } from "node:crypto";
+import { closeSync, existsSync, fstatSync, openSync, readFileSync, readSync, statSync, type Stats } from "node:fs";
+import { resolve } from "node:path";
 import { loadStore, mergeUnknown, saveStore } from "../lib/tracking/agent-triage";
-import { closeDb, getSite, recordBursts, recordLogFetches, setLogSource } from "../lib/tracking/db";
 import { loadRanges } from "../lib/tracking/bot-ranges";
-import { importLines } from "../lib/tracking/log-import";
+import { closeDb, getSite, ingestLogSourceBatch, logSourceStates, type SourceRecord } from "../lib/tracking/db";
 
-/**
- * Reads the web server's access log for one site and turns agent lines into
- * fetch counters and bursts. Runs every quarter hour from cron, remembers
- * where it stopped, and survives logrotate: when the file's inode changes,
- * the rest of the rotated file (.1, still uncompressed thanks to
- * delaycompress) is read first, then the new file from the start.
- *
- *   LOG_IMPORT_SOURCES  path=domain pairs, comma separated, for every site whose
- *                       server log this machine can read
- *   LOG_IMPORT_STATE    .data/log-import.json (one cursor per log file)
- *
- * Crontab line (not installed by this script):
- *   every 15 minutes: /bin/bash /root/agent-tracking/scripts/log-import.sh
- */
-
+/** Local nginx/Apache collector; LOG_IMPORT_SOURCES contains path=domain pairs. */
 const SOURCES = (process.env.LOG_IMPORT_SOURCES ?? "")
   .split(",")
   .map((pair) => pair.trim())
@@ -30,115 +15,98 @@ const SOURCES = (process.env.LOG_IMPORT_SOURCES ?? "")
     return at > 0 ? { file: pair.slice(0, at).trim(), domain: pair.slice(at + 1).trim().toLowerCase() } : null;
   })
   .filter((s): s is { file: string; domain: string } => Boolean(s));
-const STATE = process.env.LOG_IMPORT_STATE ?? ".data/log-import.json";
 
 const say = (msg: string) => console.log(`[${new Date().toISOString()}] ${msg}`);
+const sourceId = (file: string) => `local-${createHash("sha256").update(resolve(file)).digest("hex").slice(0, 20)}`;
+const generation = (st: Stats) => `${st.dev.toString(36)}-${st.ino.toString(36)}-${Math.round(st.birthtimeMs).toString(36)}`;
 
-type Cursor = { inode: number; offset: number };
-type State = Record<string, Cursor>;
-
-function readState(): State {
+function legacyCursor(file: string): { inode: number; offset: number } | null {
   try {
-    const parsed = JSON.parse(readFileSync(STATE, "utf8")) as State | Cursor;
-    // The single-file shape from before: a cursor at the top level.
-    if (typeof (parsed as Cursor).inode === "number") return {};
-    return parsed as State;
-  } catch {
-    return {};
-  }
+    const state = JSON.parse(readFileSync(process.env.LOG_IMPORT_STATE ?? ".data/log-import.json", "utf8")) as Record<string, { inode: number; offset: number }>;
+    const cursor = state[file];
+    return Number.isSafeInteger(cursor?.inode) && Number.isSafeInteger(cursor?.offset) ? cursor : null;
+  } catch { return null; }
 }
 
-/** Whole lines from `offset` to the end; returns them and the offset after the last newline. */
-function readLines(path: string, offset: number): { lines: string[]; offset: number; inode: number } {
-  const fd = openSync(path, "r");
+/** Byte offsets identify lines, so duplicate text in the same second counts twice. */
+function readLines(file: string, start: number): { records: SourceRecord[]; nextOffset: number; stat: Stats } {
+  const fd = openSync(file, "r");
   try {
     const st = fstatSync(fd);
-    if (offset > st.size) offset = 0; // truncated in place: start over
-    const length = st.size - offset;
-    const buf = Buffer.alloc(length);
+    if (start > st.size) throw new Error("Log file shrank within one generation; use a new generation");
+    const buf = Buffer.alloc(st.size - start);
     let read = 0;
-    while (read < length) {
-      const n = readSync(fd, buf, read, length - read, offset + read);
-      if (n === 0) break;
+    while (read < buf.length) {
+      const n = readSync(fd, buf, read, buf.length - read, start + read);
+      if (!n) break;
       read += n;
     }
-    const text = buf.subarray(0, read).toString("utf8");
-    const lastNl = text.lastIndexOf("\n");
-    if (lastNl < 0) return { lines: [], offset, inode: st.ino };
-    return { lines: text.slice(0, lastNl).split("\n"), offset: offset + Buffer.byteLength(text.slice(0, lastNl + 1)), inode: st.ino };
-  } finally {
-    closeSync(fd);
-  }
-}
-
-function importOne(FILE: string, DOMAIN: string, state: State) {
-  if (!existsSync(FILE)) {
-    say(`no log at ${FILE}; nothing to do`);
-    return;
-  }
-  const site = getSite(DOMAIN);
-  if (!site) {
-    say(`${DOMAIN} is not a registered site; nothing to do`);
-    return;
-  }
-  const cursor = state[FILE] ?? null;
-  const current = statSync(FILE);
-  const lines: string[] = [];
-  let next: Cursor;
-
-  if (cursor && cursor.inode !== current.ino) {
-    // Rotated since the last run. Finish the old file if it is still there.
-    const rotated = `${FILE}.1`;
-    if (existsSync(rotated) && statSync(rotated).ino === cursor.inode) {
-      const tail = readLines(rotated, cursor.offset);
-      lines.push(...tail.lines);
-      say(`rotated: ${tail.lines.length} line(s) from the previous file`);
-    } else {
-      say("rotated: previous file gone, lines since the last run are lost");
+    const records: SourceRecord[] = [];
+    let from = 0;
+    for (let i = 0; i < read; i++) {
+      if (buf[i] !== 10) continue;
+      records.push({ id: String(start + from), line: buf.subarray(from, i).toString("utf8") });
+      from = i + 1;
     }
-    const fresh = readLines(FILE, 0);
-    lines.push(...fresh.lines);
-    next = { inode: fresh.inode, offset: fresh.offset };
-  } else {
-    const fresh = readLines(FILE, cursor?.offset ?? 0);
-    lines.push(...fresh.lines);
-    next = { inode: fresh.inode, offset: fresh.offset };
-  }
-
-  const ranges = loadRanges();
-  const { fetches, unverified, attempts, bursts, scanned, lastT, unknown } = importLines(lines, { ranges });
-  recordLogFetches(DOMAIN, fetches, unverified, site.owner, Date.now(), attempts);
-  recordBursts(DOMAIN, bursts);
-  setLogSource(DOMAIN, Date.now(), lastT);
-  state[FILE] = next;
-  mkdirSync(dirname(STATE), { recursive: true });
-  writeFileSync(STATE, JSON.stringify(state));
-
-  // Kept, not counted. The nightly run asks about these; see
-  // lib/tracking/agent-triage.ts. Nothing here reaches the dashboard.
-  if (unknown.length) saveStore(mergeUnknown(loadStore(), unknown, Date.now()));
-
-  const byAgent = new Map<string, number>();
-  for (const f of fetches) byAgent.set(f.agent, (byAgent.get(f.agent) ?? 0) + 1);
-  const summary = [...byAgent.entries()].map(([id, n]) => `${AGENT_LABELS[id] ?? id} ${n}`).join(", ");
-  const unplaced = unknown.length ? `, ${unknown.length} unplaced bot string(s)` : "";
-  say(`${DOMAIN}: ${scanned} line(s) scanned, ${fetches.length} agent fetch(es)${summary ? ` (${summary})` : ""}, ${unverified.length} unverified, ${bursts.length} burst(s)${unplaced}${ranges ? "" : " (no range file yet: nothing verified)"}`);
-  for (const b of bursts) say(`  burst: ${AGENT_LABELS[b.agent] ?? b.agent} fetched ${b.paths.length} page(s) in ${Math.round(b.ms / 1000)}s starting ${new Date(b.start).toISOString()}`);
+    return { records, nextOffset: start + from, stat: st };
+  } finally { closeSync(fd); }
 }
 
-function main() {
-  if (SOURCES.length === 0) {
-    say("LOG_IMPORT_SOURCES is empty; nothing to do");
+function importPart(file: string, domain: string, owner: string, id: string, gen: string, offset: number): void {
+  const part = readLines(file, offset);
+  if (!part.records.length) return;
+  if (generation(part.stat) !== gen && !gen.includes("-truncated-")) throw new Error(`Log generation changed while reading ${file}`);
+  const { result, duplicates } = ingestLogSourceBatch(domain, owner, id, gen, part.records, loadRanges(), Date.now(), part.nextOffset);
+  if (result.unknown.length) saveStore(mergeUnknown(loadStore(), result.unknown, Date.now()));
+  say(`${domain}: ${result.scanned} new line(s), ${duplicates} duplicate(s), ${result.fetches.length} confirmed HTML fetch(es), ${result.attempts.length} access attempt(s), ${result.bursts.length} burst(s)`);
+}
+
+function importOne(file: string, domain: string): void {
+  if (!existsSync(file)) { say(`no log at ${file}`); return; }
+  const site = getSite(domain);
+  if (!site) { say(`${domain} is not a registered site`); return; }
+  const id = sourceId(file);
+  const states = logSourceStates(domain).filter((s) => s.sourceId === id);
+  const current = statSync(file);
+  let gen = generation(current);
+  const prior = states[0];
+  if (!prior && site.log_since) {
+    const cursor = legacyCursor(file);
+    if (!cursor) throw new Error(`${domain}: legacy cursor missing; refusing to replay an already counted log`);
+    if (cursor.inode === current.ino) {
+      importPart(file, domain, site.owner, id, gen, cursor.offset);
+      return;
+    }
+    const rotated = `${file}.1`;
+    if (!existsSync(rotated) || statSync(rotated).ino !== cursor.inode) throw new Error(`${domain}: rotated legacy log unavailable; manual cutover needed to avoid double counting`);
+    importPart(rotated, domain, site.owner, id, generation(statSync(rotated)), cursor.offset);
+    importPart(file, domain, site.owner, id, gen, 0);
     return;
   }
-  const state = readState();
-  for (const { file, domain } of SOURCES) importOne(file, domain, state);
-  closeDb();
+  if (prior?.generation.startsWith(`${gen}-truncated-`)) gen = prior.generation;
+  if (prior && prior.generation !== gen && !prior.generation.startsWith(`${generation(current)}-truncated-`)) {
+    const rotated = `${file}.1`;
+    if (existsSync(rotated) && generation(statSync(rotated)) === prior.generation) {
+      importPart(rotated, domain, site.owner, id, prior.generation, prior.nextOffset ?? 0);
+    } else {
+      say(`${domain}: previous log generation unavailable; a collection gap is possible`);
+    }
+  }
+  let offset = states.find((s) => s.generation === gen)?.nextOffset ?? 0;
+  if (offset > current.size) {
+    gen = `${generation(current)}-truncated-${Math.round(current.mtimeMs).toString(36)}`;
+    offset = 0;
+    say(`${domain}: log truncated in place; starting a new generation`);
+  }
+  importPart(file, domain, site.owner, id, gen, offset);
 }
 
 try {
-  main();
+  if (!SOURCES.length) say("LOG_IMPORT_SOURCES is empty");
+  for (const { file, domain } of SOURCES) importOne(file, domain);
+  closeDb();
 } catch (err) {
   say(`FATAL: ${err instanceof Error ? (err.stack ?? err.message) : String(err)}`);
+  closeDb();
   process.exitCode = 1;
 }

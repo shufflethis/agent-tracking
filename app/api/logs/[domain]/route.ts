@@ -4,8 +4,7 @@ import { accountForToken, bearerFrom } from "@/lib/tracking/api-token";
 import { currentAccount } from "@/lib/tracking/auth";
 import { loadRanges } from "@/lib/tracking/bot-ranges";
 import { normalizeDomain } from "@/lib/tracking/classify";
-import { getSite, recordBursts, recordLogFetches, setLogSource } from "@/lib/tracking/db";
-import { importLines } from "@/lib/tracking/log-import";
+import { getSite, ingestLogSourceBatch } from "@/lib/tracking/db";
 import { BodyLimitError, readLimitedBody } from "@/lib/tracking/request-body";
 
 export const runtime = "nodejs";
@@ -15,10 +14,8 @@ export const maxDuration = 60;
  * POST /api/logs/example.com: a server log in, counters out.
  *
  * The body is the access log as text (nginx or Apache "combined"), plain or
- * gzipped, from the dashboard's upload or from a cron on the customer's
- * server with the API token. Whole files may be re-sent: lines at or before
- * the newest line already imported are skipped, so a daily "send the file"
- * needs no bookkeeping on the customer's side.
+ * gzipped, from the dashboard or an authenticated collector. A source,
+ * generation and record position identify each request across retries.
  *
  * What is kept from a line is the day, the agent and the page path. The
  * address is used inside the import to group a burst and to check the agent
@@ -60,17 +57,26 @@ export async function POST(request: Request, { params }: { params: Promise<{ dom
     }
   }
   const text = bytes.toString("utf8");
-  const lines = text.split("\n");
-
-  const result = importLines(lines, { ranges: loadRanges(), since: site.log_last_t });
-  recordLogFetches(site.domain, result.fetches, result.unverified, site.owner, Date.now(), result.attempts);
-  recordBursts(site.domain, result.bursts);
-  setLogSource(site.domain, Date.now(), result.lastT);
+  const lines = text.endsWith("\n") ? text.slice(0, -1).split("\n") : text.split("\n");
+  const source = request.headers.get("x-log-source-id");
+  const generation = request.headers.get("x-log-generation");
+  const startRaw = request.headers.get("x-log-start-record");
+  if ([source, generation, startRaw].some(Boolean) && ![source, generation, startRaw].every(Boolean)) return problem("Provide X-Log-Source-Id, X-Log-Generation and X-Log-Start-Record together.");
+  const start = startRaw === null ? 0 : Number(startRaw);
+  if (!Number.isSafeInteger(start) || start < 0 || start + lines.length > Number.MAX_SAFE_INTEGER) return problem("X-Log-Start-Record must be a non-negative safe integer.");
+  let imported;
+  try {
+    imported = ingestLogSourceBatch(site.domain, site.owner, source ?? "legacy-upload", generation ?? "append-only", lines.map((line, i) => ({ id: String(start + i), line })), loadRanges());
+  } catch (error) {
+    return problem(error instanceof Error ? error.message : "Log import failed.", 409);
+  }
+  const { result, duplicates } = imported;
 
   return Response.json({
     ok: true,
     scanned: result.scanned,
-    skipped: result.skipped,
+    skipped: duplicates,
+    duplicates,
     fetches: result.fetches.length,
     unverified: result.unverified.length,
     attempts: result.attempts.length,

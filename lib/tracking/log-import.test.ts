@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { after, before, describe, it } from "node:test";
-import { closeDb, dailyRows, ensureAccount, addSite, logAttemptPaths, recentBursts, recordBursts, recordEvents, recordLogFetches, setLogSource, getSite, usageThisMonth, verificationAudit } from "./db";
+import { closeDb, dailyRows, ensureAccount, addSite, ingestLogSourceBatch, logAttemptPaths, logSourceStates, recentBursts, recordBursts, recordEvents, recordLogFetches, setLogSource, getSite, usageThisMonth, verificationAudit } from "./db";
 import { BURST_MIN_PAGES, importLines, isPagePath, parseLine } from "./log-import";
 
 const line = (ip: string, time: string, path: string, ua: string, status = 200, method = "GET") =>
@@ -190,5 +190,54 @@ describe("log rows in the store", () => {
     assert.ok(attempts.some((a) => a.resource === "pdf" && a.result === "delivered"));
     assert.equal(dailyRows("attempt.example", 30, NOW).find((r) => r.kind === "ai_fetch_verified")?.count, 1);
     assert.equal(usageThisMonth("attempt@x.com", NOW), 1);
+  });
+  it("uses source positions for idempotence and accepts late lines and equal-time requests", () => {
+    closeDb();
+    ensureAccount("source@x.com", NOW);
+    addSite("source.example", "source@x.com", NOW);
+    const fresh = new Date().toISOString();
+    const ranges = { fetchedAt: fresh, updatedAt: { "openai-chatgpt-user": fresh }, lists: { "openai-chatgpt-user": ["1.1.1.0/24"] } };
+    const recent = line("1.1.1.1", "08/Sep/2026:06:00:10 +0200", "/docs", GPT);
+    const old = line("1.1.1.1", "08/Sep/2026:06:00:00 +0200", "/older", GPT);
+    const first = ingestLogSourceBatch("source.example", "source@x.com", "nginx-a", "inode-1", [{ id: "0", line: recent }, { id: "100", line: recent }], ranges, NOW, 200);
+    assert.equal(first.result.fetches.length, 2, "identical lines at distinct byte positions are distinct requests");
+    const retry = ingestLogSourceBatch("source.example", "source@x.com", "nginx-a", "inode-1", [{ id: "0", line: recent }, { id: "100", line: recent }], ranges, NOW, 200);
+    assert.equal(retry.duplicates, 2);
+    assert.equal(retry.result.fetches.length, 0);
+    ingestLogSourceBatch("source.example", "source@x.com", "nginx-a", "inode-1", [{ id: "200", line: old }], ranges, NOW, 300);
+    ingestLogSourceBatch("source.example", "source@x.com", "nginx-b", "inode-1", [{ id: "0", line: old }], ranges, NOW);
+    ingestLogSourceBatch("source.example", "source@x.com", "nginx-a", "inode-2", [{ id: "0", line: old }], ranges, NOW, 100);
+    assert.equal(dailyRows("source.example", 30, NOW).find((r) => r.kind === "ai_fetch_verified")?.count, 5);
+    assert.equal(usageThisMonth("source@x.com", NOW), 5);
+    assert.equal(logSourceStates("source.example").length, 3);
+    assert.equal(logSourceStates("source.example").find((s) => s.sourceId === "nginx-a" && s.generation === "inode-1")?.nextOffset, 300);
+  });
+  it("rolls back records and counters when an identity is reused with different content", () => {
+    closeDb();
+    ensureAccount("rollback@x.com", NOW);
+    addSite("rollback.example", "rollback@x.com", NOW);
+    const first = line("1.1.1.1", "08/Sep/2026:06:00:00 +0200", "/one", GPT);
+    const other = line("1.1.1.1", "08/Sep/2026:06:00:00 +0200", "/two", GPT);
+    ingestLogSourceBatch("rollback.example", "rollback@x.com", "source", "generation", [{ id: "0", line: first }], null, NOW, 100);
+    assert.throws(() => ingestLogSourceBatch("rollback.example", "rollback@x.com", "source", "generation", [{ id: "100", line: other }, { id: "0", line: other }], null, NOW, 200), /identity reused/);
+    const retry = ingestLogSourceBatch("rollback.example", "rollback@x.com", "source", "generation", [{ id: "100", line: other }], null, NOW, 200);
+    assert.equal(retry.result.unverified.length, 1);
+    assert.equal(logSourceStates("rollback.example")[0].records, 2);
+  });
+  it("cuts over one legacy append-only snapshot without recounting old lines", () => {
+    closeDb();
+    ensureAccount("legacy@x.com", NOW);
+    addSite("legacy.example", "legacy@x.com", NOW);
+    const oldTime = Date.UTC(2026, 8, 8, 4, 0, 0);
+    setLogSource("legacy.example", NOW - 1000, oldTime);
+    const old = line("1.1.1.1", "08/Sep/2026:06:00:00 +0200", "/old", GPT);
+    const newer = line("1.1.1.1", "08/Sep/2026:06:00:01 +0200", "/new", GPT);
+    const ranges = { fetchedAt: new Date().toISOString(), updatedAt: { "openai-chatgpt-user": new Date().toISOString() }, lists: { "openai-chatgpt-user": ["1.1.1.0/24"] } };
+    const first = ingestLogSourceBatch("legacy.example", "legacy@x.com", "legacy-upload", "append-only", [{ id: "0", line: old }, { id: "1", line: newer }], ranges, NOW);
+    assert.equal(first.result.fetches.length, 1);
+    assert.equal(ingestLogSourceBatch("legacy.example", "legacy@x.com", "legacy-upload", "append-only", [{ id: "0", line: old }, { id: "1", line: newer }], ranges, NOW).duplicates, 2);
+    const late = ingestLogSourceBatch("legacy.example", "legacy@x.com", "legacy-upload", "append-only", [{ id: "2", line: old }], ranges, NOW);
+    assert.equal(late.result.fetches.length, 1, "later appended older timestamps count after cutover");
+    assert.equal(dailyRows("legacy.example", 30, NOW).find((r) => r.kind === "ai_fetch_verified")?.count, 2);
   });
 });

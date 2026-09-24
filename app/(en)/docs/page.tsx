@@ -222,7 +222,7 @@ export default function Page() {
         </p>
         <pre className="code">{API_CURL}</pre>
         <p className="dek" style={{ maxWidth: "62ch", marginTop: 18 }}>
-          The same token sends your server log. Whole files are fine, daily from a cron; lines at or before the newest line already imported are skipped, so nothing is counted
+          The same token sends your server log. Append-only full snapshots can be retried; stable source, generation and record headers are required for rotated or overlapping chunks. Previously accepted positions are skipped, so nothing is counted
           twice:
         </p>
         <pre className="code">{LOG_CURL}</pre>

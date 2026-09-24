@@ -1,11 +1,13 @@
 import { mkdirSync } from "node:fs";
+import { createHash } from "node:crypto";
 import { dirname, join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import type { CleanEvent } from "./classify";
 import { MEASUREMENT_VERSION, type BusinessOutcome, type IdentityEvidence, type IdentityStatus, type TechnicalOutcome, type Transport } from "./measurement";
 import { redactPath, safeErrorClass, safeEventName } from "./privacy";
 import { RAW_RETENTION_DAYS, type PlanId } from "./plans";
-import type { LogAttempt } from "./log-import";
+import { importLines, type ImportResult, type LogAttempt } from "./log-import";
+import type { Ranges } from "./bot-ranges";
 
 /**
  * The tracking store.
@@ -198,6 +200,20 @@ function migrate(instance: DatabaseSync): void {
     instance.exec("create index log_attempts_domain_day on log_attempts(domain, day)");
     instance.prepare("insert into schema_migrations (version, applied_at) values (6, ?)").run(Date.now());
   }
+  if ((current.version ?? 0) < 7) {
+    instance.exec(`create table log_records (
+      domain text not null, source_id text not null, generation text not null,
+      record_id text not null, content_hash text not null, imported_at integer not null,
+      primary key (domain, source_id, generation, record_id)
+    )`);
+    instance.exec(`create table log_sources (
+      domain text not null, source_id text not null, generation text not null,
+      records integer not null default 0, last_import_at integer,
+      last_log_at integer, next_offset integer, status text not null default 'active',
+      primary key (domain, source_id, generation)
+    )`);
+    instance.prepare("insert into schema_migrations (version, applied_at) values (7, ?)").run(Date.now());
+  }
   instance.exec("commit");
   } catch (err) {
     instance.exec("rollback");
@@ -371,6 +387,9 @@ export function removeSite(domain: string, owner: string): boolean {
   d.prepare("delete from daily where domain = ?").run(key);
   d.prepare("delete from ingest_health where domain = ?").run(key);
   d.prepare("delete from verification_audit where domain = ?").run(key);
+  d.prepare("delete from log_attempts where domain = ?").run(key);
+  d.prepare("delete from log_records where domain = ?").run(key);
+  d.prepare("delete from log_sources where domain = ?").run(key);
   d.prepare("delete from tools where domain = ?").run(key);
   d.prepare("delete from sites where domain = ?").run(key);
   return true;
@@ -617,7 +636,7 @@ export function recordLogFetches(domain: string, fetches: { day: string; agent: 
     values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
     on conflict(domain, day, agent, path, identity_status, method, status, result, resource, resource_basis)
     do update set count = count + 1`);
-  d.exec("begin");
+  d.exec("savepoint log_fetches_write");
   try {
     for (const a of attempts) {
       logAttempt.run(domain.toLowerCase(), a.day, a.agent, redactPath(a.path), a.evidence.status, a.method, a.status, a.result, a.resource, a.resourceBasis, a.contentType, a.durationMs);
@@ -642,7 +661,72 @@ export function recordLogFetches(domain: string, fetches: { day: string; agent: 
     }
     // A fetch from the log is an agent event like any other for the quota.
     if (owner && acceptedFetches) addUsage(owner, acceptedFetches, now);
+    d.exec("release log_fetches_write");
+  } catch (err) {
+    d.exec("rollback to log_fetches_write");
+    d.exec("release log_fetches_write");
+    throw err;
+  }
+}
+
+export type SourceRecord = { id: string; line: string };
+export type LogSourceState = { sourceId: string; generation: string; records: number; lastImportAt: number | null; lastLogAt: number | null; nextOffset: number | null; status: string };
+
+export function logSourceStates(domain: string): LogSourceState[] {
+  return db().prepare(`select source_id as sourceId, generation, records, last_import_at as lastImportAt,
+    last_log_at as lastLogAt, next_offset as nextOffset, status from log_sources where domain = ? order by last_import_at desc`)
+    .all(domain.toLowerCase()) as LogSourceState[];
+}
+
+export function hasFreshLogSource(domain: string, now = Date.now()): boolean {
+  const row = db().prepare("select max(last_import_at) as lastImportAt from log_sources where domain = ? and records > 0 and status = 'active'")
+    .get(domain.toLowerCase()) as { lastImportAt: number | null };
+  return row.lastImportAt !== null && row.lastImportAt <= now + 300_000 && now - row.lastImportAt <= 36 * 3_600_000;
+}
+
+/** Accept identities and measurements in one write transaction. Time never determines duplicate status. */
+export function ingestLogSourceBatch(domain: string, owner: string, sourceId: string, generation: string, records: SourceRecord[], ranges: Ranges | null, now = Date.now(), nextOffset: number | null = null): { result: ImportResult; duplicates: number } {
+  if (!/^[a-zA-Z0-9._:-]{1,128}$/.test(sourceId) || !/^[a-zA-Z0-9._:-]{1,128}$/.test(generation)) throw new Error("Invalid log source identity");
+  if (records.some((r) => !/^[a-zA-Z0-9._:-]{1,128}$/.test(r.id))) throw new Error("Invalid log record identity");
+  const d = db();
+  const lookup = d.prepare("select content_hash as contentHash from log_records where domain = ? and source_id = ? and generation = ? and record_id = ?");
+  const insert = d.prepare("insert into log_records (domain, source_id, generation, record_id, content_hash, imported_at) values (?, ?, ?, ?, ?, ?)");
+  d.exec("begin immediate");
+  try {
+    // One-time cutover for an append-only legacy upload: record positional
+    // receipts for the whole snapshot, but do not recount pre-migration lines.
+    // Subsequent uploads use record identity only, including late old times.
+    const cutover = sourceId === "legacy-upload" && generation === "append-only" &&
+      !d.prepare("select 1 from log_sources where domain = ? and source_id = ? and generation = ?")
+        .get(domain.toLowerCase(), sourceId, generation)
+      ? (d.prepare("select log_last_t as lastT from sites where domain = ?").get(domain.toLowerCase()) as { lastT: number | null } | undefined)?.lastT ?? null
+      : null;
+    const accepted: string[] = [];
+    let duplicates = 0;
+    for (const r of records) {
+      const digest = createHash("sha256").update(r.line).digest("hex");
+      const existing = lookup.get(domain.toLowerCase(), sourceId, generation, r.id) as { contentHash: string } | undefined;
+      if (existing) {
+        if (existing.contentHash !== digest) throw new Error("Log record identity reused with different content; use a new generation for rotated or replaced files");
+        duplicates++;
+        continue;
+      }
+      insert.run(domain.toLowerCase(), sourceId, generation, r.id, digest, now);
+      accepted.push(r.line);
+    }
+    const result = importLines(accepted, { ranges, since: cutover });
+    recordLogFetches(domain, result.fetches, result.unverified, owner, now, result.attempts);
+    recordBursts(domain, result.bursts);
+    d.prepare(`insert into log_sources (domain, source_id, generation, records, last_import_at, last_log_at, next_offset, status)
+      values (?, ?, ?, ?, ?, ?, ?, 'active') on conflict(domain, source_id, generation)
+      do update set records = records + excluded.records,
+      last_import_at = case when excluded.records > 0 then excluded.last_import_at else log_sources.last_import_at end,
+      last_log_at = max(coalesce(last_log_at, 0), coalesce(excluded.last_log_at, 0)),
+      next_offset = coalesce(excluded.next_offset, next_offset), status = 'active'`)
+      .run(domain.toLowerCase(), sourceId, generation, accepted.length, now, result.lastT, nextOffset);
+    if (result.fetches.length) setLogSource(domain, now, result.lastT);
     d.exec("commit");
+    return { result, duplicates };
   } catch (err) {
     d.exec("rollback");
     throw err;
@@ -679,16 +763,17 @@ export function recordBursts(domain: string, bursts: { agent: string; start: num
     "insert into daily (domain, day, kind, name, count, errors, ms_total) values (?, ?, 'burst', ?, 1, 0, ?) on conflict(domain, day, kind, name) do update set count = count + 1, ms_total = ms_total + excluded.ms_total",
   );
   const insert = d.prepare("insert into events (domain, t, kind, name, path, source, session, ms, ok, err, keys, declarative, simulated) values (?, ?, 'fetch_burst', ?, ?, ?, 'log', ?, null, null, ?, 0, 0)");
-  d.exec("begin");
+  d.exec("savepoint log_bursts_write");
   try {
     for (const b of bursts) {
       const paths = b.paths.map((path) => redactPath(path));
       bump.run(domain.toLowerCase(), dayKey(b.start), `agent:${b.agent}`, paths.length);
       insert.run(domain.toLowerCase(), b.start, b.agent, paths[0] ?? "/", `agent:${b.agent}`, b.ms, JSON.stringify(paths));
     }
-    d.exec("commit");
+    d.exec("release log_bursts_write");
   } catch (err) {
-    d.exec("rollback");
+    d.exec("rollback to log_bursts_write");
+    d.exec("release log_bursts_write");
     throw err;
   }
 }

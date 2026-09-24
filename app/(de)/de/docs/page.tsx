@@ -230,8 +230,7 @@ export default function Page() {
         </p>
         <pre className="code">{API_CURL}</pre>
         <p className="dek" style={{ maxWidth: "62ch", marginTop: 18 }}>
-          Dasselbe Token schickt dein Server-Log. Ganze Dateien sind in Ordnung, täglich aus einem Cron; Zeilen bis zur neuesten bereits importierten werden übersprungen, nichts wird
-          doppelt gezählt:
+          Dasselbe Token schickt dein Server-Log. Vollständige Append-only-Dateien kannst du erneut senden. Für Rotation oder überlappende Chunks brauchst du stabile Header für Quelle, Dateigeneration und Datensatzposition. Bereits angenommene Positionen werden übersprungen:
         </p>
         <pre className="code">{LOG_CURL}</pre>
         <p className="dek" style={{ maxWidth: "62ch", marginTop: 18 }}>

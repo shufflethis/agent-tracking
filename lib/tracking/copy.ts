@@ -165,10 +165,13 @@ const en = {
       `Read these numbers from your own scripts and agents. One token per account, for all its sites, read-only, daily totals only. With it, GET ${SITE_ORIGIN}/api/stats/${domain}?days=30 returns what this dashboard shows as JSON, and the get_agent_stats tool on our MCP server answers the same question in Claude, ChatGPT or Cursor. Examples are on the`,
     logTitle: "Server log",
     logText:
-      "Crawlers that never run JavaScript (GPTBot, ClaudeBot, PerplexityBot) are only in your server log. Upload it here, or let a cron on your server send it daily with the API token. nginx or Apache combined format, plain or gzipped, whole files are fine: lines older than the newest line already imported are skipped. From a line we keep the day, the agent and the page path; the address is used to group bursts and to check the agent against its vendor's published ranges, then dropped.",
+      "Crawlers that never run JavaScript (GPTBot, ClaudeBot, PerplexityBot) are only in your server log. Upload an append-only full log here, or use a collector with stable source, generation and record positions. Repeated lines at the same positions are skipped; later lines count regardless of their timestamps. A rotated or reordered upload needs source metadata. The address is used to group bursts and check published vendor ranges, then dropped.",
     logFedSince: (date: string) => `Log-fed since ${date}`,
+    logFresh: "A log source imported records recently. Coverage can still have gaps; browser and log requests have no shared ID.",
+    logStale: "No log source has imported records in the last 36 hours. Browser fetch observations resume; log coverage is incomplete.",
+    logSourceRow: (source: string, generation: string, count: number, date: string) => `${source} / ${generation}: ${count} records, last import ${date}`,
     newestLine: (when: string) => `, newest line ${when} UTC`,
-    logCurlComment: "# daily, from your server: sends the whole file, we skip what we have",
+    logCurlComment: "# append-only full snapshot; rotated/chunked files need source headers",
     logProxyNote: "Behind a CDN or proxy, make sure the log carries the visitor address (real_ip), or every crawler shows as unverified.",
     digestTitle: "Weekly digest, language and your data",
     digestText: (on: boolean) =>
@@ -377,10 +380,13 @@ const de: DashCopy = {
       `Lesen Sie diese Zahlen aus Ihren eigenen Scripts und Agenten. Ein Token pro Konto, für alle seine Sites, nur lesend, nur Tagessummen. Damit liefert GET ${SITE_ORIGIN}/api/stats/${domain}?days=30 als JSON, was dieses Dashboard zeigt, und das Tool get_agent_stats auf unserem MCP-Server beantwortet dieselbe Frage in Claude, ChatGPT oder Cursor. Beispiele stehen auf der`,
     logTitle: "Server-Log",
     logText:
-      "Crawler ohne JavaScript (GPTBot, ClaudeBot, PerplexityBot) stehen nur in Ihrem Server-Log. Laden Sie es hier hoch oder lassen Sie es einen Cron auf Ihrem Server täglich mit dem API-Token schicken. nginx- oder Apache-Format combined, roh oder gezippt, ganze Dateien sind in Ordnung: Zeilen, die älter sind als die neueste bereits importierte, werden übersprungen. Aus einer Zeile behalten wir Tag, Agent und Seitenpfad; die Adresse dient dem Gruppieren von Bursts und der Prüfung gegen die veröffentlichten Bereiche des Anbieters und wird dann verworfen.",
+      "Crawler ohne JavaScript (GPTBot, ClaudeBot, PerplexityBot) stehen nur im Server-Log. Laden Sie hier ein vollständiges, nur angehängtes Log hoch oder nutzen Sie einen Collector mit stabiler Quell-, Datei- und Datensatzidentität. Wiederholte Positionen werden übersprungen; spätere Zeilen zählen unabhängig vom Zeitstempel. Für rotierte oder überlappende Chunks sind Quellmetadaten nötig. Die Adresse dient zum Gruppieren von Bursts und zur Prüfung gegen Anbieter-IP-Bereiche und wird dann verworfen.",
     logFedSince: (date) => `Log-gespeist seit ${date}`,
+    logFresh: "Eine Logquelle hat kürzlich Datensätze importiert. Lücken bleiben möglich; Browser und Log haben keine gemeinsame Request-ID.",
+    logStale: "Seit 36 Stunden hat keine Logquelle Datensätze importiert. Browser-Abrufe werden wieder erfasst; die Logabdeckung ist unvollständig.",
+    logSourceRow: (source, generation, count, date) => `${source} / ${generation}: ${count} Datensätze, letzter Import ${date}`,
     newestLine: (when) => `, neueste Zeile ${when} UTC`,
-    logCurlComment: "# täglich von Ihrem Server: schickt die ganze Datei, wir überspringen Bekanntes",
+    logCurlComment: "# vollständiger Append-only-Snapshot; Rotation/Chunks benötigen Quellheader",
     logProxyNote: "Hinter einem CDN oder Proxy muss das Log die Besucheradresse tragen (real_ip), sonst erscheint jeder Crawler als unverifiziert.",
     digestTitle: "Wochenbericht, Sprache und Ihre Daten",
     digestText: (on) =>

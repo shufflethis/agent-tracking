@@ -141,7 +141,7 @@ The comparison names categories, not vendors, because products change. Check any
 </form>
 ```
 
-**Crawlers that do not run JavaScript** (most of them) come from your server log: upload it on the settings page, or let a cron send it daily with the API token. Whole files are fine; lines already imported are skipped.
+**Crawlers that do not run JavaScript** (most of them) come from your server log: upload an append-only full snapshot on the settings page, or use a collector with stable source, generation and record positions. Retried positions are skipped; late requests still count. Rotated or overlapping chunks require source metadata (see [log collector](docs/log-collector.md)).
 
 ```sh
 curl -sS -X POST https://agenttracking.co/api/logs/example.com \

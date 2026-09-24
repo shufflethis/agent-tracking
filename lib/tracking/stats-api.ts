@@ -1,5 +1,5 @@
 import { SOURCES_VERSION } from "./classify";
-import { getSite, ingestHealth, verificationAudit, type Account } from "./db";
+import { getSite, hasFreshLogSource, ingestHealth, logAttemptSummary, logSourceStates, verificationAudit, type Account } from "./db";
 import { activitySignals, interactions, loadDashboard } from "./dashboard";
 import { planFor } from "./plans";
 import { REPORTING_DEFINITIONS, reportingTotals } from "./reporting";
@@ -31,6 +31,9 @@ export function statsFor(domain: string, account: Account, days: number, now = D
     verified: Boolean(site.verified_at),
     reportingDefinitions: REPORTING_DEFINITIONS,
     ingestHealth: ingestHealth(site.domain, days, now).map((r) => ({ ...r, lastAt: new Date(r.lastAt).toISOString() })),
+    logSources: logSourceStates(site.domain).map((s) => ({ ...s, lastImportAt: s.lastImportAt ? new Date(s.lastImportAt).toISOString() : null, lastLogAt: s.lastLogAt ? new Date(s.lastLogAt).toISOString() : null })),
+    logSourceFresh: hasFreshLogSource(site.domain, now),
+    logAttempts: logAttemptSummary(site.domain, days, now),
     verificationAudit: verificationAudit(site.domain, days, now).map((r) => ({ ...r, lastCheckedAt: new Date(r.lastCheckedAt).toISOString() })),
     check: site.last_score === null ? null : { score: site.last_score, grade: site.last_grade, scannedAt: site.last_scanned_at ? new Date(site.last_scanned_at).toISOString() : null },
     totals: { ...dash.overview.totals, ...reportingTotals(dash.overview.totals), interactions: interactions(dash.overview), activitySignals: activitySignals(dash.overview) },

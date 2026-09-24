@@ -1,5 +1,5 @@
 import { matchAgent, matchReferral, sameSite, sanitizeBatch, sessionHash, type CleanEvent } from "@/lib/tracking/classify";
-import { getAccount, getSite, noteIngestOutcome, noteManifest, recordEvents, UNATTRIBUTED_INGEST, type StoredEvent } from "@/lib/tracking/db";
+import { getAccount, getSite, hasFreshLogSource, noteIngestOutcome, noteManifest, recordEvents, UNATTRIBUTED_INGEST, type StoredEvent } from "@/lib/tracking/db";
 import { planFor } from "@/lib/tracking/plans";
 import { dailySalt } from "@/lib/tracking/salt";
 import { clientIp, take } from "@/lib/ratelimit";
@@ -108,7 +108,7 @@ export async function POST(request: Request) {
     stored.push(toStored(e, agent?.id ?? null, agentEvidence, referral, session));
   }
   try {
-    const result = recordEvents(site.domain, site.owner, stored, now, { fetchesFromLog: Boolean(site.log_since), quota: plan.eventsPerMonth });
+    const result = recordEvents(site.domain, site.owner, stored, now, { fetchesFromLog: hasFreshLogSource(site.domain, now), quota: plan.eventsPerMonth });
     if (result.quotaDropped) noteIngestOutcome(site.domain, "quota_reached", now);
     noteIngestOutcome(site.domain, "accepted_batch", now);
   } catch (err) {
