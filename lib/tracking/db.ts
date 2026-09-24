@@ -214,6 +214,28 @@ function migrate(instance: DatabaseSync): void {
     )`);
     instance.prepare("insert into schema_migrations (version, applied_at) values (7, ?)").run(Date.now());
   }
+  if ((current.version ?? 0) < 8) {
+    instance.exec(`create table tool_session_receipts (
+      domain text not null, day text not null, session text not null,
+      primary key (domain, day, session)
+    )`);
+    const receipt = instance.prepare("insert or ignore into tool_session_receipts (domain, day, session) values (?, ?, ?)");
+    const bump = instance.prepare(`insert into daily (domain, day, kind, name, count)
+      values (?, ?, 'tool_session_estimate', 'all', 1)
+      on conflict(domain, day, kind, name) do update set count = count + 1`);
+    const batch = instance.prepare("select id, domain, t, session from events where kind = 'tool_call' and simulated = 0 and session is not null and id > ? order by id limit 1000");
+    let lastId = 0;
+    for (;;) {
+      const rows = batch.all(lastId) as { id: number; domain: string; t: number; session: string }[];
+      if (!rows.length) break;
+      for (const row of rows) {
+        const day = dayKey(row.t);
+        if (Number(receipt.run(row.domain, day, row.session).changes)) bump.run(row.domain, day);
+      }
+      lastId = rows[rows.length - 1].id;
+    }
+    instance.prepare("insert into schema_migrations (version, applied_at) values (8, ?)").run(Date.now());
+  }
   instance.exec("commit");
   } catch (err) {
     instance.exec("rollback");
@@ -387,6 +409,7 @@ export function removeSite(domain: string, owner: string): boolean {
   d.prepare("delete from daily where domain = ?").run(key);
   d.prepare("delete from ingest_health where domain = ?").run(key);
   d.prepare("delete from verification_audit where domain = ?").run(key);
+  d.prepare("delete from tool_session_receipts where domain = ?").run(key);
   d.prepare("delete from log_attempts where domain = ?").run(key);
   d.prepare("delete from log_records where domain = ?").run(key);
   d.prepare("delete from log_sources where domain = ?").run(key);
@@ -504,6 +527,7 @@ export function recordEvents(domain: string, owner: string, events: StoredEvent[
   );
   const discoveredTool = d.prepare("insert into tools (domain, name, schema_hash, first_seen, last_seen, active, capture_mode) values (?, ?, ?, ?, ?, 1, 'discovered') on conflict(domain, name) do update set schema_hash = coalesce(excluded.schema_hash, schema_hash), last_seen = excluded.last_seen, active = 1, capture_mode = case when tools.capture_mode = 'wrapped' then 'wrapped' else 'discovered' end");
   const removedTool = d.prepare("update tools set active = 0, last_seen = ? where domain = ? and name = ?");
+  const sessionReceipt = d.prepare("insert or ignore into tool_session_receipts (domain, day, session) values (?, ?, ?)");
 
   d.exec("begin");
   try {
@@ -566,6 +590,7 @@ export function recordEvents(domain: string, owner: string, events: StoredEvent[
         }
       } else if (e.kind === "tool_call") {
         bump.run(domain, day, e.simulated ? "tool_call_sim" : "tool_call", name ?? "?", errors, msTotal);
+        if (!e.simulated && e.session && Number(sessionReceipt.run(domain, day, e.session).changes)) bump.run(domain, day, "tool_session_estimate", "all", 0, 0);
         if (!e.simulated) {
           const state = e.technicalOutcome ?? (e.ok === true ? "completed" : e.ok === false ? "failed" : "unknown");
           bump.run(domain, day, `tool_${state}`, name ?? "?", 0, 0);
@@ -616,6 +641,7 @@ export function pruneRaw(now = Date.now()): number {
   const cutoff = now - RAW_RETENTION_DAYS * 86_400_000;
   const d = db();
   d.prepare("delete from event_receipts where received_at < ?").run(cutoff);
+  d.prepare("delete from tool_session_receipts where day < ?").run(dayKey(cutoff));
   const result = d.prepare("delete from events where t < ?").run(cutoff);
   return Number(result.changes);
 }
@@ -804,18 +830,10 @@ export function recentEvents(domain: string, limit = 50): RecentRow[] {
   return db().prepare("select t, kind, name, path, source, ms, ok, err, keys, declarative, simulated from events where domain = ? order by t desc limit ?").all(domain.toLowerCase(), limit) as RecentRow[];
 }
 
-/** Distinct sessions that called a tool, per day, for the overview's "agents" line. */
+/** Daily estimates persist after raw event and temporary receipt expiry. */
 export function sessionsPerDay(domain: string, days: number, now = Date.now()): { day: string; sessions: number }[] {
-  const from = now - days * 86_400_000;
-  const rows = db()
-    .prepare("select t, session from events where domain = ? and t >= ? and kind = 'tool_call' and simulated = 0")
-    .all(domain.toLowerCase(), from) as { t: number; session: string }[];
-  const perDay = new Map<string, Set<string>>();
-  for (const r of rows) {
-    const day = dayKey(r.t);
-    const set = perDay.get(day) ?? new Set<string>();
-    set.add(r.session);
-    perDay.set(day, set);
-  }
-  return [...perDay.entries()].sort((a, b) => a[0].localeCompare(b[0])).map(([day, set]) => ({ day, sessions: set.size }));
+  const from = dayKey(now - (days - 1) * 86_400_000);
+  const rows = db().prepare("select day, count as sessions from daily where domain = ? and day >= ? and kind = 'tool_session_estimate' and name = 'all' order by day")
+    .all(domain.toLowerCase(), from) as { day: string; sessions: number }[];
+  return rows.map((row) => ({ day: row.day, sessions: row.sessions }));
 }

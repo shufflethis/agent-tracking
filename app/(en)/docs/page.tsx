@@ -122,7 +122,7 @@ export default function Page() {
           <span className="tag">What this cannot see</span>
           <p style={{ marginBottom: 0 }}>
             A crawler that does not run JavaScript never executes the snippet. GPTBot, ClaudeBot and their kind mostly fetch raw HTML, so they appear here only when they render the page.
-            Counting them needs the server log. For {SITE_HOST} itself that import runs every quarter hour and feeds the same dashboard, including fetch bursts (one agent, several pages, a few seconds: what a query fan-out looks like from your side). For your site, upload the log on the settings page or let a cron send it daily with the API token; nginx or Apache combined format, plain or gzipped, whole files are fine. Where the vendor publishes address ranges (OpenAI, Perplexity, Microsoft, Google, Apple) each line is checked against them, and a claimed agent from elsewhere is shown as unverified rather than counted.
+            Counting them needs the server log. For {SITE_HOST} itself the collector runs every quarter hour. A fetch burst means at least three distinct relevant paths close together in one import batch; it does not reveal a question or intent. For your site, upload an append-only full log on the settings page or use a collector with stable record identities. Where a vendor publishes address ranges, a claimed agent is checked against them. Missing or stale range data and mismatches stay separate from confirmed counts.
           </p>
         </div>
       </section>

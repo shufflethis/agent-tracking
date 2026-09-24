@@ -17,7 +17,8 @@ Stand: 2026-09-25. Arbeitsgrundlage: `IMPLEMENTATION-PROMPT.md`.
 | F09 | erledigt | Google-/Apple-Richtlinientokens separat; generische Such-/Unternehmensquellen entfernt; UA-Grenzen, Pfad- und exakte UTM-Regeln, URL-Redaktion sowie Negativtests. `docs/source-classification.md`; Typecheck und 90 Tests bestanden. | F10 beginnen. |
 | F10 | erledigt | Log-Versuche nach Methode, HTTP-Ergebnis, Status, Ressourcenvermutung und Identitätsstand in Migration v6 aggregiert; UI zeigt sie separat. Nur 2xx-HTML-GET bleibt bestätigter Fetch. PDF/API/Discovery, 301/403/429/500, null Content-Type/Timing getestet; 92 Tests und Typecheck bestanden. | F11 beginnen. |
 | F11 | erledigt | Migration v7: Site-/Quellen-/Generations-/Positionsbelege, atomarer Import mit Zählern/Bursts/SQLite-Cursor; lokaler Collector mit Rotation und altem JSON-Cursor; Upload als Append-only-Vollsnapshot oder mit Quellheadern. Browser-Fallback bei >36h ohne neue Datensätze; Lücken und fehlende Quellendopplung dokumentiert. Tests für gleiche Zeile/Zeit, späte Zeilen, zwei Quellen, Rotation, Retry, Rollback, Legacy-Cutover; 96 Tests und Typecheck. | F12 beginnen. |
-| F12–F22 | offen | Noch nicht implementiert. | Der Reihenfolge im Umsetzungsauftrag folgen. |
+| F12 | erledigt | Burst erst ab drei verschiedenen relevanten HTML-Pfaden; Batchgrenze und fehlender Absichtsnachweis dokumentiert. Migration v8 backfillt tägliche Tool-Session-Näherungen aus noch vorhandenen Rohdaten; Tagesaggregate überstehen 90-Tage-Löschung. Hash-Kollisionsgrenzen in UI/Doku. 98 Tests und Typecheck. | F13 beginnen. |
+| F13–F22 | offen | Noch nicht implementiert. | Der Reihenfolge im Umsetzungsauftrag folgen. |
 
 ## Entscheidungen
 

@@ -206,6 +206,17 @@ describe("db", () => {
     assert.equal(recentEvents("example.com").length, 0);
     assert.ok(dailyRows("example.com", 30, NOW).length > 0);
   });
+  it("keeps daily session estimates after raw tool calls expire", () => {
+    const old = Date.UTC(2026, 4, 1, 12);
+    const site = addSite("sessions.example", "a@x.com", old);
+    assert.ok(site);
+    const call = { kind: "tool_call", name: "search", path: "/", source: null, session: "daily-hash", ms: 12, ok: true, err: null, keys: [], declarative: false, simulated: false };
+    recordEvents(site.domain, site.owner, [call, call], old);
+    assert.equal(sessionsPerDay(site.domain, 365, NOW).find((s) => s.day === "2026-05-01")?.sessions, 1);
+    pruneRaw(NOW);
+    assert.equal(recentEvents(site.domain).length, 0);
+    assert.equal(sessionsPerDay(site.domain, 365, NOW).find((s) => s.day === "2026-05-01")?.sessions, 1);
+  });
 
   it("removes a site with everything under it, owner only", () => {
     assert.equal(removeSite("example.com", "b@x.com"), false);

@@ -110,6 +110,16 @@ describe("importLines", () => {
     assert.equal(bursts[0].ms, 3000);
     assert.ok(bursts[0].paths.length >= BURST_MIN_PAGES);
   });
+  it("requires three distinct relevant pages for a multi-page burst", () => {
+    const at = ["06:00:00", "06:00:01", "06:00:02", "06:00:03"].map((clock) => `08/Sep/2026:${clock} +0200`);
+    const ranges = { fetchedAt: new Date().toISOString(), updatedAt: { "openai-chatgpt-user": new Date().toISOString() }, lists: { "openai-chatgpt-user": ["1.1.1.0/24"] } };
+    const repeated = importLines(at.slice(0, 3).map((time) => line("1.1.1.1", time, "/same", GPT)), { ranges });
+    assert.equal(repeated.fetches.length, 3);
+    assert.equal(repeated.bursts.length, 0);
+    const distinct = importLines(["/one", "/two", "/three"].map((path, i) => line("1.1.1.1", at[i], path, GPT)), { ranges });
+    assert.equal(distinct.bursts.length, 1);
+    assert.deepEqual(distinct.bursts[0].paths, ["/one", "/two", "/three"]);
+  });
   it("skips lines already imported and sets apart claimed agents from outside the published ranges", () => {
     const ranges = { fetchedAt: new Date().toISOString(), updatedAt: { "openai-chatgpt-user": new Date().toISOString() }, lists: { "openai-chatgpt-user": ["1.1.1.0/24"] } };
     const lines = [

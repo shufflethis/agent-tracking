@@ -1,0 +1,5 @@
+# Bursts and daily session estimates
+
+A multi-page fetch burst requires at least three **distinct** relevant HTML paths from the same claimed, IP-verified agent and source address, with no gap over 30 seconds inside one imported batch. Repeated requests to one path do not qualify. Burst grouping is currently limited to one import batch: a burst crossing chunk or rotation boundaries can be missed or split. The importer discards the address after the batch; it stores neither a question nor an inferred intent.
+
+The dashboard's daily tool-session estimate comes from a daily salted hash of address and coarse browser class. Multiple people behind one address with the same class can merge; one person using different addresses or classes can split. It is not a count of people or agents. A distinct session is counted only when it calls a tool. Short-lived distinct receipts prevent double counting within a day; daily aggregate counts persist after raw events and receipts are pruned at 90 days. Migration v8 backfills the aggregate from still-retained legacy raw tool calls. Older raw rows that were already deleted cannot be recovered.

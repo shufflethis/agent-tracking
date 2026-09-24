@@ -186,8 +186,8 @@ export function importLines(lines: Iterable<string>, options: ImportOptions = {}
     hits.sort((a, b) => a.t - b.t);
     let run: { t: number; path: string }[] = [];
     const flush = () => {
-      if (run.length >= BURST_MIN_PAGES) {
-        const paths = [...new Set(run.map((h) => h.path))].slice(0, 24);
+      const paths = [...new Set(run.map((h) => h.path))].slice(0, 24);
+      if (paths.length >= BURST_MIN_PAGES) {
         bursts.push({ agent, start: run[0].t, ms: run[run.length - 1].t - run[0].t, paths });
       }
       run = [];

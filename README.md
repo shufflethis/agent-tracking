@@ -48,7 +48,7 @@ and get four views: **Overview**, **Agents**, **Tools**, **Pages**. Plus the sam
 | Layer | What is measured | Where it comes from |
 | --- | --- | --- |
 | **AI referrals** | A person arrives from chatgpt.com, perplexity.ai, claude.ai, copilot.microsoft.com, gemini.google.com and a dozen more; which assistant, which landing page, how the share moves week over week | Referrer and `utm_source`, matched against a [published, versioned list](lib/tracking/ai-sources.json) |
-| **AI fetches** | GPTBot, ClaudeBot, PerplexityBot, OAI-SearchBot, Google-Extended, Applebot-Extended, Bytespider, CCBot and the rest: who reads what, how often, with a trend | The snippet for agents that run JavaScript; your **server log** for the ones that do not, each line **verified against the vendor's published IP ranges**, and grouped into **fetch bursts** (one agent, many pages, a few seconds: what a query fan-out looks like from your side) |
+| **Agent fetch observations** | Named crawler or fetcher requests, their paths and HTTP outcomes | Browser beacons and server logs. Only claims with a fresh matching published IP range enter the confirmed fetch count; other claims remain separate. A burst is three distinct pages in one import batch, not a known question. |
 | **Tool calls** | Every MCP and WebMCP tool on your site: calls, duration, success rate, error classes, argument key names, the tools nobody ever calls, and the moment a tool call reaches a goal you marked | The snippet wraps `navigator.modelContext` and `document.modelContext` and watches declarative `<form toolname>` elements. Nothing to change in your code |
 | **Conversions** | Whether agents complete the thing the site is for: a booking, an order, a signup | `data-agent-goal` on any element, or a tool call marked as a goal |
 | **Manifest** | Your `/.well-known/webmcp` manifest, hashed once per visit, so you notice when it changes | The snippet; Pro accounts get an email |
@@ -123,7 +123,7 @@ The comparison names categories, not vendors, because products change. Check any
 ### The concrete value
 
 - **Know who sends you business.** "Perplexity referred 40 visitors this week, ChatGPT 12, and they land on the pricing page." That is a channel you can now optimise, and a number you can show to whoever asks whether AI matters for your site.
-- **Know who reads you and what they take.** GPTBot fetching 400 pages a night is training. ChatGPT-User fetching 3 pages in 4 seconds is a person asking a question about you right now. The Agents view tells them apart; the bursts tell you which question.
+- **See agent request patterns.** A verified GPTBot request shows a fetched resource, not how it was used. A ChatGPT-User burst shows nearby requests to distinct pages, not the user's question or intent.
 - **Know whether your tools work for agents.** You published MCP or WebMCP tools. Are they called? Do they fail? Which error? How long do they take? Which ones has no agent ever touched? The Tools view is the only place this exists.
 - **Know whether agents finish.** A tool call is not a sale. Mark the goal and see the conversion rate of agents, separately from people.
 - **Monitor machine behaviour on your site.** Verified fetches, unverified impostors claiming to be a known bot, bursts, manifest changes: the operational picture of what non-humans do to your site, every day, in one place.

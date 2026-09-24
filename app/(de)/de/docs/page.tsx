@@ -125,10 +125,7 @@ export default function Page() {
           <span className="tag">Was das nicht sehen kann</span>
           <p style={{ marginBottom: 0 }}>
             Ein Crawler ohne JavaScript führt das Snippet nie aus. GPTBot, ClaudeBot und ihresgleichen holen meist rohes HTML und erscheinen hier nur, wenn sie die Seite rendern. Sie zu
-            zählen braucht das Server-Log. Für {SITE_HOST} selbst läuft dieser Import alle 15 Minuten und speist dasselbe Dashboard, samt Abruf-Bursts (ein Agent, mehrere Seiten,
-            wenige Sekunden: so sieht ein Query-Fan-out von deiner Seite aus). Für deine Site lädst du das Log auf der Einstellungsseite hoch oder lässt es einen Cron täglich mit dem
-            API-Token schicken; nginx- oder Apache-Format combined, roh oder gezippt, ganze Dateien sind in Ordnung. Wo der Anbieter Adressbereiche veröffentlicht (OpenAI, Perplexity,
-            Microsoft, Google, Apple), wird jede Zeile dagegen geprüft; ein behaupteter Agent von anderswo wird als unverifiziert angezeigt statt gezählt.
+            zählen braucht das Server-Log. Für {SITE_HOST} selbst läuft der Collector alle 15 Minuten. Ein Abruf-Burst bedeutet mindestens drei verschiedene relevante Pfade nahe beieinander in einem Import-Batch; er verrät weder Suchfrage noch Absicht. Für deine Site lädst du ein vollständiges Append-only-Log hoch oder verwendest einen Collector mit stabilen Datensatzidentitäten. Wo ein Anbieter IP-Bereiche veröffentlicht, wird ein Agenten-Claim dagegen geprüft. Fehlende oder veraltete Listen und Abweichungen bleiben getrennt von bestätigten Zahlen.
           </p>
         </div>
       </section>
