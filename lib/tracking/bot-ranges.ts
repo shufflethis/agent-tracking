@@ -44,14 +44,11 @@ export function rangeSourceHealth(ranges: Ranges | null, now = Date.now()): { ke
 
 export const RANGE_SOURCES: { key: string; url: string; agents: string[] }[] = [
   { key: "openai-gptbot", url: "https://openai.com/gptbot.json", agents: ["gptbot"] },
-  { key: "openai-chatgpt-user", url: "https://openai.com/chatgpt-user.json", agents: ["chatgpt-user", "operator"] },
+  { key: "openai-chatgpt-user", url: "https://openai.com/chatgpt-user.json", agents: ["chatgpt-user"] },
   { key: "openai-searchbot", url: "https://openai.com/searchbot.json", agents: ["oai-searchbot"] },
   { key: "perplexity-bot", url: "https://www.perplexity.ai/perplexitybot.json", agents: ["perplexitybot"] },
   { key: "perplexity-user", url: "https://www.perplexity.ai/perplexity-user.json", agents: ["perplexity-user"] },
-  { key: "bing", url: "https://www.bing.com/toolbox/bingbot.json", agents: ["bingbot-ai"] },
-  { key: "google-special", url: "https://developers.google.com/static/search/apis/ipranges/special-crawlers.json", agents: ["googleother", "google-extended"] },
   { key: "google-user-fetchers", url: "https://developers.google.com/static/search/apis/ipranges/user-triggered-fetchers-google.json", agents: ["gemini-deep-research"] },
-  { key: "apple", url: "https://search.developer.apple.com/applebot.json", agents: ["applebot-extended"] },
 ];
 
 const KEY_FOR_AGENT = new Map(RANGE_SOURCES.flatMap((s) => s.agents.map((a) => [a, s.key] as const)));

@@ -71,11 +71,37 @@ describe("classification", () => {
     assert.equal(matchReferral("google.com", "chatgpt.com")?.via, "utm");
     assert.equal(matchReferral("google.com", null), null);
     assert.equal(matchReferral("notchatgpt.com", null), null);
+    assert.equal(matchReferral("https://openai.com/blog/chatgpt?secret=1", null), null);
+    assert.equal(matchReferral("anthropic.com", null), null);
+    assert.equal(matchReferral("mistral.ai", null), null);
+    assert.equal(matchReferral("bing.com/chat", null)?.id, "copilot");
+    assert.equal(matchReferral("bing.com/chat/answer", null)?.id, "copilot");
+    assert.equal(matchReferral("bing.com/chatting", null), null);
+    assert.equal(matchReferral("bing.com/search?q=/chat", null), null);
+    assert.equal(matchReferral("duckduckgo.com/aichat", null)?.id, "duckduckgo-ai");
+    assert.equal(matchReferral("duckduckgo.com/aichatty", null), null);
+    assert.equal(matchReferral("https://chatgpt.com@evil.example/", null), null);
+    assert.equal(matchReferral(null, "notchatgpt"), null);
+    assert.equal(matchReferral(null, "openai"), null);
+    assert.equal(matchReferral(null, "chatgpt" )?.via, "utm");
   });
   it("matches AI user agents and leaves browsers alone", () => {
     assert.equal(matchAgent("Mozilla/5.0 (compatible; ChatGPT-User/1.0; +https://openai.com/bot)")?.id, "chatgpt-user");
     assert.equal(matchAgent("Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; ClaudeBot/1.0)")?.id, "claudebot");
     assert.equal(matchAgent("Mozilla/5.0 (Windows NT 10.0) Chrome/128.0 Safari/537.36"), null);
+    assert.equal(matchAgent("FakeGPTBot/1.0"), null);
+    assert.equal(matchAgent("GPTBotish/1.0"), null);
+    assert.equal(matchAgent("https://example.com/GPTBot/1.0"), null);
+    assert.equal(matchAgent("Google-Extended"), null);
+    assert.equal(matchAgent("Applebot-Extended"), null);
+    assert.equal(matchAgent("GoogleOther/1.0"), null);
+    assert.equal(matchAgent("bingbot/2.0"), null);
+    assert.equal(matchAgent("Operator/1.0"), null);
+  });
+  it("does not retain a full referrer URL or its query", () => {
+    assert.equal(sanitizeEvent({ k: "view", r: "https://chatgpt.com/c/secret-thread?token=secret#more" })?.referrer, "chatgpt.com");
+    assert.equal(sanitizeEvent({ k: "view", r: "https://bing.com/chat/secret-thread?token=secret" })?.referrer, "bing.com/chat");
+    assert.equal(sanitizeEvent({ k: "view", r: "https://other.example/private?token=secret" })?.referrer, "other.example");
   });
   it("classes a browser coarsely and hashes the session without the address on either side", () => {
     assert.equal(uaClass("Mozilla/5.0 (iPhone) Version/17 Mobile Safari/604.1"), "safari:m");

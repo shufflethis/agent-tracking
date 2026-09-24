@@ -1,6 +1,6 @@
 # Agent Tracking – Umsetzung
 
-Stand: 2026-09-24. Arbeitsgrundlage: `IMPLEMENTATION-PROMPT.md`.
+Stand: 2026-09-25. Arbeitsgrundlage: `IMPLEMENTATION-PROMPT.md`.
 
 ## Fortschritt
 
@@ -14,7 +14,7 @@ Stand: 2026-09-24. Arbeitsgrundlage: `IMPLEMENTATION-PROMPT.md`.
 | F06 | erledigt | Sofortige Instrumentierung und 15-Sekunden-Nachbeobachtung; getTools-Discovery, toolchange/Abort-Removal, getrennte Aktivierungs-/Cancel-Signale, Schemaversionen, parallele Aufrufe und optionales Early-SDK. Browsermatrix/Spec-Grenzen dokumentiert; VM-Tests, Typecheck, Kernsnippet 4.926 Bytes. | F07 beginnen. |
 | F07 | erledigt | Fehlerklassen-Whitelist, keine Argument-/Formularwerte oder dynamischen Schlüsselnamen, Standard- und konfigurierbare Pfadredaktion; historische Ausgaben bereinigt. Tests für E-Mail/Token/Formwert und Typecheck/Gesamttest. | F08 beginnen. |
 | F08 | erledigt | Pro-Anbieter-Refresh-/Fehlerstand, konfigurierbare Frischefrist, tatsächlicher IP-Abgleich für Browser und Log, getrennte Zustände und `verification_audit`; historische Fetch-Claims bleiben getrennt. Typecheck, 89 Tests, Browser-/Log-Fälle bestanden. | F09 beginnen. |
-| F09 | in Arbeit | Agenten- und Referrer-Liste anhand Primärquellen prüfen. | Richtlinientokens aus Requestklassifikation entfernen und Matchregeln härten. |
+| F09 | erledigt | Google-/Apple-Richtlinientokens separat; generische Such-/Unternehmensquellen entfernt; UA-Grenzen, Pfad- und exakte UTM-Regeln, URL-Redaktion sowie Negativtests. `docs/source-classification.md`; Typecheck und 90 Tests bestanden. | F10 beginnen. |
 | F10–F22 | offen | Noch nicht implementiert. | Der Reihenfolge im Umsetzungsauftrag folgen. |
 
 ## Entscheidungen

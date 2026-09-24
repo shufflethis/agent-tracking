@@ -88,6 +88,23 @@ export type CleanEvent = {
 const CAP = { path: 200, name: 128, err: 80, keys: 24, key: 64, referrer: 120, utm: 64, hash: 32 };
 const str = (v: unknown, max: number): string | null => (typeof v === "string" && v.trim() ? v.trim().slice(0, max) : null);
 
+/** Retain only a hostname and, for listed path-specific assistants, the path. */
+function safeReferrer(value: unknown): string | null {
+  if (typeof value !== "string" || !value.trim()) return null;
+  try {
+    const url = new URL(/^https?:\/\//i.test(value) ? value : `https://${value}`);
+    if (!/^https?:$/.test(url.protocol) || url.username || url.password || url.port) return null;
+    const host = url.hostname.toLowerCase();
+    if (!DOMAIN_RE.test(host)) return null;
+    const path = url.pathname.toLowerCase();
+    const pathRule = sources.referrers.flatMap((r) => r.hosts).find((rule) => {
+      const slash = rule.indexOf("/");
+      return slash > 0 && host === rule.slice(0, slash) && (path === rule.slice(slash) || path.startsWith(`${rule.slice(slash)}/`));
+    });
+    return (pathRule ?? host).slice(0, CAP.referrer);
+  } catch { return null; }
+}
+
 export function sanitizeEvent(raw: unknown): CleanEvent | null {
   if (!raw || typeof raw !== "object") return null;
   const r = raw as RawEvent;
@@ -119,7 +136,7 @@ export function sanitizeEvent(raw: unknown): CleanEvent | null {
     schemaVersion: str(r.sv, 64),
     path,
     name,
-    referrer: str(r.r, CAP.referrer)?.toLowerCase() ?? null,
+    referrer: safeReferrer(r.r),
     utm: str(r.u, CAP.utm)?.toLowerCase() ?? null,
     ms,
     ok: typeof r.ok === "boolean" ? r.ok : null,
@@ -172,19 +189,22 @@ export type ReferralMatch = { id: string; label: string; via: "referrer" | "utm"
 
 export function matchReferral(referrer: string | null, utm: string | null): ReferralMatch | null {
   if (referrer) {
-    const host = referrer.replace(/^https?:\/\//, "").split("/")[0];
+    const safe = safeReferrer(referrer);
+    const [host, ...pathParts] = (safe ?? "").split("/");
+    const path = pathParts.length ? `/${pathParts.join("/")}` : "/";
     for (const entry of sources.referrers) {
       for (const h of entry.hosts) {
         const [hostPart, pathPart] = h.split("/", 2);
-        if (host === hostPart || host.endsWith(`.${hostPart}`)) {
-          if (!pathPart || referrer.includes(`/${pathPart}`)) return { id: entry.id, label: entry.label, via: "referrer" };
+        if (host === hostPart || (!pathPart && host.endsWith(`.${hostPart}`))) {
+          if (!pathPart || path === `/${pathPart}` || path.startsWith(`/${pathPart}/`)) return { id: entry.id, label: entry.label, via: "referrer" };
         }
       }
     }
   }
   if (utm) {
+    const source = utm.trim().toLowerCase();
     for (const entry of sources.utm) {
-      if (utm.includes(entry.pattern)) {
+      if (source === entry.pattern || source === `${entry.pattern}.com` || source === `${entry.pattern}.ai`) {
         const label = sources.referrers.find((r) => r.id === entry.id)?.label ?? entry.id;
         return { id: entry.id, label, via: "utm" };
       }
@@ -195,12 +215,16 @@ export function matchReferral(referrer: string | null, utm: string | null): Refe
 
 export type AgentMatch = { id: string; label: string; vendor: string; kind: string };
 
+const AGENT_PATTERNS = sources.agents.map((a) => ({
+  agent: a,
+  regex: new RegExp(`(?:^|[\\s(;])${a.token.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?=$|[/;\\s)])`, "i"),
+}));
+
 /** The AI agent behind a user agent string, or null for a browser or an unknown bot. */
 export function matchAgent(userAgent: string | null): AgentMatch | null {
   if (!userAgent) return null;
-  const ua = userAgent.toLowerCase();
-  for (const a of sources.agents) {
-    if (ua.includes(a.token)) return { id: a.id, label: a.label, vendor: a.vendor, kind: a.kind };
+  for (const { agent: a, regex } of AGENT_PATTERNS) {
+    if (regex.test(userAgent)) return { id: a.id, label: a.label, vendor: a.vendor, kind: a.kind };
   }
   return null;
 }
