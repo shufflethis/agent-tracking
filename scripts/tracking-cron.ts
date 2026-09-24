@@ -6,7 +6,7 @@ import { loadStore, markTriaged, pending, saveStore, saveSuggestions, suggestion
 import { button, layout, paragraph } from "../lib/email-layout";
 import { fetchScore } from "../lib/tracking/score";
 import { SITE_ORIGIN } from "../lib/site";
-import { allSites, closeDb, getAccount, pruneRaw, setScore } from "../lib/tracking/db";
+import { allSites, closeDb, dueScanSites, finishScanAttempt, getAccount, pruneRaw, recordSiteCheck, scanSchedulerHeartbeat, startScanAttempt } from "../lib/tracking/db";
 import { planFor } from "../lib/tracking/plans";
 
 /**
@@ -30,12 +30,12 @@ import { planFor } from "../lib/tracking/plans";
  */
 
 const say = (msg: string) => console.log(`[${new Date().toISOString()}] ${msg}`);
-const MONTH = 30 * 86_400_000;
 /** A ceiling on a nightly bill that nobody is watching. */
 const TRIAGE_PER_NIGHT = Number(process.env.AGENT_TRIAGE_LIMIT ?? 40);
 
 async function main() {
   const now = Date.now();
+  scanSchedulerHeartbeat(now);
   say(`pruned ${pruneRaw(now)} raw event(s) past retention`);
 
   // The published crawler ranges, for the log import's verification.
@@ -47,19 +47,22 @@ async function main() {
   const sites = allSites();
   say(`${sites.length} site(s) on file`);
 
-  for (const site of sites) {
-    if (!site.verified_at) continue;
-    if (site.last_scanned_at && now - site.last_scanned_at < MONTH) continue;
+  for (const domain of dueScanSites(now)) {
+    const testId = startScanAttempt(domain, Date.now());
+    if (!testId) continue;
     try {
-      const scored = await fetchScore(site.domain);
+      const scored = await fetchScore(domain);
+      finishScanAttempt(domain, testId, scored, Date.now());
+      recordSiteCheck(domain, { testId, kind: "score", attemptedAt: now, success: scored.ok, detailCode: scored.ok ? "scored" : scored.code });
       if (!scored.ok) {
-        say(`SKIP ${site.domain}: ${scored.detail}`);
+        say(`SCAN FAILED ${domain}: ${scored.code}`);
         continue;
       }
-      setScore(site.domain, scored.score, scored.grade, now);
-      say(`scored ${site.domain}: ${scored.score} (${scored.grade})`);
+      say(`scored ${domain}: ${scored.score} (${scored.grade})`);
     } catch (err) {
-      say(`SKIP ${site.domain}: ${err instanceof Error ? err.message : String(err)}`);
+      finishScanAttempt(domain, testId, { ok: false, code: "unexpected_error" }, Date.now());
+      recordSiteCheck(domain, { testId, kind: "score", attemptedAt: now, success: false, detailCode: "unexpected_error" });
+      say(`SCAN FAILED ${domain}: unexpected_error`);
     }
   }
 

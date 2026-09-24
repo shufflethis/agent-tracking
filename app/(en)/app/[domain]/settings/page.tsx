@@ -9,7 +9,8 @@ import { actionStrings, dashCopy, dashLang, numberLocale } from "@/lib/tracking/
 import { PLANS, planFor, priceIdFor } from "@/lib/tracking/plans";
 import { snippetFor } from "@/lib/tracking/snippet";
 import { SITE_ORIGIN } from "@/lib/site";
-import { hasFreshLogSource, lastSiteCheck, logSourceStates } from "@/lib/tracking/db";
+import { hasFreshLogSource, lastSiteCheck, logSourceStates, recentScanAttempts, scanJob } from "@/lib/tracking/db";
+import { scanStatusText } from "@/lib/tracking/scan-display";
 
 // Rendered per request, not at build: the host, the entity on the legal pages and the
 // snippet line come from the environment, and a self-hosted copy must print its own.
@@ -36,6 +37,10 @@ export default async function Page({ params, searchParams }: { params: Promise<{
   const logSources = logSourceStates(site.domain);
   const logFresh = hasFreshLogSource(site.domain);
   const snippetCheck = lastSiteCheck(site.domain, "snippet");
+  const scans = recentScanAttempts(site.domain);
+  const currentScan = scanJob(site.domain);
+  const scanCopy = dashCopy(lang).overview;
+  const scanAttemptLabel = (status: string) => status === "success" ? scanCopy.scanSucceeded : status === "failed" ? scanCopy.scanFailed : status === "running" ? scanCopy.scanRunning : status === "disabled" ? scanCopy.scanDisabled : status;
   const extras = `${plan.manifestAlerts ? `, ${c.manifestAlerts}` : ""}${plan.whiteLabelBadge ? `, ${c.whiteLabel}` : ""}`;
 
   return (
@@ -76,6 +81,9 @@ export default async function Page({ params, searchParams }: { params: Promise<{
             <li>{site.last_tool_call_at ? c.toolCapture(new Date(site.last_tool_call_at).toISOString()) : c.noToolCapture}</li>
             <li>{c.noOutcomeSource}</li>
           </ul>
+          <h3 style={{ marginTop: 20 }}>{c.scanHistoryTitle}</h3>
+          <p style={{ color: "var(--muted)", fontSize: 13 }}>{scanStatusText(currentScan, scanCopy)}</p>
+          {scans.length > 0 && <ul style={{ margin: 0, paddingLeft: 20, fontSize: 13, color: "var(--muted)" }}>{scans.map((scan) => <li key={scan.id}>{c.scanHistoryRow(new Date(scan.startedAt).toISOString(), scanAttemptLabel(scan.status), scan.errorCode ?? "")}</li>)}</ul>}
         </div>
 
         <div className="card" style={{ padding: 28 }}>

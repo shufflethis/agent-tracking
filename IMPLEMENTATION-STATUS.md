@@ -20,7 +20,8 @@ Stand: 2026-09-25. Arbeitsgrundlage: `IMPLEMENTATION-PROMPT.md`.
 | F12 | erledigt | Burst erst ab drei verschiedenen relevanten HTML-Pfaden; Batchgrenze und fehlender Absichtsnachweis dokumentiert. Migration v8 backfillt tägliche Tool-Session-Näherungen aus noch vorhandenen Rohdaten; Tagesaggregate überstehen 90-Tage-Löschung. Hash-Kollisionsgrenzen in UI/Doku. 98 Tests und Typecheck. | F13 beginnen. |
 | F13 | erledigt | Zentrale technische Regel: Toolaufruf oder IP-bestätigter HTML-Fetch; Quotenprüfung atomar in Browser- und Logpfad. Kostenfreie Zustände, Zugriffsversuche und Nachweise bleiben bei Grenze; Quotenlücken in Health/Dashboard, API/MCP, CSV und Digest. Retrys und Grenzfälle getestet; Preise/Planlimits unverändert; 100 Tests und Typecheck. | F14 beginnen. |
 | F14 | erledigt | Migration v9: separate Setup-Test-IDs für Snippet-/Score-Checks, letzter Versuch neben letztem Erfolg, erster/letzter angenommener Beacon seit Einführung des Status, letzter echter Toolaufruf; Logfrische und Abschlussquelle getrennt angezeigt. Warnung nach fehlgeschlagenem Recheck und direkter Link zum Messzustand; API ergänzt. 101 Tests und Typecheck. | F15 beginnen. |
-| F15–F22 | offen | Noch nicht implementiert. | Der Reihenfolge im Umsetzungsauftrag folgen. |
+| F15 | erledigt | Migration v10: persistierte Scan-Jobs/-Versuche, Cron-Heartbeat, monatliche Wiederholung, Fehlercode und Recovery; 24h-Hinweis nur bei fälligem Job und frischem Cron. Deaktivierter Check-Service ohne Termin, Recheck setzt Termin nicht neu. Nullzustände im Dashboard/Public-Stats und API-Datenstatus. 103 Tests, Typecheck und Next-Build bestanden. | F16 beginnen. |
+| F16–F22 | offen | Noch nicht implementiert. | Der Reihenfolge im Umsetzungsauftrag folgen. |
 
 ## Entscheidungen
 

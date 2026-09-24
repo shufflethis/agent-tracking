@@ -6,7 +6,7 @@ import { fetchScore } from "@/lib/tracking/score";
 import { clientIp, take } from "@/lib/ratelimit";
 import { currentAccount } from "@/lib/tracking/auth";
 import { normalizeDomain } from "@/lib/tracking/classify";
-import { addSite, getSite, markVerified, recordSiteCheck, removeSite, setPublicShare, setScore, sitesFor } from "@/lib/tracking/db";
+import { addSite, finishScanAttempt, getSite, markVerified, recordSiteCheck, removeSite, setPublicShare, sitesFor, startScanAttempt } from "@/lib/tracking/db";
 import { planFor } from "@/lib/tracking/plans";
 
 export const runtime = "nodejs";
@@ -75,12 +75,13 @@ export async function POST(request: Request) {
       if (!site || site.owner !== account.email) return problem("Not your site.", 403);
       const budget = take(clientIp(request.headers), "crawls");
       if (!budget.ok) return problem("Too many checks. Try again in a while.", 429);
-      const testId = randomUUID();
+      const testId = startScanAttempt(domain);
+      if (!testId) return problem("The check service is disabled or a scan is already running.", 409);
       const at = Date.now();
       const scored = await fetchScore(domain);
-      recordSiteCheck(domain, { testId, kind: "score", attemptedAt: at, success: scored.ok, detailCode: scored.ok ? "scored" : "check_failed" });
+      finishScanAttempt(domain, testId, scored);
+      recordSiteCheck(domain, { testId, kind: "score", attemptedAt: at, success: scored.ok, detailCode: scored.ok ? "scored" : scored.code });
       if (!scored.ok) return problem(scored.detail, 502);
-      setScore(domain, scored.score, scored.grade);
       return Response.json({ ok: true, score: scored.score, grade: scored.grade, testId });
     }
     case "remove": {

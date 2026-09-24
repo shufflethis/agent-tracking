@@ -1,5 +1,5 @@
 import { mkdirSync } from "node:fs";
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { dirname, join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import type { CleanEvent } from "./classify";
@@ -8,6 +8,7 @@ import { redactPath, safeErrorClass, safeEventName } from "./privacy";
 import { RAW_RETENTION_DAYS, type PlanId } from "./plans";
 import { planFor } from "./plans";
 import { browserUsage, logUsage } from "./usage-rules";
+import { CHECK_ORIGIN } from "../site";
 import { importLines, type ImportResult, type LogAttempt } from "./log-import";
 import type { Ranges } from "./bot-ranges";
 
@@ -249,6 +250,27 @@ function migrate(instance: DatabaseSync): void {
     instance.exec("create index site_checks_domain_time on site_checks(domain, attempted_at)");
     instance.prepare("insert into schema_migrations (version, applied_at) values (9, ?)").run(Date.now());
   }
+  if ((current.version ?? 0) < 10) {
+    instance.exec(`create table scan_scheduler (name text primary key, heartbeat_at integer not null)`);
+    instance.exec(`create table scan_jobs (
+      domain text primary key, status text not null, due_at integer,
+      last_attempt_id text, last_attempt_at integer, last_success_at integer,
+      last_error_code text
+    )`);
+    instance.exec(`create table scan_attempts (
+      id text primary key, domain text not null, started_at integer not null,
+      finished_at integer, status text not null, error_code text,
+      score integer, grade text
+    )`);
+    instance.exec("create index scan_attempts_domain_time on scan_attempts(domain, started_at)");
+    const historical = instance.prepare("select domain, verified_at, last_scanned_at from sites where verified_at is not null")
+      .all() as { domain: string; verified_at: number; last_scanned_at: number | null }[];
+    const insert = instance.prepare("insert into scan_jobs (domain, status, due_at, last_success_at) values (?, ?, ?, ?)");
+    for (const site of historical) {
+      insert.run(site.domain, !CHECK_ORIGIN ? "disabled" : site.last_scanned_at ? "success" : "unscheduled", site.last_scanned_at ? site.last_scanned_at + 30 * 86_400_000 : null, site.last_scanned_at);
+    }
+    instance.prepare("insert into schema_migrations (version, applied_at) values (10, ?)").run(Date.now());
+  }
   instance.exec("commit");
   } catch (err) {
     instance.exec("rollback");
@@ -433,6 +455,8 @@ export function removeSite(domain: string, owner: string): boolean {
   d.prepare("delete from verification_audit where domain = ?").run(key);
   d.prepare("delete from tool_session_receipts where domain = ?").run(key);
   d.prepare("delete from site_checks where domain = ?").run(key);
+  d.prepare("delete from scan_attempts where domain = ?").run(key);
+  d.prepare("delete from scan_jobs where domain = ?").run(key);
   d.prepare("delete from log_attempts where domain = ?").run(key);
   d.prepare("delete from log_records where domain = ?").run(key);
   d.prepare("delete from log_sources where domain = ?").run(key);
@@ -443,6 +467,90 @@ export function removeSite(domain: string, owner: string): boolean {
 
 export function markVerified(domain: string, now = Date.now()): void {
   db().prepare("update sites set verified_at = ? where domain = ?").run(now, domain.toLowerCase());
+  ensureScanJob(domain, now);
+}
+
+const SCAN_MONTH_MS = 30 * 86_400_000;
+const SCAN_HEARTBEAT_MAX_MS = 48 * 3_600_000;
+
+function schedulerFresh(now: number): boolean {
+  const row = db().prepare("select heartbeat_at as at from scan_scheduler where name = 'nightly'").get() as { at: number } | undefined;
+  return Boolean(row && row.at <= now + 300_000 && now - row.at <= SCAN_HEARTBEAT_MAX_MS);
+}
+
+export type ScanStatus = "scheduled" | "running" | "success" | "failed" | "disabled" | "unscheduled";
+export type ScanJob = { status: ScanStatus; dueAt: number | null; lastAttemptId: string | null; lastAttemptAt: number | null; lastSuccessAt: number | null; lastErrorCode: string | null; schedulerFresh: boolean };
+
+function ensureScanJob(domain: string, now: number): void {
+  const status: ScanStatus = !CHECK_ORIGIN ? "disabled" : schedulerFresh(now) ? "scheduled" : "unscheduled";
+  db().prepare("insert or ignore into scan_jobs (domain, status, due_at) values (?, ?, ?)")
+    .run(domain.toLowerCase(), status, status === "scheduled" ? now : null);
+}
+
+export function scanJob(domain: string, now = Date.now()): ScanJob | null {
+  const row = db().prepare("select status, due_at as dueAt, last_attempt_id as lastAttemptId, last_attempt_at as lastAttemptAt, last_success_at as lastSuccessAt, last_error_code as lastErrorCode from scan_jobs where domain = ?")
+    .get(domain.toLowerCase()) as Omit<ScanJob, "schedulerFresh"> | undefined;
+  if (!row) return null;
+  const fresh = schedulerFresh(now);
+  return { ...row, status: !CHECK_ORIGIN ? "disabled" : row.status === "scheduled" && !fresh ? "unscheduled" : row.status, schedulerFresh: fresh };
+}
+
+export type ScanAttempt = { id: string; startedAt: number; finishedAt: number | null; status: string; errorCode: string | null; score: number | null; grade: string | null };
+export function recentScanAttempts(domain: string, limit = 5): ScanAttempt[] {
+  return db().prepare("select id, started_at as startedAt, finished_at as finishedAt, status, error_code as errorCode, score, grade from scan_attempts where domain = ? order by started_at desc limit ?")
+    .all(domain.toLowerCase(), limit) as ScanAttempt[];
+}
+
+/** Called by the actual nightly runner, never by a page view or verification. */
+export function scanSchedulerHeartbeat(now = Date.now()): void {
+  const d = db();
+  d.prepare("insert into scan_scheduler (name, heartbeat_at) values ('nightly', ?) on conflict(name) do update set heartbeat_at = excluded.heartbeat_at").run(now);
+  d.prepare("update scan_attempts set status = 'failed', finished_at = ?, error_code = 'interrupted' where status = 'running' and started_at < ?")
+    .run(now, now - 2 * 3_600_000);
+  d.prepare("update scan_jobs set status = 'failed', due_at = ?, last_error_code = 'interrupted' where status = 'running' and last_attempt_at < ?")
+    .run(now, now - 2 * 3_600_000);
+  if (CHECK_ORIGIN) {
+    d.prepare("update scan_jobs set status = 'scheduled', due_at = coalesce(due_at, ?) where status in ('unscheduled', 'disabled')").run(now);
+  } else {
+    d.prepare("update scan_jobs set status = 'disabled' where status != 'disabled'").run();
+  }
+}
+
+export function dueScanSites(now = Date.now()): string[] {
+  if (!CHECK_ORIGIN || !schedulerFresh(now)) return [];
+  return (db().prepare(`select j.domain from scan_jobs j join sites s on s.domain = j.domain
+    where s.verified_at is not null and j.status in ('scheduled', 'success', 'failed')
+    and j.due_at is not null and j.due_at <= ? order by j.due_at`).all(now) as { domain: string }[]).map((r) => r.domain);
+}
+
+export function startScanAttempt(domain: string, now = Date.now()): string | null {
+  if (!CHECK_ORIGIN) return null;
+  ensureScanJob(domain, now);
+  const id = randomUUID();
+  const d = db();
+  d.exec("begin immediate");
+  try {
+    const changed = d.prepare("update scan_jobs set status = 'running', last_attempt_id = ?, last_attempt_at = ?, last_error_code = null where domain = ? and status != 'running'")
+      .run(id, now, domain.toLowerCase());
+    if (!Number(changed.changes)) { d.exec("rollback"); return null; }
+    d.prepare("insert into scan_attempts (id, domain, started_at, status) values (?, ?, ?, 'running')").run(id, domain.toLowerCase(), now);
+    d.exec("commit");
+    return id;
+  } catch (err) { d.exec("rollback"); throw err; }
+}
+
+export function finishScanAttempt(domain: string, id: string, result: { ok: true; score: number; grade: string } | { ok: false; code: string }, now = Date.now()): void {
+  const d = db();
+  d.exec("begin immediate");
+  try {
+    const status = result.ok ? "success" : result.code === "disabled" ? "disabled" : "failed";
+    d.prepare("update scan_attempts set finished_at = ?, status = ?, error_code = ?, score = ?, grade = ? where id = ? and domain = ? and status = 'running'")
+      .run(now, status, result.ok ? null : result.code, result.ok ? result.score : null, result.ok ? result.grade : null, id, domain.toLowerCase());
+    d.prepare("update scan_jobs set status = ?, due_at = ?, last_success_at = case when ? = 'success' then ? else last_success_at end, last_error_code = ? where domain = ? and last_attempt_id = ?")
+      .run(status, result.ok ? now + SCAN_MONTH_MS : status === "failed" ? now + 86_400_000 : null, status, now, result.ok ? null : result.code, domain.toLowerCase(), id);
+    if (result.ok) setScore(domain, result.score, result.grade, now);
+    d.exec("commit");
+  } catch (err) { d.exec("rollback"); throw err; }
 }
 
 export type SiteCheck = { testId: string; kind: "snippet" | "score" | "tool_capture"; attemptedAt: number; success: boolean; detailCode: string };

@@ -6,7 +6,8 @@ import BarChart from "@/components/BarChart";
 import ShareBar from "@/components/ShareBar";
 import { normalizeDomain } from "@/lib/tracking/classify";
 import { activitySignals, loadDashboard } from "@/lib/tracking/dashboard";
-import { getSite } from "@/lib/tracking/db";
+import { getSite, hasFreshLogSource, ingestHealth } from "@/lib/tracking/db";
+import { dataState } from "@/lib/tracking/data-state";
 import { snippetFor } from "@/lib/tracking/snippet";
 
 // Rendered per request, not at build: the host, the entity on the legal pages and the
@@ -17,6 +18,12 @@ export const runtime = "nodejs";
 export const revalidate = 600;
 
 type Params = { params: Promise<{ domain: string }> };
+const stateText = { active: "active", not_configured: "not configured", no_data_yet: "no data yet", source_stale: "source stale", quota_reached: "event quota reached" };
+
+function measurementState(site: NonNullable<ReturnType<typeof getSite>>) {
+  const health = ingestHealth(site.domain, 30);
+  return dataState(site, { acceptedBeacons: health.find((r) => r.outcome === "accepted_batch")?.count ?? 0, quotaGaps: health.find((r) => r.outcome === "quota_reached")?.count ?? 0, logFresh: hasFreshLogSource(site.domain), windowDays: 30, now: Date.now() });
+}
 
 /**
  * The opt-in public stats page: one number, one chart, a share image.
@@ -31,7 +38,8 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const site = host ? getSite(host) : null;
   if (!site || !site.public_share) return { title: "Stats", robots: { index: false } };
   const n = activitySignals(loadDashboard(site.domain, 30).overview);
-  const title = `${site.domain}: ${n.toLocaleString("en-GB")} activity signals in 30 days`;
+  const state = measurementState(site);
+  const title = state !== "active" && n === 0 ? `${site.domain}: ${stateText[state]}` : `${site.domain}: ${n.toLocaleString("en-GB")} activity signals in 30 days`;
   const description = `AI referral, fetch and observed tool-call signals on ${site.domain}, measured by ${SITE_HOST}. Historical browser goal signals are unverified.`;
   return {
     title,
@@ -50,6 +58,8 @@ export default async function Page({ params }: Params) {
   const dash = loadDashboard(site.domain, 30);
   const o = dash.overview;
   const n = activitySignals(o);
+  const state = measurementState(site);
+  const unavailable = state !== "active" && n === 0;
   const url = `${SITE_ORIGIN}/stats/${encodeURIComponent(site.domain)}`;
 
   return (
@@ -59,8 +69,7 @@ export default async function Page({ params }: Params) {
           <p className="eyebrow" style={{ marginBottom: 10 }}>Agent Tracking</p>
           <h1 style={{ fontSize: "clamp(26px,4vw,40px)", marginBottom: 8, wordBreak: "break-word" }}>{site.domain}</h1>
           <p className="dek" style={{ margin: 0, maxWidth: "56ch" }}>
-            <b style={{ color: "var(--ink)" }}>{n.toLocaleString("en-GB")}</b> activity signals in the last 30 days: visitors referred by assistants, historical fetch claims, IP-confirmed crawler requests,
-            WebMCP tools called, and unverified browser goal signals.
+            {unavailable ? `Measurement status: ${stateText[state]}. No observed zero can be stated for this period.` : <><b style={{ color: "var(--ink)" }}>{n.toLocaleString("en-GB")}</b> activity signals in the last 30 days: visitors referred by assistants, historical fetch claims, IP-confirmed crawler requests, WebMCP tools called, and unverified browser goal signals.</>}
           </p>
         </div>
         <div className="card" style={{ padding: 28, display: "grid", gap: 28, gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))" }}>
@@ -73,12 +82,12 @@ export default async function Page({ params }: Params) {
           ].map(([label, value]) => (
             <div key={String(label)}>
               <p className="smallcaps" style={{ margin: "0 0 6px" }}>{label}</p>
-              <p style={{ fontFamily: "var(--display)", fontWeight: 700, fontSize: 30, margin: 0 }}>{value}</p>
+              <p style={{ fontFamily: "var(--display)", fontWeight: 700, fontSize: 30, margin: 0 }}>{unavailable && value === 0 ? "–" : value}</p>
             </div>
           ))}
         </div>
       </section>
-      <section className="shell section" style={{ paddingTop: 24 }}>
+      {!unavailable && <section className="shell section" style={{ paddingTop: 24 }}>
         <div className="card" style={{ padding: 28 }}>
           <BarChart
             days={o.days.map((d) => d.day)}
@@ -91,7 +100,7 @@ export default async function Page({ params }: Params) {
             ]}
           />
         </div>
-      </section>
+      </section>}
       <section className="shell section" style={{ paddingTop: 0 }}>
         <div className="grid2" style={{ gap: 18 }}>
           <div className="card" style={{ padding: 28 }}>
@@ -134,7 +143,7 @@ export default async function Page({ params }: Params) {
           <h2 style={{ fontSize: 22, marginBottom: 14 }}>Share</h2>
           <ShareBar
             url={url}
-            text={`${site.domain} had ${n.toLocaleString("en-GB")} activity signals in 30 days, measured with ${SITE_HOST}:`}
+            text={unavailable ? `${site.domain}: measurement ${stateText[state]} on ${SITE_HOST}:` : `${site.domain} had ${n.toLocaleString("en-GB")} activity signals in 30 days, measured with ${SITE_HOST}:`}
             labels={{ x: "Share on X", linkedin: "Share on LinkedIn", copy: "Copy link", copied: "Link copied" }}
           />
           <p style={{ color: "var(--muted)", fontSize: 14, margin: "18px 0 0" }}>

@@ -1,0 +1,7 @@
+# Readiness scan states
+
+Snippet verification and readiness scanning are separate. Scan jobs and attempts are persisted in SQLite (`scan_jobs`, `scan_attempts`). A job can be scheduled, running, successful, failed or disabled. A site with no live scheduler heartbeat is shown as unscheduled. The nightly runner writes a heartbeat, schedules verified sites and records each attempt with start, finish, bounded error code and score on success. A running attempt interrupted for over two hours is marked failed and can be retried. Failures preserve the last successful score and its date.
+
+“Scheduled within 24 hours” appears only when the check service is configured, a nightly runner heartbeat is recent, and a stored job is due within 24 hours. Rechecking the snippet does not move the job’s due date. An empty `CHECK_ORIGIN` disables scans. A self-hosted deployment must actually run `npm run cron:nightly`; without its heartbeat the UI does not promise a scan time.
+
+The overview separates a measured zero from no data. Before the first accepted beacon it shows “No data yet”; with no installation it shows “Not configured.” A stale source or quota gap is labelled instead of displayed as zero. Stats API/MCP include `measurementStatus.dataState` so numeric zero fields can be interpreted. Historical data may predate the measurement-status fields; those fields are explicitly scoped to observations since the status was introduced.

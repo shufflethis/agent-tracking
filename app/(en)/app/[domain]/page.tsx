@@ -6,7 +6,9 @@ import DashboardShell, { Stat, trendNote } from "@/components/DashboardShell";
 import { requireSite } from "@/lib/tracking/auth";
 import { dashCopy, dashLang, numberLocale } from "@/lib/tracking/copy";
 import { activitySignals, loadDashboard } from "@/lib/tracking/dashboard";
-import { ingestHealth } from "@/lib/tracking/db";
+import { hasFreshLogSource, ingestHealth, scanJob } from "@/lib/tracking/db";
+import { dataState } from "@/lib/tracking/data-state";
+import { scanStatusText } from "@/lib/tracking/scan-display";
 import { planFor } from "@/lib/tracking/plans";
 
 // Rendered per request, not at build: the host, the entity on the legal pages and the
@@ -58,7 +60,11 @@ export default async function Page({ params }: Params) {
   const plan = planFor(account.plan);
   const dash = loadDashboard(site.domain, Math.min(plan.windowDays, 30));
   const o = dash.overview;
-  const ingestIssues = ingestHealth(site.domain, dash.days).filter((row) => row.outcome !== "accepted_batch").reduce((n, row) => n + row.count, 0);
+  const health = ingestHealth(site.domain, dash.days);
+  const ingestIssues = health.filter((row) => row.outcome !== "accepted_batch").reduce((n, row) => n + row.count, 0);
+  const state = dataState(site, { acceptedBeacons: health.find((row) => row.outcome === "accepted_batch")?.count ?? 0, quotaGaps: health.find((row) => row.outcome === "quota_reached")?.count ?? 0, logFresh: hasFreshLogSource(site.domain), windowDays: dash.days, now: Date.now() });
+  const measured = (n: number, note: string) => n === 0 && state !== "active" ? { value: "–", note: c.zeroState[state] } : { value: String(n), note };
+  const scan = scanJob(site.domain);
   const days = o.days.map((d) => d.day);
   const legend = [
     { label: c.referrals, color: "var(--cyan)" },
@@ -72,13 +78,13 @@ export default async function Page({ params }: Params) {
     <DashboardShell account={account} site={site} view="">
       <section className="shell section" style={{ paddingTop: 32 }}>
         <div className="card" style={{ padding: 28, display: "grid", gap: 28, gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))" }}>
-          <Stat label={c.referrals} value={String(o.totals.referrals)} note={trendNote(o.totals.referrals, o.previous.referrals, lang)} />
-          <Stat label={c.fetches} value={String(o.totals.fetches)} note={trendNote(o.totals.fetches, o.previous.fetches, lang)} />
-          <Stat label={c.verifiedFetches} value={String(o.totals.verifiedFetches)} note={trendNote(o.totals.verifiedFetches, o.previous.verifiedFetches, lang)} />
-          <Stat label={c.calls} value={String(o.totals.calls)} note={trendNote(o.totals.calls, o.previous.calls, lang)} />
-          <Stat label={c.conversions} value={String(o.totals.conversions)} note={trendNote(o.totals.conversions, o.previous.conversions, lang)} />
-          <Stat label={c.goalAttempts} value={String(o.totals.goalAttempts)} note={trendNote(o.totals.goalAttempts, o.previous.goalAttempts, lang)} />
-          <Stat label={c.sessions} value={String(o.totals.sessions)} note={c.sessionsNote} />
+          <Stat label={c.referrals} {...measured(o.totals.referrals, trendNote(o.totals.referrals, o.previous.referrals, lang))} />
+          <Stat label={c.fetches} {...measured(o.totals.fetches, trendNote(o.totals.fetches, o.previous.fetches, lang))} />
+          <Stat label={c.verifiedFetches} {...measured(o.totals.verifiedFetches, trendNote(o.totals.verifiedFetches, o.previous.verifiedFetches, lang))} />
+          <Stat label={c.calls} {...measured(o.totals.calls, trendNote(o.totals.calls, o.previous.calls, lang))} />
+          <Stat label={c.conversions} {...measured(o.totals.conversions, trendNote(o.totals.conversions, o.previous.conversions, lang))} />
+          <Stat label={c.goalAttempts} {...measured(o.totals.goalAttempts, trendNote(o.totals.goalAttempts, o.previous.goalAttempts, lang))} />
+          <Stat label={c.sessions} {...measured(o.totals.sessions, c.sessionsNote)} />
           <p style={{ gridColumn: "1 / -1", color: "var(--muted)", margin: 0, fontSize: 13 }}>{c.legacyGoalNote}</p>
           {ingestIssues > 0 && <p role="status" style={{ gridColumn: "1 / -1", color: "var(--warn)", margin: 0, fontSize: 13 }}>{c.ingestIssue(ingestIssues)}</p>}
         </div>
@@ -126,14 +132,12 @@ export default async function Page({ params }: Params) {
                   <span style={{ fontSize: 16, color: "var(--muted)" }}> / 100 · {c.grade} {site.last_grade}</span>
                 </p>
                 <p style={{ fontSize: 13, color: "var(--muted)", margin: "6px 0 0" }}>
-                  {c.scanned(new Date(site.last_scanned_at ?? 0).toISOString().slice(0, 10))} {checkUrl(site.domain) ? <a href={checkUrl(site.domain)!} rel="noopener">{c.openCheck}</a> : null}.
+                  {c.scanned(new Date(site.last_scanned_at ?? 0).toISOString().slice(0, 10))} {scan && scan.status !== "success" ? scanStatusText(scan, c) : ""} {checkUrl(site.domain) ? <a href={checkUrl(site.domain)!} rel="noopener">{c.openCheck}</a> : null}.
                 </p>
               </>
             ) : (
               <p style={{ color: "var(--ink-2)", margin: 0 }}>
-                {site.verified_at
-                  ? Date.now() - site.verified_at < 86_400_000 ? c.scanScheduled : c.scanPending
-                  : c.scoreAfterVerify}{" "}
+                {site.verified_at ? scanStatusText(scan, c) : c.scoreAfterVerify}{" "}
                 {checkUrl(site.domain) ? <a href={checkUrl(site.domain)!} rel="noopener">{c.openCheck}</a> : null}
               </p>
             )}

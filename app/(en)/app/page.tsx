@@ -4,7 +4,8 @@ import DashboardShell from "@/components/DashboardShell";
 import { AddSiteForm } from "@/components/SiteActions";
 import { requireAccount } from "@/lib/tracking/auth";
 import { actionStrings, dashCopy, dashLang } from "@/lib/tracking/copy";
-import { lastSiteCheck, sitesFor } from "@/lib/tracking/db";
+import { lastSiteCheck, scanJob, sitesFor } from "@/lib/tracking/db";
+import { scanStatusText } from "@/lib/tracking/scan-display";
 import { planFor } from "@/lib/tracking/plans";
 
 export const metadata: Metadata = { title: "Your sites", robots: { index: false, follow: false } };
@@ -43,7 +44,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ a
                       {s.verified_at ? <span className="chip pass">{c.verified}</span> : <span className="chip partial">{c.notVerified}</span>}
                       {lastSiteCheck(s.domain, "snippet")?.success === false && <Link href={`/app/${encodeURIComponent(s.domain)}/settings#measurement`} style={{ display: "block", color: "var(--warn)", fontSize: 12, marginTop: 4 }}>⚠ {c.recentCheckFailed}</Link>}
                     </td>
-                    <td>{s.last_score !== null ? `${s.last_score} / 100 (${s.last_grade})` : s.verified_at && Date.now() - s.verified_at < 86_400_000 ? c.scanScheduled : c.notScanned}</td>
+                    <td>{s.last_score !== null ? `${s.last_score} / 100 (${s.last_grade}) · ${scanStatusText(scanJob(s.domain), c)}` : scanStatusText(scanJob(s.domain), c)}</td>
                     <td>{s.public_share ? <Link href={`/stats/${encodeURIComponent(s.domain)}`}>{c.public}</Link> : c.private}</td>
                   </tr>
                 ))}

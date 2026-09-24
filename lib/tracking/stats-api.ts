@@ -1,8 +1,9 @@
 import { SOURCES_VERSION } from "./classify";
-import { getSite, hasFreshLogSource, ingestHealth, lastSiteCheck, logAttemptSummary, logSourceStates, verificationAudit, type Account } from "./db";
+import { getSite, hasFreshLogSource, ingestHealth, lastSiteCheck, logAttemptSummary, logSourceStates, recentScanAttempts, scanJob, verificationAudit, type Account } from "./db";
 import { activitySignals, interactions, loadDashboard } from "./dashboard";
 import { planFor } from "./plans";
 import { REPORTING_DEFINITIONS, reportingTotals } from "./reporting";
+import { dataState } from "./data-state";
 
 /**
  * The stats payload: exactly what the dashboard shows, as JSON, for the
@@ -23,6 +24,8 @@ export function statsFor(domain: string, account: Account, days: number, now = D
   const site = getSite(domain);
   if (!site || site.owner !== account.email) return null;
   const dash = loadDashboard(site.domain, days, now);
+  const health = ingestHealth(site.domain, days, now);
+  const logFresh = hasFreshLogSource(site.domain, now);
   return {
     domain: site.domain,
     days,
@@ -35,16 +38,19 @@ export function statsFor(domain: string, account: Account, days: number, now = D
       firstAcceptedBeaconAt: site.first_beacon_at ? new Date(site.first_beacon_at).toISOString() : null,
       lastAcceptedBeaconAt: site.last_beacon_at ? new Date(site.last_beacon_at).toISOString() : null,
       logSourceFresh: hasFreshLogSource(site.domain, now),
+      dataState: dataState(site, { acceptedBeacons: health.find((r) => r.outcome === "accepted_batch")?.count ?? 0, quotaGaps: health.find((r) => r.outcome === "quota_reached")?.count ?? 0, logFresh, windowDays: days, now }),
       lastRealToolCallAt: site.last_tool_call_at ? new Date(site.last_tool_call_at).toISOString() : null,
       confirmedOutcomeSourceConfigured: false,
     },
     reportingDefinitions: REPORTING_DEFINITIONS,
-    ingestHealth: ingestHealth(site.domain, days, now).map((r) => ({ ...r, lastAt: new Date(r.lastAt).toISOString() })),
+    ingestHealth: health.map((r) => ({ ...r, lastAt: new Date(r.lastAt).toISOString() })),
     logSources: logSourceStates(site.domain).map((s) => ({ ...s, lastImportAt: s.lastImportAt ? new Date(s.lastImportAt).toISOString() : null, lastLogAt: s.lastLogAt ? new Date(s.lastLogAt).toISOString() : null })),
-    logSourceFresh: hasFreshLogSource(site.domain, now),
+    logSourceFresh: logFresh,
     logAttempts: logAttemptSummary(site.domain, days, now),
     verificationAudit: verificationAudit(site.domain, days, now).map((r) => ({ ...r, lastCheckedAt: new Date(r.lastCheckedAt).toISOString() })),
     check: site.last_score === null ? null : { score: site.last_score, grade: site.last_grade, scannedAt: site.last_scanned_at ? new Date(site.last_scanned_at).toISOString() : null },
+    scanJob: scanJob(site.domain, now),
+    recentScanAttempts: recentScanAttempts(site.domain),
     totals: { ...dash.overview.totals, ...reportingTotals(dash.overview.totals), interactions: interactions(dash.overview), activitySignals: activitySignals(dash.overview) },
     previous: dash.overview.previous,
     days_series: dash.overview.days,
