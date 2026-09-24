@@ -9,6 +9,8 @@ export const REPORTING_DEFINITIONS = {
   legacyFetchMeaning: "The fetches field contains historical UA-classified fetch claims without a persisted per-request IP match. New IP-confirmed requests are in verifiedFetches.",
   verifiedFetchMeaning: "A request's source IP matched a fresh provider-published range; this does not prove content understanding or a specific language model.",
   goalAttemptsMeaning: "Observed browser goal actions since protocol v2; actor and business outcome remain unconfirmed.",
+  serverOutcomeMeaning: "Authenticated site-server receipt confirms a business outcome, but only site-server tool telemetry can support site-reported agent attribution. Browser task IDs alone do not.",
+  serverToolMeaning: "Remote tool calls reported by the site server. Browser and server sources can overlap; do not sum these as distinct invocations without deduplication.",
   formAttemptsMeaning: "Observed browser form submits with a toolname marker; this is not proof of an agent invocation or successful completion.",
   interactionsMeaning: "Legacy sum of referrals, fetches, observed tool calls and unverified goal signals; categories may overlap and are not distinct agents.",
   eventUsageMeaning: "One technical tool invocation or one IP-verified HTML fetch counts toward monthly usage. Registrations, checks, simulations, referrals and unverified UA claims are free. A fresh log source takes priority over browser fetch observations; cross-source request identity is unavailable.",

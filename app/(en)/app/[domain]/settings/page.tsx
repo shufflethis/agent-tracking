@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import CopyButton from "@/components/CopyButton";
 import DashboardShell from "@/components/DashboardShell";
-import { CheckoutButton, DigestToggle, LogUpload, RemoveButton, ShareToggle, TokenPanel, VerifyButton } from "@/components/SiteActions";
+import { CheckoutButton, DigestToggle, LogUpload, RemoveButton, ShareToggle, TokenPanel, VerifyButton, WriteTokenPanel } from "@/components/SiteActions";
 import { billingConfigured } from "@/lib/billing";
 import { requireSite } from "@/lib/tracking/auth";
 import { actionStrings, dashCopy, dashLang, numberLocale } from "@/lib/tracking/copy";
@@ -11,6 +11,7 @@ import { snippetFor } from "@/lib/tracking/snippet";
 import { SITE_ORIGIN } from "@/lib/site";
 import { hasFreshLogSource, lastSiteCheck, logSourceStates, recentScanAttempts, scanJob } from "@/lib/tracking/db";
 import { scanStatusText } from "@/lib/tracking/scan-display";
+import { writeTokenConfigured } from "@/lib/tracking/server-ingest";
 
 // Rendered per request, not at build: the host, the entity on the legal pages and the
 // snippet line come from the environment, and a self-hosted copy must print its own.
@@ -79,7 +80,7 @@ export default async function Page({ params, searchParams }: { params: Promise<{
             {site.last_beacon_at && <li>{c.lastBeacon(new Date(site.last_beacon_at).toISOString())}</li>}
             <li>{logFresh ? c.logFresh : c.logStale}</li>
             <li>{site.last_tool_call_at ? c.toolCapture(new Date(site.last_tool_call_at).toISOString()) : c.noToolCapture}</li>
-            <li>{c.noOutcomeSource}</li>
+            <li>{writeTokenConfigured(site.domain, "outcome") ? (lang === "de" ? "Serverbestätigte Abschlüsse: Schreibzugang eingerichtet" : "Server confirmed outcomes: write access configured") : c.noOutcomeSource}</li>
           </ul>
           <h3 style={{ marginTop: 20 }}>{c.scanHistoryTitle}</h3>
           <p style={{ color: "var(--muted)", fontSize: 13 }}>{scanStatusText(currentScan, scanCopy)}</p>
@@ -149,6 +150,12 @@ export default async function Page({ params, searchParams }: { params: Promise<{
             existsLabel={dashCopy(lang).actions.tokenExists(account.api_token_created_at ? new Date(account.api_token_created_at).toISOString().slice(0, 10) : "")}
             c={a}
           />
+        </div>
+
+        <div className="card" style={{ padding: 28 }}>
+          <h2 style={{ fontSize: 22, marginBottom: 6 }}>{lang === "de" ? "Server-Integrationen" : "Server integrations"}</h2>
+          <p style={{ color: "var(--ink-2)" }}>{lang === "de" ? "Getrennte, jederzeit widerrufbare Schreibzugänge für bestätigte Anfragen/Buchungen und Remote-MCP-Tool-Aufrufe. Nur auf deinem Server verwenden; niemals im Browser einbauen." : "Separate revocable write credentials for confirmed inquiries/bookings and remote MCP tool calls. Use on your server only; never put them in the browser."} <Link href={`${docsHref}#server-outcomes`}>{c.docsLink}</Link>.</p>
+          <WriteTokenPanel domain={site.domain} lang={lang} outcomeConfigured={writeTokenConfigured(site.domain, "outcome")} toolConfigured={writeTokenConfigured(site.domain, "tool_telemetry")} />
         </div>
 
         <div className="card" style={{ padding: 28 }}>

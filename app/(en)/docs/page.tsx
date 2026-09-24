@@ -240,6 +240,14 @@ export default function Page() {
         </p>
       </section>
 
+      <section className="shell section" id="server-outcomes">
+        <h2>Confirm inquiries and bookings from your server</h2>
+        <p className="dek">Create separate site write credentials for outcomes and remote MCP tool calls in the site settings. Keep them on your server. After your application successfully saves an inquiry, POST a stable receipt to <code>/api/outcomes/example.com</code> with <code>Authorization: Bearer atw_...</code>. The account&apos;s stats token cannot write here.</p>
+        <pre className="code">{`{"receiptId":"receipt_1234567890123","kind":"inquiry_created","status":"confirmed","occurredAt":${Date.UTC(2026, 8, 25, 12)},"taskId":"task_1234567890123456"}`}</pre>
+        <p className="dek">Use a new receipt ID per actual inquiry and retry the same ID after network failure. A repeated receipt returns <code>duplicate</code>; a changed payload for the same ID returns 409. Do not send contact, payment or order content. Optional task and invocation IDs link observations without proving the actor.</p>
+        <p className="dek">For external MCP servers, send a separate credential to <code>/api/server-tools/example.com</code> with an invocation ID, optional task ID, tool name, time, technical outcome and actor kind. An agent actor is reported by your server, not independently verified. The browser snippet does not observe every remote MCP call. The runnable TypeScript example is in <code>examples/inquiry-app</code> in the repository.</p>
+      </section>
+
       <section className="shell section">
         <h2>The agents on the list</h2>
         <p className="dek" style={{ maxWidth: "62ch" }}>

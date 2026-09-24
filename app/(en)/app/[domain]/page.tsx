@@ -10,6 +10,7 @@ import { hasFreshLogSource, ingestHealth, scanJob } from "@/lib/tracking/db";
 import { dataState } from "@/lib/tracking/data-state";
 import { scanStatusText } from "@/lib/tracking/scan-display";
 import { planFor } from "@/lib/tracking/plans";
+import { outcomeSummary, serverToolSummary } from "@/lib/tracking/server-ingest";
 
 // Rendered per request, not at build: the host, the entity on the legal pages and the
 // snippet line come from the environment, and a self-hosted copy must print its own.
@@ -65,6 +66,8 @@ export default async function Page({ params }: Params) {
   const state = dataState(site, { acceptedBeacons: health.find((row) => row.outcome === "accepted_batch")?.count ?? 0, quotaGaps: health.find((row) => row.outcome === "quota_reached")?.count ?? 0, logFresh: hasFreshLogSource(site.domain), windowDays: dash.days, now: Date.now() });
   const measured = (n: number, note: string) => n === 0 && state !== "active" ? { value: "–", note: c.zeroState[state] } : { value: String(n), note };
   const scan = scanJob(site.domain);
+  const outcomes = outcomeSummary(site.domain, dash.days);
+  const remoteTools = serverToolSummary(site.domain, dash.days);
   const days = o.days.map((d) => d.day);
   const legend = [
     { label: c.referrals, color: "var(--cyan)" },
@@ -82,8 +85,12 @@ export default async function Page({ params }: Params) {
           <Stat label={c.fetches} {...measured(o.totals.fetches, trendNote(o.totals.fetches, o.previous.fetches, lang))} />
           <Stat label={c.verifiedFetches} {...measured(o.totals.verifiedFetches, trendNote(o.totals.verifiedFetches, o.previous.verifiedFetches, lang))} />
           <Stat label={c.calls} {...measured(o.totals.calls, trendNote(o.totals.calls, o.previous.calls, lang))} />
+          <Stat label={lang === "de" ? "Remote-MCP-Aufrufe" : "Remote MCP calls"} value={String(remoteTools.counted)} note={`${remoteTools.counted} / ${remoteTools.reports} ${lang === "de" ? "Servermeldungen im Zeitraum; separat von Browser-Calls" : "server reports in period; separate from browser calls"}`} />
           <Stat label={c.conversions} {...measured(o.totals.conversions, trendNote(o.totals.conversions, o.previous.conversions, lang))} />
           <Stat label={c.goalAttempts} {...measured(o.totals.goalAttempts, trendNote(o.totals.goalAttempts, o.previous.goalAttempts, lang))} />
+          <Stat label={lang === "de" ? "Serverbestätigte Abschlüsse" : "Server confirmed outcomes"} value={String(outcomes.confirmed)} note={`${outcomes.confirmed} / ${outcomes.reports} ${lang === "de" ? "Serverbelege im Zeitraum" : "server receipts in period"}`} />
+          <Stat label={lang === "de" ? "Ausgang ungeklärt" : "Outcome unlinked"} value={String(Math.max(0, o.totals.goalAttempts - outcomes.linkedGoalAttempts))} note={`${Math.max(0, o.totals.goalAttempts - outcomes.linkedGoalAttempts)} / ${o.totals.goalAttempts} ${lang === "de" ? "Browser-Zielversuche ohne verknüpften bestätigten Beleg" : "browser goal attempts without a linked confirmed receipt"}`} />
+          <p style={{ gridColumn: "1 / -1", color: "var(--muted)", margin: 0, fontSize: 13 }}>{lang === "de" ? `${outcomes.agentReported} Abschlüsse mit serverseitig gemeldetem Agenten; ${outcomes.actorUnknown} bestätigte Abschlüsse mit unbekanntem Akteur. Browser-Versuche und Serverbelege haben unterschiedliche Nenner und werden nicht zu einer Conversion-Rate verrechnet.` : `${outcomes.agentReported} outcomes with site server-reported agent actor; ${outcomes.actorUnknown} confirmed outcomes with unknown actor. Browser attempts and server receipts have different denominators and are not combined into a conversion rate.`}</p>
           <Stat label={c.sessions} {...measured(o.totals.sessions, c.sessionsNote)} />
           <p style={{ gridColumn: "1 / -1", color: "var(--muted)", margin: 0, fontSize: 13 }}>{c.legacyGoalNote}</p>
           {ingestIssues > 0 && <p role="status" style={{ gridColumn: "1 / -1", color: "var(--warn)", margin: 0, fontSize: 13 }}>{c.ingestIssue(ingestIssues)}</p>}

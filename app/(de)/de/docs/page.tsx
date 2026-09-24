@@ -244,6 +244,14 @@ export default function Page() {
         </p>
       </section>
 
+      <section className="shell section" id="server-outcomes">
+        <h2>Anfragen und Buchungen serverseitig bestätigen</h2>
+        <p className="dek">Erstelle in den Site-Einstellungen getrennte Schreibzugänge für Abschlüsse und Remote-MCP-Aufrufe. Bewahre sie nur auf deinem Server auf. Nach erfolgreichem Speichern einer Anfrage sende einen stabilen Beleg an <code>/api/outcomes/example.com</code> mit <code>Authorization: Bearer atw_...</code>. Das Stats-Lesetoken kann hier nicht schreiben.</p>
+        <pre className="code">{`{"receiptId":"receipt_1234567890123","kind":"inquiry_created","status":"confirmed","occurredAt":${Date.UTC(2026, 8, 25, 12)},"taskId":"task_1234567890123456"}`}</pre>
+        <p className="dek">Vergib pro echter Anfrage eine neue Beleg-ID und wiederhole bei Netzfehlern dieselbe ID. Wiederholungen liefern <code>duplicate</code>, geänderte Nutzdaten zur selben ID HTTP 409. Sende keine Kontakt-, Zahlungs- oder Bestellinhalte. Task- und Invocation-ID verknüpfen Beobachtungen, belegen aber keinen Akteur.</p>
+        <p className="dek">Für externe MCP-Server nutze den separaten Zugang und <code>/api/server-tools/example.com</code> mit Invocation-ID, optionaler Task-ID, Toolname, Zeitpunkt, technischem Ausgang und Akteurstyp. Ein Agentenakteur ist eine Aussage deines Servers, keine unabhängige Verifikation. Das Browser-Snippet sieht nicht jeden externen MCP-Aufruf. Das ausführbare TypeScript-Beispiel liegt im Repository unter <code>examples/inquiry-app</code>.</p>
+      </section>
+
       <section className="shell section">
         <h2>Die Agenten auf der Liste</h2>
         <p className="dek" style={{ maxWidth: "62ch" }}>

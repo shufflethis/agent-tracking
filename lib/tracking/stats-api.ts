@@ -4,6 +4,7 @@ import { activitySignals, interactions, loadDashboard } from "./dashboard";
 import { planFor } from "./plans";
 import { REPORTING_DEFINITIONS, reportingTotals } from "./reporting";
 import { dataState } from "./data-state";
+import { outcomeSummary, serverToolSummary, writeTokenConfigured } from "./server-ingest";
 
 /**
  * The stats payload: exactly what the dashboard shows, as JSON, for the
@@ -40,13 +41,15 @@ export function statsFor(domain: string, account: Account, days: number, now = D
       logSourceFresh: hasFreshLogSource(site.domain, now),
       dataState: dataState(site, { acceptedBeacons: health.find((r) => r.outcome === "accepted_batch")?.count ?? 0, quotaGaps: health.find((r) => r.outcome === "quota_reached")?.count ?? 0, logFresh, windowDays: days, now }),
       lastRealToolCallAt: site.last_tool_call_at ? new Date(site.last_tool_call_at).toISOString() : null,
-      confirmedOutcomeSourceConfigured: false,
+      confirmedOutcomeSourceConfigured: writeTokenConfigured(site.domain, "outcome"),
     },
     reportingDefinitions: REPORTING_DEFINITIONS,
     ingestHealth: health.map((r) => ({ ...r, lastAt: new Date(r.lastAt).toISOString() })),
     logSources: logSourceStates(site.domain).map((s) => ({ ...s, lastImportAt: s.lastImportAt ? new Date(s.lastImportAt).toISOString() : null, lastLogAt: s.lastLogAt ? new Date(s.lastLogAt).toISOString() : null })),
     logSourceFresh: logFresh,
     logAttempts: logAttemptSummary(site.domain, days, now),
+    serverOutcomes: outcomeSummary(site.domain, days, now),
+    serverToolCalls: serverToolSummary(site.domain, days, now),
     verificationAudit: verificationAudit(site.domain, days, now).map((r) => ({ ...r, lastCheckedAt: new Date(r.lastCheckedAt).toISOString() })),
     check: site.last_score === null ? null : { score: site.last_score, grade: site.last_grade, scannedAt: site.last_scanned_at ? new Date(site.last_scanned_at).toISOString() : null },
     scanJob: scanJob(site.domain, now),

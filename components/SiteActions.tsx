@@ -3,6 +3,34 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+
+export function WriteTokenPanel({ domain, lang, outcomeConfigured, toolConfigured }: { domain: string; lang: "de" | "en"; outcomeConfigured: boolean; toolConfigured: boolean }) {
+  const [shown, setShown] = useState<{ purpose: string; token: string } | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [configured, setConfigured] = useState({ outcome: outcomeConfigured, tool_telemetry: toolConfigured });
+  async function change(purpose: "outcome" | "tool_telemetry", method: "POST" | "DELETE") {
+    setBusy(true); setError(null); setShown(null);
+    try {
+      const response = await fetch(`/api/write-token/${encodeURIComponent(domain)}`, { method, headers: { "content-type": "application/json" }, body: JSON.stringify({ purpose }) });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.detail ?? "Request failed");
+      setConfigured((old) => ({ ...old, [purpose]: method === "POST" }));
+      if (method === "POST") setShown({ purpose, token: data.token });
+    } catch (cause) { setError(cause instanceof Error ? cause.message : "Request failed"); }
+    finally { setBusy(false); }
+  }
+  return <div style={{ display: "grid", gap: 12 }}>
+    {(["outcome", "tool_telemetry"] as const).map((purpose) => <div key={purpose} style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center" }}>
+      <strong>{purpose === "outcome" ? (lang === "de" ? "Abschlüsse" : "Outcomes") : "Remote MCP"}</strong>
+      <span>{configured[purpose] ? (lang === "de" ? "Eingerichtet" : "Configured") : (lang === "de" ? "Nicht eingerichtet" : "Not configured")}</span>
+      <button className="btn ghost" type="button" disabled={busy} onClick={() => change(purpose, "POST")}>{configured[purpose] ? (lang === "de" ? "Erneuern" : "Rotate") : (lang === "de" ? "Erstellen" : "Create")}</button>
+      {configured[purpose] && <button className="btn ghost" type="button" disabled={busy} onClick={() => change(purpose, "DELETE")}>{lang === "de" ? "Widerrufen" : "Revoke"}</button>}
+    </div>)}
+    {shown && <div><p>{lang === "de" ? "Diesen Zugang jetzt kopieren. Er wird nur einmal angezeigt." : "Copy this credential now. It is shown only once."}</p><pre className="code" style={{ overflowWrap: "anywhere" }}>{shown.token}</pre><button className="btn ghost" type="button" onClick={() => navigator.clipboard.writeText(shown.token)}>{lang === "de" ? "Kopieren" : "Copy"}</button></div>}
+    {error && <p role="alert" className="formerror">{error}</p>}
+  </div>;
+}
 import type { ActionCopy } from "@/lib/tracking/copy";
 
 /**

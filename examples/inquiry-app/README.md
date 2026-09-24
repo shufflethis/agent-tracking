@@ -1,0 +1,9 @@
+# Serverseitige Anfrageintegration
+
+In Site-Einstellungen zwei getrennte Schreibzugänge erstellen. Den Abschlusszugang als `TRACKING_OUTCOME_TOKEN` ausschließlich auf dem Anwendungsserver speichern. Ein `wmt_` Stats-Lesezugang kann hier nicht schreiben. Rotation und Widerruf wirken sofort.
+
+Lokal: Tracking-Anwendung starten, eine eigene Test-Site anlegen und `TRACKING_ORIGIN=http://localhost:3000 TRACKING_SITE=example.com TRACKING_OUTCOME_TOKEN=atw_... npx tsx examples/inquiry-app/example.ts` ausführen. Die Beispielanwendung schreibt zuerst eine Anfrage in `.data/inquiry-example.sqlite` und sendet danach einen Beleg. Für Zustellungssicherheit in einer echten Anwendung den stabilen Beleg und den ungesendeten Status in derselben lokalen Transaktion speichern und bei Netzwerkfehler mit derselben ID wiederholen.
+
+`tracking-client.ts` sendet nur Beleg-ID, Abschlussart, fachlichen Status, Zeitpunkt und optionale Task-/Invocation-ID. Keine Namen, E-Mail-Adressen, Zahlungs- oder Bestellinhalte senden. `receiptId`, `taskId` und `invocationId` sind opake IDs mit 16–64 Zeichen (`A-Z a-z 0-9 _ -`). Der Endpunkt `POST /api/outcomes/{domain}` antwortet `201 created`, `200 duplicate` oder `409 conflict`; andere Credentials werden mit `401` abgelehnt. Meldungen dürfen vor Browser-Ereignissen eintreffen.
+
+Für Remote-MCP-Aufrufe dient ein **separater** Zugang und `POST /api/server-tools/{domain}`. `remoteToolCalled` verwendet denselben Messvertrag mit Invocation-ID, Task-ID, Zeitpunkt, Toolname und technischem Ausgang. `actorKind=agent` ist eine Aussage des authentifizierten Site-Servers, keine unabhängige Providerverifikation. Nur so kann ein verknüpfter Abschluss als *serverseitig gemeldeter Agentenabschluss* erscheinen. Browser-Task-IDs allein bewirken das nie. Das Browser-Snippet sieht externe MCP-Aufrufe nicht automatisch.

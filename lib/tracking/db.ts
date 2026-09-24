@@ -271,6 +271,34 @@ function migrate(instance: DatabaseSync): void {
     }
     instance.prepare("insert into schema_migrations (version, applied_at) values (10, ?)").run(Date.now());
   }
+  if ((current.version ?? 0) < 11) {
+    instance.exec(`create table site_write_tokens (
+      domain text not null, purpose text not null, token_hash text not null,
+      created_at integer not null, revoked_at integer,
+      primary key (domain, purpose)
+    )`);
+    instance.exec("create unique index site_write_tokens_hash on site_write_tokens(token_hash)");
+    instance.exec(`create table server_outcomes (
+      domain text not null, receipt_id text not null, received_at integer not null,
+      occurred_at integer not null, kind text not null, status text not null,
+      task_id text, invocation_id text, payload_hash text not null,
+      observed_event_id integer, server_invocation_id text,
+      actor_evidence text not null default 'unknown',
+      primary key (domain, receipt_id)
+    )`);
+    instance.exec("create index server_outcomes_task on server_outcomes(domain, task_id)");
+    instance.exec("create index server_outcomes_invocation on server_outcomes(domain, invocation_id)");
+    instance.exec(`create table server_tool_calls (
+      domain text not null, invocation_id text not null, task_id text,
+      received_at integer not null, occurred_at integer not null,
+      tool_name text not null, technical_outcome text not null,
+      actor_kind text not null, actor_evidence text not null,
+      payload_hash text not null, counted integer not null default 0,
+      primary key (domain, invocation_id)
+    )`);
+    instance.exec("create index server_tool_calls_task on server_tool_calls(domain, task_id)");
+    instance.prepare("insert into schema_migrations (version, applied_at) values (11, ?)").run(Date.now());
+  }
   instance.exec("commit");
   } catch (err) {
     instance.exec("rollback");
@@ -457,6 +485,9 @@ export function removeSite(domain: string, owner: string): boolean {
   d.prepare("delete from site_checks where domain = ?").run(key);
   d.prepare("delete from scan_attempts where domain = ?").run(key);
   d.prepare("delete from scan_jobs where domain = ?").run(key);
+  d.prepare("delete from site_write_tokens where domain = ?").run(key);
+  d.prepare("delete from server_outcomes where domain = ?").run(key);
+  d.prepare("delete from server_tool_calls where domain = ?").run(key);
   d.prepare("delete from log_attempts where domain = ?").run(key);
   d.prepare("delete from log_records where domain = ?").run(key);
   d.prepare("delete from log_sources where domain = ?").run(key);
@@ -713,6 +744,7 @@ export function recordEvents(domain: string, owner: string, events: StoredEvent[
           e.businessOutcome ?? "unconfirmed", e.taskId ?? null, e.invocationId ?? null, e.parentId ?? null,
           e.releaseId ?? null, e.toolVersion ?? null, e.schemaVersion ?? null,
         );
+        if (e.taskId || e.invocationId) reconcileOutcomeLinks(domain, e.taskId ?? null, e.invocationId ?? null);
       }
       const errors = e.ok === false ? 1 : 0;
       const msTotal = e.ms ?? 0;
@@ -782,6 +814,28 @@ export function recordEvents(domain: string, owner: string, events: StoredEvent[
   } catch (err) {
     d.exec("rollback");
     throw err;
+  }
+}
+
+/** Browser observations may be linked, but only authenticated server telemetry can attest an agent actor. */
+export function reconcileOutcomeLinks(domain: string, taskId: string | null, invocationId: string | null): void {
+  if (!taskId && !invocationId) return;
+  const d = db();
+  const key = domain.toLowerCase();
+  const outcomes = d.prepare("select receipt_id as receiptId, task_id as taskId, invocation_id as invocationId from server_outcomes where domain = ? and ((task_id is not null and task_id = ?) or (invocation_id is not null and invocation_id = ?))")
+    .all(key, taskId, invocationId) as { receiptId: string; taskId: string | null; invocationId: string | null }[];
+  const browser = d.prepare(`select id from events where domain = ? and simulated = 0 and transport = 'browser'
+    and kind in ('goal_attempt', 'form_attempt', 'tool_call')
+    and ((? is not null and task_id = ?) or (? is not null and invocation_id = ?))
+    order by case kind when 'goal_attempt' then 0 when 'form_attempt' then 1 else 2 end, t limit 1`);
+  const server = d.prepare(`select invocation_id as invocationId, actor_kind as actorKind from server_tool_calls where domain = ?
+    and ((? is not null and task_id = ?) or (? is not null and invocation_id = ?))
+    order by case actor_kind when 'agent' then 0 else 1 end, received_at limit 1`);
+  const update = d.prepare("update server_outcomes set observed_event_id = coalesce(observed_event_id, ?), server_invocation_id = coalesce(server_invocation_id, ?), actor_evidence = case when ? = 'agent' then 'site_server_reported_agent' else actor_evidence end where domain = ? and receipt_id = ?");
+  for (const o of outcomes) {
+    const observed = browser.get(key, o.taskId, o.taskId, o.invocationId, o.invocationId) as { id: number } | undefined;
+    const attested = server.get(key, o.taskId, o.taskId, o.invocationId, o.invocationId) as { invocationId: string; actorKind: string } | undefined;
+    update.run(observed?.id ?? null, attested?.invocationId ?? null, attested?.actorKind ?? "unknown", key, o.receiptId);
   }
 }
 
