@@ -1,133 +1,46 @@
-<p align="center">
-  <a href="https://agenttracking.co"><img src="public/email/mark.png" width="64" alt=""></a>
-</p>
+# Agent Tracking
 
-<h1 align="center">Agent Tracking</h1>
+[Website](https://agenttracking.co) · [Documentation](https://agenttracking.co/docs) · [Demo](https://agenttracking.co/demo) · [Deutsch](https://agenttracking.co/de)
 
-<p align="center"><b>See what AI agents do on your website.</b><br>
-Which assistants send you visitors, which agents read your pages, which of your MCP and WebMCP tools they call, and whether they get to the goal.<br>
-One line of script. No cookies, no personal data, no ad or social trackers.</p>
-
-<p align="center">
-  <a href="https://github.com/shufflethis/agent-tracking/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/shufflethis/agent-tracking/actions/workflows/ci.yml/badge.svg"></a>
-  <a href="LICENSE"><img alt="License: AGPL-3.0" src="https://img.shields.io/badge/license-AGPL--3.0-8b3fca"></a>
-  <img alt="Snippet under 5 KB" src="https://img.shields.io/badge/snippet-4.5%20KB%2C%20no%20dependencies-3fd8ca">
-  <img alt="Node 22.13+" src="https://img.shields.io/badge/node-%3E%3D22.13-339933?logo=node.js&logoColor=white">
-  <img alt="Next.js 16" src="https://img.shields.io/badge/Next.js-16-000000?logo=next.js&logoColor=white">
-  <img alt="SQLite, one file" src="https://img.shields.io/badge/storage-SQLite%2C%20one%20file-003b57?logo=sqlite&logoColor=white">
-  <a href="https://agenttracking.co"><img alt="Hosted in Germany" src="https://img.shields.io/badge/cloud-agenttracking.co%2C%20hosted%20in%20Germany-f0c14b"></a>
-</p>
-
-<p align="center">
-  <a href="https://agenttracking.co"><b>Cloud (free pilot)</b></a> ·
-  <a href="https://agenttracking.co/docs">Docs</a> ·
-  <a href="https://agenttracking.co/demo">Live demo</a> ·
-  <a href="#self-hosting">Self-host</a> ·
-  <a href="#stats-api-and-mcp-server">API and MCP</a> ·
-  <a href="https://agenttracking.co/de">Deutsch</a>
-</p>
-
----
-
-## What agenttracking.co does
-
-Your analytics counts people. It does not see the visitor ChatGPT sent you, the page ClaudeBot fetched at 3 a.m., or the `book_table` tool an assistant called inside your customer's browser. Agent Tracking does. It is analytics for the third kind of visitor: **the AI agent that reads, reasons and acts on your site**, whether it arrives as a crawler, as a live fetch on behalf of a user, or as an assistant driving your MCP and WebMCP tools.
-
-You install one line:
+Agent Tracking combines **recognized assistant referrals**, **browser-visible WebMCP activity**, **optional origin-log evidence for crawlers**, and **site-server receipts for completed inquiries or bookings**. Each measurement keeps its source and evidence status. A browser goal marker is an attempt; it does not confirm a business result or an agent actor.
 
 ```html
 <script defer data-domain="example.com" src="https://agenttracking.co/agent.js"></script>
 ```
 
-and get four views: **Overview**, **Agents**, **Tools**, **Pages**. Plus the same numbers as JSON and as an MCP tool, so your own agents can read them.
+The snippet sets no cookies or local storage entries. It does not store raw network addresses or tool argument values. Daily salted session hashes and other telemetry still warrant a privacy assessment for each deployment; see the [documentation](https://agenttracking.co/docs) and [privacy notice](https://agenttracking.co/privacy).
 
-<p align="center"><img src="public/img/tracking/dashboard-overview.webp" width="820" alt="The overview: agent interactions per day, referrals, fetches, tool calls and conversions"></p>
+## Measurement sources
 
-## What it sees
-
-| Layer | What is measured | Where it comes from |
+| Source | What it can support | What it cannot prove |
 | --- | --- | --- |
-| **AI referrals** | A person arrives from chatgpt.com, perplexity.ai, claude.ai, copilot.microsoft.com, gemini.google.com and a dozen more; which assistant, which landing page, how the share moves week over week | Referrer and `utm_source`, matched against a [published, versioned list](lib/tracking/ai-sources.json) |
-| **Agent fetch observations** | Named crawler or fetcher requests, their paths and HTTP outcomes | Browser beacons and server logs. Only claims with a fresh matching published IP range enter the confirmed fetch count; other claims remain separate. A burst is three distinct pages in one import batch, not a known question. |
-| **Tool calls** | Every MCP and WebMCP tool on your site: calls, duration, success rate, error classes, argument key names, the tools nobody ever calls, and the moment a tool call reaches a goal you marked | The snippet wraps `navigator.modelContext` and `document.modelContext` and watches declarative `<form toolname>` elements. Nothing to change in your code |
-| **Conversions** | Whether agents complete the thing the site is for: a booking, an order, a signup | `data-agent-goal` on any element, or a tool call marked as a goal |
-| **Manifest** | Your `/.well-known/webmcp` manifest, hashed once per visit, so you notice when it changes | The snippet; Pro accounts get an email |
+| Assistant referrer and exact `utm_source` rules | Recognized source and landing path | A citation, model answer or agent identity |
+| Browser snippet | Supported WebMCP calls, technical outcomes, form and goal attempts | Every external MCP call or a completed business outcome |
+| Origin server log | HTTP access attempts; successful HTML fetches when status, method, resource and fresh published IP range match | What a crawler understood, a user query or intent |
+| Site-server integration | A stable receipt for a successfully created inquiry or booking, or a remote MCP invocation | Independent verification of a site-reported agent actor |
+| Deterministic Chrome task check | A reproducible test-only inquiry run with steps, versions and result | A third-party model-agent run or production conversion |
 
-And, beside the numbers, the site's **Agent Readiness Score** from [webmcp-tool.com](https://webmcp-tool.com): how well the site itself can be used by agents, next to how much it actually is.
+Browser and server tool-call sources can overlap. They are displayed separately; summing them does not yield distinct agents or invocations. Historical browser goal signals remain explicitly unconfirmed.
 
-## What it is not
+## Confirm a real inquiry
 
-The name is shared with other things. Agent Tracking is **AI agent analytics for websites**: it measures agents other people run when they visit your site. It is not
+Create a site-bound, revocable **outcome** write credential in site settings. After your backend durably creates an inquiry, send a stable receipt to `POST /api/outcomes/{domain}`. Retry with the same receipt ID after a network failure; duplicates count once. A separate **tool telemetry** credential sends remote MCP invocations to `POST /api/server-tools/{domain}`. The account's Stats token is read-only for these endpoints. Keep write credentials on your server, never in the browser. See the [local TypeScript example](examples/inquiry-app/README.md).
 
-- **LLM observability or tracing** (AgentOps, LangSmith, Langfuse, OpenTelemetry for LLM apps): those trace the agents you build, from inside your code. Complementary, not the same.
-- **call-centre or support-agent workforce tracking**, **field-sales or GPS tracking**, or **parcel and air-waybill tracking**: nothing here records people, locations, shifts or shipments.
-- **a bot blocker**: it measures and never blocks. The only request it makes to your site is one fetch of the homepage to verify the snippet.
+Task and invocation IDs can link a browser observation to a server receipt within one site. A browser-provided ID alone never promotes an unknown actor to a confirmed agent. Agent attribution from a remote tool report is labeled as the site server's claim.
 
-## Win the fight for AI bot traffic
+## Test, fix and report
 
-Agents already decide which sites get cited, read and used. Most sites have no idea what agents do on them. Four steps, repeated:
+Site owners can run a deterministic inquiry check against a `test.` or `staging.` subdomain. The check uses fixed synthetic values, a twelve-second limit and explicit success marker. It is separate from production counters. Model-driven agent tests are **not configured** without a real provider adapter. A documented fix can link a failed run to a new run of the same task with version IDs, conditions, sample sizes and unknown share; this does not establish causal revenue gain.
 
-1. **Measure** every agent and every action: referrals, verified fetches, bursts, tool calls, goals. Actual events, agent named.
-2. **Understand** how MCP and WebMCP agents behave: which pages a crawler takes and how fast, which tool an assistant tries first, where it fails, which argument keys it sends, whether it reaches the goal.
-3. **Fix** the site, the tools, the manifest: rename the tool agents keep missing, fix the error class behind half the failures, open the page every fan-out lands on.
-4. **Verify** with the readiness score and real usage side by side. When both go up, you are winning.
+Site owners can create seven-day, email-bound read links without sending invitation mail. A reader sees only the granted site and its internal report. Findings link evidence, category, responsible person, correction and retest. The printable HTML report and protected JSON export show coverage, findings, retests and open points. Public stats pages do not expose internal findings. Generic diagnostic recipes are suggestions; only an actual site retest can confirm a specific case.
 
-## Ask your agent, not a dashboard
+## API and MCP
 
-Every number is an MCP tool. Point the agent you already use at it and ask in words:
+The authenticated Stats API, CSV export and read-only MCP tool expose site summaries. A reader can access only explicitly shared sites. For details, see [API documentation](https://agenttracking.co/docs#api), [measurement contract](docs/measurement.md), [source classification](docs/source-classification.md), [task tests](docs/task-tests.md) and [agency workflow](docs/agency-workflow.md).
 
-| From | How |
-| --- | --- |
-| **Claude** Desktop and Claude Code | Add the MCP server with your token and ask: "Which agents read our site this week, and which tool failed most?" |
-| **ChatGPT** connectors and custom GPTs | The same endpoint as a connector; your GPT answers from your own agent data. |
-| **Cursor, Codex, Hermes, OpenClaw**, any MCP client | One JSON block in the client config (below). The agent that writes your code can read how agents use the result. |
-| **Scripts and BI** | `GET /api/stats` as JSON, CSV export, a Monday digest mail. |
+## Scope and limits
 
-Questions that work: "Which of our WebMCP tools has the worst success rate, and what is the top error?", "Did any fetch burst look like a Perplexity fan-out on the pricing page?", "How many agent conversions did we have in the last 30 days, compared to the 30 before?"
-
-## Who it is for
-
-- **Marketing and GEO teams**: which assistants send visitors and which pages they cite, week over week. The number generative engine optimisation was missing.
-- **Developers publishing MCP and WebMCP tools**: production analytics for your tools. Calls, success rate, duration, errors, the tools nobody uses.
-- **Agencies**: unlimited sites on the Agency plan, a public stats page per client, a white-label badge, one API token for your reporting.
-- **European companies**: no consent banner, no transfer, a DPA on adding the site, hosting in Germany or your own server.
-
-## Why it exists, and what makes it different
-
-Every tool on the market measures one of two things: **people** (Google Analytics, Plausible, Matomo) or **crawlers** (Cloudflare AI Audit, bot managers, log analyzers). Neither can see an agent that has already got past the door and is using your site: calling a tool, filling a form, finishing a booking on someone's behalf. That is the layer where the money and the risk are, and it is the layer nobody was measuring. Agent Tracking was built for it.
-
-| | Agent Tracking | Web analytics | CDN bot audit | Log analyzers | AI referral SaaS |
-| --- | :---: | :---: | :---: | :---: | :---: |
-| AI referrals attributed to the assistant | ✅ | partly | ❌ | ❌ | ✅ |
-| Crawler fetches, verified against vendor IP ranges | ✅ | ❌ | ✅ | partly | ❌ |
-| Fetch bursts (query fan-outs) | ✅ | ❌ | ❌ | ❌ | ❌ |
-| **MCP and WebMCP tool calls, success, errors, duration** | ✅ | ❌ | ❌ | ❌ | ❌ |
-| Agent conversions (goals reached by agents) | ✅ | ❌ | ❌ | ❌ | ❌ |
-| Manifest change alerts | ✅ | ❌ | ❌ | ❌ | ❌ |
-| Readiness score beside the usage | ✅ | ❌ | ❌ | ❌ | ❌ |
-| Works without a CDN or proxy in front of the site | ✅ | ✅ | ❌ | ✅ | ✅ |
-| No cookies, no IP stored, no consent banner needed | ✅ | some | n/a | ❌ | rarely |
-| Data stays in the EU | ✅ (server in Germany) | depends | ❌ | ✅ | ❌ |
-| Numbers available as JSON and as an MCP tool | ✅ | API only | ❌ | ❌ | API only |
-| Open source, self-hostable, one file to back up | ✅ | some | ❌ | ✅ | ❌ |
-
-The comparison names categories, not vendors, because products change. Check any one of them against the rows above; the middle five rows are the ones you will not find elsewhere.
-
-### Built for European companies and professionals
-
-- **GDPR by construction, not by banner.** No cookies, nothing written to the device, no network address stored, no fingerprint. The session id is a hash of a random value that changes every day, so yesterday's rows cannot be linked to today's. Tool arguments are recorded as key names, never values. Raw events are deleted after 90 days. This is why the snippet runs without a consent dialog.
-- **Hosted in Germany, with a data processing agreement you conclude by adding a site.** The [DPA](https://agenttracking.co/dpa) (German: [AVV](https://agenttracking.co/de/avv)) names the sub-processors, includes the EU standard contractual clauses, and describes the processing exactly as the code does it. Your data protection officer can read the source.
-- **Documentation and dashboard in English and German**, legal pages in both, English binding.
-- **Self-hostable in ten minutes** when data must not leave your own infrastructure. One Node process, one SQLite file, AGPL-3.0. What the cloud does, your server does.
-
-### The concrete value
-
-- **Know who sends you business.** "Perplexity referred 40 visitors this week, ChatGPT 12, and they land on the pricing page." That is a channel you can now optimise, and a number you can show to whoever asks whether AI matters for your site.
-- **See agent request patterns.** A verified GPTBot request shows a fetched resource, not how it was used. A ChatGPT-User burst shows nearby requests to distinct pages, not the user's question or intent.
-- **Know whether your tools work for agents.** You published MCP or WebMCP tools. Are they called? Do they fail? Which error? How long do they take? Which ones has no agent ever touched? The Tools view is the only place this exists.
-- **Know whether agents finish.** A tool call is not a sale. Mark the goal and see the conversion rate of agents, separately from people.
-- **Monitor machine behaviour on your site.** Verified fetches, unverified impostors claiming to be a known bot, bursts, manifest changes: the operational picture of what non-humans do to your site, every day, in one place.
-- **Give the numbers to your own agents.** A bearer token and one MCP tool, and Claude, ChatGPT or Cursor can answer "which agents read our site this week?" from your data.
+A missing or stale crawler range stays unverified. Legacy fetch counts are not silently upgraded. Fetch bursts mean at least three distinct relevant paths in one import batch; they reveal no prompt or intent. Browser-only traffic cannot identify every agent. The product does not record full referrer URLs, tool arguments or form values in its event schema. Deployment, additional scripts and legal requirements still need an individual privacy review.
 
 ## Installation
 
@@ -200,7 +113,7 @@ The same data as an MCP tool, for the agents you already use:
 { "mcpServers": { "agent-tracking": { "url": "https://agenttracking.co/api/mcp", "headers": { "Authorization": "Bearer wmt_your_token" } } } }
 ```
 
-Then ask: "Which agents read example.com this week, and which tool failed most?" The client calls `get_agent_stats`. A client that cannot set headers passes the token as the tool's `token` argument.
+Then ask: "Which verified crawler fetches and observed tool failures did example.com have this week?" The client calls `get_agent_stats`. A client that cannot set headers passes the token as the tool's `token` argument.
 
 ## How it works
 

@@ -244,7 +244,7 @@ export default function Page() {
               <b>Separation:</b> Data is stored and queried per domain; ingest is limited per account and per sending address.
             </li>
             <li>
-              <b>Deletion:</b> Raw data is deleted automatically every day after {RAW_RETENTION_DAYS} days. Removing a site deletes all of its data in one transaction.
+              <b>Deletion:</b> Raw data is deleted automatically every day after {RAW_RETENTION_DAYS} days. Removing a site deletes its associated records through the site removal process.
             </li>
             <li>
               <b>Availability:</b> The database writes transactionally. Every day a consistent snapshot is encrypted with AES-256 and stored outside the server (see section 5);

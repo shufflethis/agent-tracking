@@ -81,11 +81,15 @@ Sign in by email at ${SITE_ORIGIN}/login, add the domain, put this on every page
 ${snippetFor("example.com")}
 \`\`\`
 
-Tools registered through navigator.modelContext or document.modelContext are recorded automatically. Declarative tools are forms with a toolname attribute; data-agent-goal on any element marks a conversion. Crawlers that do not run JavaScript are counted from the server log: upload on the settings page or POST ${SITE_ORIGIN}/api/logs/{domain} with the API token (nginx or Apache combined format, plain or gzipped).
+Supported browser WebMCP tools registered through navigator.modelContext or document.modelContext can be observed by the snippet. Declarative forms with a toolname attribute yield attempts; data-agent-goal marks a browser goal attempt, not a completed sale. Crawlers that do not run JavaScript require an origin server log: upload on the settings page or POST ${SITE_ORIGIN}/api/logs/{domain} with the API token (nginx or Apache combined format, plain or gzipped). Only supported, successful HTML requests with a fresh matching published IP range enter the verified fetch count.
 
 ## What is recorded, and what is not
 
-Recorded: page path without query string; referrer host and utm_source only when they name an assistant; tool name, duration, success, error class, input key names; a session id (daily random salt + domain + coarse browser class + address, hashed, address not stored); which agent, from list version ${SOURCES_VERSION}. Never: network address, cookies, storage, fingerprints, query strings, input values, full user agent strings. Raw events are deleted after ${RAW_RETENTION_DAYS} days; daily totals stay as long as the site does. Removing a site deletes everything.
+Recorded: redacted page path without query string; recognized referrer host or source token, never a full referrer URL; tool name, duration, technical outcome and safe error class; a daily salted session hash based on domain, coarse browser class and address (raw address not stored). Browser observations do not prove an agent actor. The event schema excludes cookies, tool argument values, form values and full user-agent strings. Raw events are deleted after ${RAW_RETENTION_DAYS} days; daily totals stay while the site exists. Removing a site deletes its records. The hashed session estimate and deployment context still warrant privacy review. Source list version: ${SOURCES_VERSION}.
+
+## Server outcomes and task tests
+
+POST ${SITE_ORIGIN}/api/outcomes/{domain} with a site-bound outcome write credential only after your backend creates an inquiry or booking. Stable receipt IDs make retries idempotent. A separate site-bound credential reports remote MCP invocations at /api/server-tools/{domain}; browser and server sources may overlap. A browser ID alone never confirms an agent actor. Site owners can run deterministic synthetic Chrome inquiry checks on test/staging hosts. Model-driven provider tests remain not configured without an adapter. Protected site reports link findings, fixes and real retests; public stats do not expose them.
 
 ## Plans
 

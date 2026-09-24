@@ -198,7 +198,7 @@ export default function Page() {
             <b>Erhoben und gespeichert</b> je Seitenaufruf: der Seitenpfad ohne Query-String und Fragment; der Referrer-Host und der Parameter <code>utm_source</code>, nur zur
             Zuordnung des Besuchs zu einem KI-Assistenten; das Ergebnis dieser Zuordnung (Referrer und User-Agent gegen eine veröffentlichte, versionierte Liste abgeglichen); eine
             Sitzungskennung. Bei WebMCP-Tools zusätzlich: der Toolname, ein Hash von Beschreibung und Schema, Dauer und Ergebnis eines Aufrufs (Erfolg oder Fehlschlag,
-            Fehlerklasse), die Namen der Eingabefelder; der Name eines als Ziel markierten Elements bei Klick oder Absenden; ein Hash des Manifests unter{" "}
+            Fehlerklasse), aber keine beliebigen Eingabefeldnamen oder Werte; der Name eines als Ziel markierten Elements bei Klick oder Absenden; ein Hash des Manifests unter{" "}
             <code>/.well-known/webmcp</code>.
           </p>
           <p>
@@ -247,7 +247,7 @@ export default function Page() {
               <b>Trennung:</b> Daten werden je Domain gespeichert und abgefragt; der Ingest ist je Konto und je sendender Adresse begrenzt.
             </li>
             <li>
-              <b>Löschung:</b> Rohdaten werden täglich automatisch nach {RAW_RETENTION_DAYS} Tagen gelöscht. Das Entfernen einer Site löscht alle ihre Daten in einer Transaktion.
+              <b>Löschung:</b> Rohdaten werden täglich automatisch nach {RAW_RETENTION_DAYS} Tagen gelöscht. Beim Entfernen einer Site werden die zugehörigen Datensätze über den Site-Löschprozess entfernt.
             </li>
             <li>
               <b>Verfügbarkeit:</b> Die Datenbank schreibt transaktional. Täglich wird ein konsistenter Snapshot mit AES-256 verschlüsselt und außerhalb des Servers abgelegt (siehe

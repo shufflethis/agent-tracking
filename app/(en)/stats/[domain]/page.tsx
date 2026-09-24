@@ -147,7 +147,7 @@ export default async function Page({ params }: Params) {
             labels={{ x: "Share on X", linkedin: "Share on LinkedIn", copy: "Copy link", copied: "Link copied" }}
           />
           <p style={{ color: "var(--muted)", fontSize: 14, margin: "18px 0 0" }}>
-            Measured with one line of script, no cookies and no personal data. <Link href="/docs">How it works</Link>, or add it to your own site:
+            Browser signals use a script; verified fetches require an access log. No cookies are set, and privacy still needs a site-specific assessment. <Link href="/docs">How it works</Link>, or add it to your own site:
           </p>
           <pre className="code" style={{ whiteSpace: "pre-wrap", wordBreak: "break-all", marginTop: 10 }}>{snippetFor("your-site.com")}</pre>
         </div>

@@ -31,7 +31,7 @@ const API_MCP = `{
 export const metadata: Metadata = {
   title: "Agent Tracking: Was KI-Agenten auf deiner Site tun",
   description:
-    "Ein Snippet unter fünf Kilobyte erfasst KI-Referrals, KI-Abrufe, WebMCP-Tool-Aufrufe und Agenten-Conversions auf deiner Site. Keine Cookies, keine Fingerprints, keine personenbezogenen Daten, Hosting in Deutschland. Wie es funktioniert, was es erfasst, was nicht.",
+    "Das Snippet beobachtet erkannte Referrals und unterstützte Browser-WebMCP-Aktionen. Optionale Logs und Site-Serverbelege liefern getrennte Nachweise. Messgrenzen und Datenauswahl erklärt.",
   alternates: alternatesForLocale("/docs", "de"),
 };
 
@@ -44,9 +44,8 @@ const REGISTER = `await document.modelContext.registerTool({
   annotations: { readOnlyHint: true },
   execute: async ({ query }, { signal }) => { /* ... */ },
 });
-// agent.js umhüllt registerTool und provideContext, bevor das hier läuft:
-// die Registrierung, jeder Aufruf, seine Dauer, Erfolg oder Fehler und
-// die Namen der Argumentfelder werden erfasst. Werte nie.`;
+// agent.js beobachtet unterstützte Registrierungen und Aufrufe, während es aktiv ist:
+// technischen Ausgang, Dauer und bereinigte Fehlerklasse; Argumentwerte werden nicht gespeichert.`;
 
 const DECLARATIVE = `<form toolname="book_table" tooldescription="Reserviert einen Tisch für Datum und Personenzahl."
       action="/book" method="post">
@@ -70,8 +69,7 @@ export default function Page() {
           <p className="eyebrow">Agent Tracking</p>
           <h1>Was KI-Agenten auf deiner Site tun</h1>
           <p className="dek" style={{ maxWidth: "62ch" }}>
-            Der Check sagt dir, ob Agenten deine Site nutzen können. Das hier sagt dir, was sie damit tun: wer sie schickt, welche Seiten sie abrufen, welche deiner WebMCP-Tools sie
-            aufrufen und ob sie zum Ziel kommen. Ein Snippet, ein Dashboard, keine Cookies, keine personenbezogenen Daten, Hosting in Deutschland.
+            Sieh erkannte Assistenten-Referrals und unterstützte Browser-WebMCP-Aktionen. Optionale Origin-Logs und Site-Serverbelege ergänzen getrennte Crawler- und Abschlussnachweise. Das Snippet setzt keine Cookies.
           </p>
           <p style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 22 }}>
             <Link className="btn" href="/login?lang=de">Anmelden oder Konto anlegen</Link>
@@ -115,9 +113,7 @@ export default function Page() {
           <div className="card" style={{ padding: 24 }}>
             <p className="smallcaps">C. WebMCP-Tool-Aufrufe</p>
             <p style={{ color: "var(--ink-2)", margin: 0 }}>
-              Der Teil, den sonst niemand misst. Das Snippet umhüllt <code>document.modelContext</code> (und das veraltete <code>navigator.modelContext</code>), sodass jede
-              Registrierung und jeder Aufruf erfasst wird: Tool-Name, Dauer, Erfolg oder Fehler, Fehlerklasse und die Namen der Eingabefelder. Deklarative Tools auf Formularen werden
-              beim Absenden erfasst.
+              Das Snippet beobachtet unterstützte <code>document.modelContext</code>- und ältere <code>navigator.modelContext</code>-Aufrufe, während es aktiv ist. Es erfasst technische Ausgänge, Dauer und bereinigte Fehlerklassen. Deklarative Formulare erzeugen Submit-Versuche. Remote-MCP-Aufrufe brauchen den getrennten Serveradapter.
             </p>
           </div>
         </div>
@@ -135,8 +131,7 @@ export default function Page() {
         <p className="dek" style={{ maxWidth: "62ch" }}>An der Registrierung deiner Tools ändert sich nichts. Registriere sie, wie die Spezifikation es vorsieht, und das Snippet sieht sie:</p>
         <pre className="code">{REGISTER}</pre>
         <p className="dek" style={{ maxWidth: "62ch", marginTop: 18 }}>
-          Deklarative Tools sind Formulare mit einem <code>toolname</code>. Setze <code>data-agent-goal</code> auf ein beliebiges Element, um eine Conversion zu markieren, etwa eine
-          Bestellung oder eine bestätigte Buchung:
+          Deklarative Tools sind Formulare mit einem <code>toolname</code>. Setze <code>data-agent-goal</code>, um einen Browser-Zielversuch zu markieren. Eine bestätigte Anfrage oder Buchung braucht einen getrennten Serverbeleg:
         </p>
         <pre className="code">{DECLARATIVE}</pre>
         <p className="dek" style={{ maxWidth: "62ch", marginTop: 18 }}>
@@ -165,7 +160,7 @@ export default function Page() {
                 <td>Vollständige Referrer-URLs</td>
               </tr>
               <tr>
-                <td>Tool-Name, Dauer, Erfolg, Fehlerklasse, Namen der Eingabefelder</td>
+                <td>Beobachteter Tool-Name, Dauer, technischer Ausgang und bereinigte Fehlerklasse</td>
                 <td>Eingabewerte, Ausgabewerte</td>
               </tr>
               <tr>
@@ -173,7 +168,7 @@ export default function Page() {
                 <td>Die Adresse selbst, Cookies, Speicher, Fingerprints, jede dauerhafte Kennung</td>
               </tr>
               <tr>
-                <td>Welcher KI-Agent, aus einer gepflegten Liste (Version {SOURCES_VERSION})</td>
+                <td>Erkannter Quellen-Claim und Nachweisstatus (Listen-Version {SOURCES_VERSION})</td>
                 <td>Vollständige User-Agent-Strings</td>
               </tr>
             </tbody>
@@ -222,8 +217,8 @@ export default function Page() {
       <section className="shell section" id="api">
         <h2>Deine Zahlen in deinen eigenen Werkzeugen</h2>
         <p className="dek" style={{ maxWidth: "62ch" }}>
-          Alles, was das Dashboard zeigt, gibt es als JSON und als MCP-Tool, damit deine eigenen Scripts, Notebooks und Agenten es lesen können. Erzeuge das Token auf der
-          Einstellungsseite einer Site; es wird einmal gezeigt und gehört zum Konto, liest also jede Site darauf. Nur lesend, nur Tagessummen, keine Rohdaten.
+          Aggregierte Site-Statistiken gibt es als JSON und über ein MCP-Lesetool für berechtigte Scripts und Agenten. Erzeuge das Token auf der
+          Einstellungsseite einer Site; es wird einmal gezeigt und gehört zum Konto. Es liest eigene und ausdrücklich freigegebene Sites, keine Rohereignisse.
         </p>
         <pre className="code">{API_CURL}</pre>
         <p className="dek" style={{ maxWidth: "62ch", marginTop: 18 }}>

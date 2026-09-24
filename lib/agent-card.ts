@@ -11,7 +11,7 @@ import { CONTACT_EMAIL, LEGAL, SITE_HOST, SITE_NAME, SITE_ORIGIN } from "@/lib/s
 export const MCP_CARD = {
   $schema: "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   name: `${SITE_HOST.split(".").reverse().join(".")}/agent-tracking`,
-  description: `Read the AI agent statistics of a site tracked on ${SITE_HOST}: AI referrals, verified crawler fetches, MCP and WebMCP tool calls and agent conversions as daily totals. Needs the site owner's API token.`,
+  description: `Read authorized site statistics on ${SITE_HOST}: recognized referrals, crawler claims and verification, browser tool observations and separate server outcome receipts. Requires a read token for a site the account can access.`,
   version: "1.0.0",
   websiteUrl: `${SITE_ORIGIN}/docs#api`,
   remotes: [{ type: "streamable-http", url: `${SITE_ORIGIN}/api/mcp` }],
@@ -20,7 +20,7 @@ export const MCP_CARD = {
 export const AGENT_CARD = {
   protocolVersion: "0.3.0",
   name: SITE_HOST,
-  description: `${SITE_NAME}: AI agent analytics for websites. Returns, for a site the caller owns, which AI assistants sent visitors, which crawlers read pages, which MCP and WebMCP tools were called and whether agents reached a goal.`,
+  description: `${SITE_NAME}: recognized referrals, crawler evidence, observed browser tools and separate server outcome receipts for an authorized site. Browser attempts do not confirm an agent actor.`,
   version: "1.0.0",
   url: `${SITE_ORIGIN}/api/mcp`,
   preferredTransport: "JSONRPC",
@@ -35,9 +35,9 @@ export const AGENT_CARD = {
     {
       id: "get_agent_stats",
       name: "Get a site's agent statistics",
-      description: "Daily totals for the last N days: AI referrals per assistant, AI fetches per crawler with verification, tool calls with success rate and duration, busiest pages, fetch bursts and conversions.",
+      description: "Daily site summaries: recognized referrals, crawler claims and verification, browser tool outcomes, separate server receipts, pages and distinct-path bursts. Legacy browser goal signals remain unconfirmed.",
       tags: ["agent-tracking", "analytics", "webmcp", "mcp"],
-      examples: ["Which agents read example.com this week?", "Which of our WebMCP tools failed most in the last 30 days?"],
+      examples: ["Which verified crawler fetches did example.com receive this week?", "Which observed WebMCP calls failed most in the last 30 days?"],
     },
   ],
 };
@@ -58,7 +58,7 @@ export const API_CATALOG = {
 };
 
 const bearer = [{ bearerAuth: [] }];
-const domainParam = { name: "domain", in: "path", required: true, description: "A site registered on the caller's account, bare host, for example example.com", schema: { type: "string" } };
+const domainParam = { name: "domain", in: "path", required: true, description: "A bare-host site owned by or explicitly shared with the caller, for example example.com", schema: { type: "string" } };
 const daysParam = { name: "days", in: "query", required: false, description: "Window in days, default 30, capped by the plan's history", schema: { type: "integer", minimum: 1, maximum: 365 } };
 
 export const OPENAPI = {
@@ -66,9 +66,9 @@ export const OPENAPI = {
   info: {
     title: `${SITE_HOST} Stats API`,
     version: "1.0.0",
-    summary: "The numbers of a tracked site, for its owner's own scripts and agents.",
+    summary: "Evidence-labeled summaries for sites the caller may read.",
     description:
-      "Every number the dashboard shows, as JSON. One token per account, created on a site's settings page, read-only, daily totals only. The same data is available through the MCP server at /api/mcp (tool get_agent_stats). Public stats pages a site owner has published are readable without a token at /api/public-stats/{domain}.",
+      "Daily counters and separate measurement-status, crawler-verification and server-receipt summaries as JSON. The account read token is created in site settings and can access owned or explicitly shared sites. It does not authorize outcome writes. MCP tool get_agent_stats returns the same site summary. Public stats pages expose only published aggregate fields, never private findings or receipts.",
     license: { name: "AGPL-3.0-only", identifier: "AGPL-3.0-only" },
     contact: { name: SITE_NAME, url: `${SITE_ORIGIN}/docs#api`, email: CONTACT_EMAIL },
   },
@@ -79,7 +79,7 @@ export const OPENAPI = {
       get: { operationId: "listSites", summary: "The sites this token can read", security: bearer, responses: { "200": { description: "Plan, history window and the sites with their stats URLs", content: { "application/json": { schema: { type: "object", properties: { plan: { type: "string" }, maxDays: { type: "integer" }, sites: { type: "array", items: { type: "object", properties: { domain: { type: "string" }, verified: { type: "boolean" }, stats: { type: "string", format: "uri" } } } } } } } } }, "401": { description: "No or invalid token" } } },
     },
     "/api/stats/{domain}": {
-      get: { operationId: "getAgentStats", summary: "Daily agent statistics of one site", security: bearer, parameters: [domainParam, daysParam], responses: { "200": { description: "Totals, previous period, day series, agents, tools, pages and bursts", content: { "application/json": { schema: { type: "object", required: ["domain", "days", "totals", "agents", "tools", "pages"], properties: { domain: { type: "string" }, days: { type: "integer" }, generatedAt: { type: "string", format: "date-time" }, sourcesVersion: { type: "string" }, verified: { type: "boolean" }, totals: { type: "object" }, previous: { type: "object" }, days_series: { type: "array", items: { type: "object" } }, agents: { type: "array", items: { type: "object" } }, tools: { type: "array", items: { type: "object" } }, pages: { type: "array", items: { type: "object" } }, bursts: { type: "array", items: { type: "object" } } } } } } }, "404": { description: "Not a site on this account" } } },
+      get: { operationId: "getAgentStats", summary: "Evidence-labeled daily statistics of one authorized site", security: bearer, parameters: [domainParam, daysParam], responses: { "200": { description: "Counters, source status, distinct server receipts, previous period, day series, pages and bursts", content: { "application/json": { schema: { type: "object", required: ["domain", "days", "totals", "agents", "tools", "pages"], properties: { domain: { type: "string" }, days: { type: "integer" }, generatedAt: { type: "string", format: "date-time" }, sourcesVersion: { type: "string" }, verified: { type: "boolean" }, measurementStatus: { type: "object" }, serverOutcomes: { type: "object" }, serverToolCalls: { type: "object" }, totals: { type: "object" }, previous: { type: "object" }, days_series: { type: "array", items: { type: "object" } }, agents: { type: "array", items: { type: "object" } }, tools: { type: "array", items: { type: "object" } }, pages: { type: "array", items: { type: "object" } }, bursts: { type: "array", items: { type: "object" } } } } } } }, "404": { description: "Site not accessible to this account" } } },
     },
     "/api/public-stats/{domain}": {
       get: { operationId: "getPublicStats", summary: "Published 30-day totals of a site whose owner switched the public stats page on", parameters: [domainParam], responses: { "200": { description: "Totals, agents and pages, 30 days", content: { "application/json": { schema: { type: "object", properties: { domain: { type: "string" }, days: { type: "integer" }, totals: { type: "object" }, agents: { type: "array", items: { type: "object" } }, pages: { type: "array", items: { type: "object" } }, page: { type: "string", format: "uri" } } } } } }, "404": { description: "No public stats page for that site" } } },

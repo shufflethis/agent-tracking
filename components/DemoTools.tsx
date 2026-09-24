@@ -108,7 +108,7 @@ export default function DemoTools() {
             Subscribe
           </button>
         </form>
-        <p style={{ fontSize: 13, color: "var(--muted)", margin: "10px 0 0" }}>The submit button also carries data-agent-goal, so one submission is a tool call and a conversion.</p>
+        <p style={{ fontSize: 13, color: "var(--muted)", margin: "10px 0 0" }}>The submit button also carries data-agent-goal, so one submission can record a tool call and an unverified goal attempt. A confirmed outcome needs a server receipt.</p>
       </div>
 
       <div className="card" style={{ padding: 26 }}>

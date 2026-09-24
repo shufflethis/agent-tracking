@@ -31,7 +31,7 @@ export default async function Image({ params }: { params: Promise<{ domain: stri
             {o.totals.referrals} referrals · {o.totals.verifiedFetches} confirmed fetches · {o.totals.fetches} legacy fetch claims · {o.totals.calls} tool calls · {o.totals.conversions} unverified goals
           </span>
         </div>
-        <Footer tagline="Cookieless, no personal data" />
+        <Footer tagline="Cookieless; assess privacy for your deployment" />
       </Frame>
     ),
     OG_SIZE,

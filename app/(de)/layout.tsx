@@ -9,7 +9,7 @@ export const metadata: Metadata = {
     template: `%s · ${SITE_NAME}`,
   },
   description:
-    "Eine Zeile Script zeigt, welche KI-Assistenten Besucher schicken, welche Agenten Ihre Seiten abrufen, welche WebMCP-Tools sie aufrufen und ob sie ans Ziel kommen. Keine Cookies, keine personenbezogenen Daten. Open Source, gehostet in Deutschland.",
+    "Erkennbare KI-Referrals und Browser-Tools messen, Crawler mit Origin-Logs prüfen und Abschlüsse über Serverbelege bestätigen. Ohne Cookies; Datenschutz hängt von der konkreten Einbindung ab. Open Source, gehostet in Deutschland.",
   openGraph: { type: "website", siteName: SITE_NAME, locale: "de_DE" },
 };
 

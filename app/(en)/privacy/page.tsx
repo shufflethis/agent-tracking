@@ -87,14 +87,14 @@ export default function Page() {
         <h2 id="tracking">Agent Tracking on customers&apos; sites</h2>
         <p>
           Site owners place our script <code>agent.js</code> on their pages. For their visitors we then record, on their behalf: the page path without query string, whether the
-          visit came from or was made by an AI assistant (matched from the referrer and the user agent against a published list), and for WebMCP tools the tool name, duration,
-          success or failure, the error class and the <b>names of the input keys, never their values</b>. Each record carries a session id computed from a random daily salt, the
+          visit had a recognized assistant referrer or claimed bot user agent, and for supported WebMCP tools the tool name, duration,
+          technical success or failure and a safe error class. Raw input values and arbitrary input key names are excluded. Each record carries a session id computed from a random daily salt, the
           site, a coarse browser class and the network address, hashed; the address itself is not stored, no cookie is set and nothing is written to the device. Raw records are
           deleted after {RAW_RETENTION_DAYS} days; daily totals remain as long as the site is in the account.
         </p>
         <p>
-          Site owners may also upload their own server log. From each line the day, the agent name and the page path are taken; the network address is used while the upload is
-          processed only to group one agent&apos;s fetches and to check the agent against its vendor&apos;s published address ranges, and is discarded when the request ends.
+          Site owners may also upload their own origin server log. Supported bot claims are checked against current published address ranges when available; missing or failed
+          verification remains visible. The network address is used during processing and is not retained in the resulting counters.
         </p>
         <p>
           A log line whose user agent matches no entry on our published list used to be discarded, which is how a new AI agent stays invisible for months. Such a line is now

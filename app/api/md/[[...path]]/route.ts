@@ -63,8 +63,8 @@ function docs(lang: DashLang): string {
     `Full text: ${SITE_ORIGIN}${lang === "de" ? "/de/docs" : "/docs"} · Everything on one page: ${SITE_ORIGIN}/llms-full.txt`, "",
     `## ${lang === "de" ? "Installation" : "Install"}`, "", "```html", snippetFor("example.com"), "```", "",
     lang === "de"
-      ? "Site im Dashboard anlegen, das Snippet auf jede Seite, Prüfen drücken. Über navigator.modelContext registrierte Tools werden automatisch erfasst; deklarative Tools sind Formulare mit toolname; data-agent-goal markiert eine Conversion. Server-Logs für Crawler ohne JavaScript per Upload oder POST /api/logs/{domain} mit dem API-Token."
-      : "Add the site in the dashboard, put the snippet on every page, press verify. Tools registered through navigator.modelContext are recorded automatically; declarative tools are forms with a toolname; data-agent-goal marks a conversion. Server logs for crawlers that do not run JavaScript: upload, or POST /api/logs/{domain} with the API token.",
+      ? "Site im Dashboard anlegen, Snippet installieren und prüfen. Unterstützte Browser-WebMCP-Aufrufe werden beobachtet; data-agent-goal markiert nur einen Versuch. Server-Logs liefern getrennte Crawler-Belege, Server-Abschlussbelege brauchen eine eigene Integration und einen Site-Schreibzugang."
+      : "Add the site in the dashboard, install and verify the snippet. Supported browser WebMCP calls are observed; data-agent-goal marks an attempt only. Server logs provide separate crawler evidence, and confirmed outcomes require a site-server integration with its own write credential.",
     "",
     "## Stats API and MCP", "",
     `- GET ${SITE_ORIGIN}/api/stats/{domain}?days=30 with Authorization: Bearer <token>`,

@@ -85,15 +85,14 @@ export default function Page() {
         <h2 id="tracking">Agent Tracking auf Kundensites</h2>
         <p>
           Site-Betreiber binden unser Script <code>agent.js</code> auf ihren Seiten ein. Für deren Besucher erfassen wir dann in ihrem Auftrag: den Seitenpfad ohne Query-String,
-          ob der Besuch von einem KI-Assistenten kam oder durch einen erfolgte (Abgleich von Referrer und User-Agent gegen eine veröffentlichte Liste), und bei WebMCP-Tools den
-          Toolnamen, Dauer, Erfolg oder Fehlschlag, die Fehlerklasse und die <b>Namen der Eingabefelder, nie deren Werte</b>. Jeder Datensatz trägt eine Sitzungskennung aus
+          ob ein erkannter Assistenten-Referrer oder ein behaupteter Bot-User-Agent vorlag, und bei unterstützten WebMCP-Tools den
+          Toolnamen, Dauer, technischen Erfolg oder Fehlschlag und eine sichere Fehlerklasse. Rohe Eingabewerte und beliebige Feldnamen werden ausgeschlossen. Jeder Datensatz trägt eine Sitzungskennung aus
           einem täglich neuen Zufallswert, der Site, einer groben Browserklasse und der Netzwerkadresse, gehasht; die Adresse selbst wird nicht gespeichert, kein Cookie gesetzt,
           nichts auf das Gerät geschrieben. Rohdaten werden nach {RAW_RETENTION_DAYS} Tagen gelöscht; Tagessummen bleiben, solange die Site im Konto ist.
         </p>
         <p>
-          Site-Betreiber können außerdem ihr eigenes Server-Log hochladen. Aus jeder Zeile werden Tag, Agentenname und Seitenpfad übernommen; die Netzwerkadresse wird nur während
-          der Verarbeitung genutzt, um Abrufe eines Agenten zu gruppieren und den Agenten gegen die veröffentlichten Adressbereiche seines Anbieters zu prüfen, und mit dem Ende
-          der Anfrage verworfen.
+          Site-Betreiber können außerdem ihr eigenes Origin-Server-Log hochladen. Unterstützte Bot-Namen werden soweit möglich gegen aktuelle veröffentlichte Adressbereiche
+          geprüft; fehlende oder gescheiterte Verifikation bleibt sichtbar. Die Netzwerkadresse wird während der Verarbeitung genutzt und nicht in den Zählern gespeichert.
         </p>
         <p>
           Eine Logzeile, deren User-Agent zu keinem Eintrag unserer veröffentlichten Liste passt, wurde bisher verworfen &mdash; so bleibt ein neuer KI-Agent monatelang unsichtbar.

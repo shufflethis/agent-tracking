@@ -31,7 +31,7 @@ const API_MCP = `{
 export const metadata: Metadata = {
   title: "Agent Tracking: what AI agents do on your site",
   description:
-    "One snippet under five kilobytes records AI referrals, AI fetches, WebMCP tool calls and agent conversions on your site. No cookies, no fingerprints, no personal data, hosted in Germany, open source. How it works, what it records, what it refuses to.",
+    "The snippet observes recognized referrals and supported browser WebMCP actions. Optional logs and site-server receipts add separate evidence. Measurement limits and data selection explained.",
   alternates: alternatesFor("/docs"),
 };
 
@@ -44,9 +44,8 @@ const REGISTER = `await document.modelContext.registerTool({
   annotations: { readOnlyHint: true },
   execute: async ({ query }, { signal }) => { /* ... */ },
 });
-// agent.js wraps registerTool and provideContext before this runs:
-// the registration, every call, its duration, success or failure and
-// the argument key names are recorded. Values never are.`;
+// agent.js observes supported registrations and calls while active:
+// technical outcome, duration and safe error class; argument values are not stored.`;
 
 const DECLARATIVE = `<form toolname="book_table" tooldescription="Book a table for a date and party size."
       action="/book" method="post">
@@ -69,8 +68,7 @@ export default function Page() {
           <p className="eyebrow">Agent Tracking</p>
           <h1>What AI agents do on your site</h1>
           <p className="dek" style={{ maxWidth: "62ch" }}>
-            Your analytics counts people. This counts agents: who sends them, which pages they fetch, which of your WebMCP tools they call, and
-            whether they finish. One snippet, one dashboard, no cookies, no personal data, hosted in Germany.
+            See recognized assistant referrals and supported browser WebMCP actions. Optional origin logs and site-server receipts add separate crawler and outcome evidence. The snippet sets no cookies.
           </p>
           <p style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 22 }}>
             <Link className="btn" href="/login">Sign in or create an account</Link>
@@ -113,8 +111,7 @@ export default function Page() {
           <div className="card" style={{ padding: 24 }}>
             <p className="smallcaps">C. WebMCP tool calls</p>
             <p style={{ color: "var(--ink-2)", margin: 0 }}>
-              The part nobody else measures. The snippet wraps <code>document.modelContext</code> (and the deprecated <code>navigator.modelContext</code>), so every registration and
-              every call is recorded: tool name, duration, success or failure, error class, and the names of the input keys. Declarative tools on forms are caught on submit.
+              The snippet wraps supported <code>document.modelContext</code> and legacy <code>navigator.modelContext</code> calls while it is active. It records technical outcomes, duration and safe error classes. Declarative forms produce submit attempts. Remote MCP calls require the separate server adapter.
             </p>
           </div>
         </div>
@@ -132,7 +129,7 @@ export default function Page() {
         <p className="dek" style={{ maxWidth: "62ch" }}>Nothing to change in how you register tools. Register them as the specification says and the snippet sees them:</p>
         <pre className="code">{REGISTER}</pre>
         <p className="dek" style={{ maxWidth: "62ch", marginTop: 18 }}>
-          Declarative tools are forms with a <code>toolname</code>. Add <code>data-agent-goal</code> to any element to mark a conversion, such as an order placed or a booking confirmed:
+          Declarative tools are forms with a <code>toolname</code>. Add <code>data-agent-goal</code> to mark a browser goal attempt. A confirmed inquiry or booking needs a separate server receipt:
         </p>
         <pre className="code">{DECLARATIVE}</pre>
         <p className="dek" style={{ maxWidth: "62ch", marginTop: 18 }}>
@@ -161,7 +158,7 @@ export default function Page() {
                 <td>Full referrer URLs</td>
               </tr>
               <tr>
-                <td>Tool name, duration, success, error class, input key names</td>
+                <td>Observed tool name, duration, technical outcome and sanitized error class</td>
                 <td>Input values, output values</td>
               </tr>
               <tr>
@@ -169,7 +166,7 @@ export default function Page() {
                 <td>The address itself, cookies, storage, fingerprints, any durable identifier</td>
               </tr>
               <tr>
-                <td>Which AI agent, from a maintained list (version {SOURCES_VERSION})</td>
+                <td>Recognized source claim and evidence status (list version {SOURCES_VERSION})</td>
                 <td>Full user agent strings</td>
               </tr>
             </tbody>
@@ -217,8 +214,8 @@ export default function Page() {
       <section className="shell section" id="api">
         <h2>Your numbers, in your own tools</h2>
         <p className="dek" style={{ maxWidth: "62ch" }}>
-          Everything the dashboard shows is available as JSON and as an MCP tool, so your own scripts, notebooks and agents can read it. Create the token on a
-          site&apos;s settings page; it is shown once and belongs to the account, so it reads every site on it. Read-only, daily totals only, no raw events.
+          Aggregate site statistics are available as JSON and through an MCP read tool, so authorized scripts and agents can read them. Create the token on a
+          site&apos;s settings page; it is shown once and belongs to the account, so it reads owned and explicitly shared sites. Read-only, aggregate data; no raw events.
         </p>
         <pre className="code">{API_CURL}</pre>
         <p className="dek" style={{ maxWidth: "62ch", marginTop: 18 }}>

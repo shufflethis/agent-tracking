@@ -15,10 +15,10 @@ export const revalidate = 3600;
 export const metadata: Metadata = {
   title: { absolute: "Agent Tracking: AI agent analytics for websites" },
   description:
-    "See which AI assistants send visitors, which crawlers read your pages, which MCP and WebMCP tools agents call and whether they finish. One script tag, no cookies. Open source.",
+    "Recognized AI referrals, supported browser tool activity, optional verified crawler logs and server-confirmed outcomes. Source limits stay visible. Open source.",
   alternates: alternatesFor("/"),
   robots: { index: true, follow: true, "max-image-preview": "large", "max-snippet": -1 },
-  openGraph: { title: "Agent Tracking: AI agent analytics for websites", description: "AI referrals, verified crawler fetches, MCP and WebMCP tool calls, agent conversions. One script tag, no cookies. Open source, hosted in Germany.", url: "/", type: "website" },
+  openGraph: { title: "Agent Tracking: AI agent analytics for websites", description: "Recognized AI referrals, supported WebMCP observations, optional crawler-log verification and server outcome receipts. Open source.", url: "/", type: "website" },
   twitter: { card: "summary_large_image" },
 };
 
@@ -28,7 +28,7 @@ const PAGE_LD = {
   "@id": `${SITE_ORIGIN}/#webpage`,
   url: SITE_ORIGIN,
   name: "Agent Tracking: AI agent analytics for websites",
-  description: "See which AI assistants send visitors, which crawlers read your pages, which MCP and WebMCP tools agents call and whether they finish.",
+  description: "Recognized assistant referrals, browser tool observations, optional crawler logs and server outcome receipts with explicit evidence limits.",
   inLanguage: "en",
   dateModified: LEGAL.revised,
   isPartOf: { "@id": `${SITE_ORIGIN}/#site` },
@@ -61,11 +61,10 @@ export default function Page() {
           Measure agents on your site.
         </h1>
         <p style={{ fontSize: "clamp(17px,2.1vw,22px)", lineHeight: 1.55, color: "var(--ink)", maxWidth: "52ch", marginTop: 0, marginBottom: 14 }}>
-          Agent Tracking is AI agent analytics for websites: it records which AI assistants send visitors, which AI crawlers read your pages, which MCP and WebMCP tools an agent calls, and whether the agent reaches a goal.
+          See recognized assistant referrals and browser-visible tool activity. Add origin logs for crawler requests and server receipts for confirmed inquiries or bookings.
         </p>
         <p style={{ fontSize: "clamp(15px,1.6vw,18px)", lineHeight: 1.55, color: "var(--ink-2)", maxWidth: "52ch", marginTop: 0, marginBottom: 28 }}>
-          See identifiable visits from assistants and browser tool calls with one script. Add your server log to
-          measure crawlers that never run JavaScript. The four views keep these signals separate.
+          The snippet observes supported browser actions. Logs and server integrations add separate evidence; a browser goal marker alone does not confirm a result or an agent actor.
         </p>
         <form className="scanform" action="/login" method="get" style={{ maxWidth: 560 }} {...{ toolname: "start_free_pilot", tooldescription: "Start the free Agent Tracking pilot for a domain: opens the sign-in page with the domain prefilled." }}>
           <label htmlFor="domain" className="sr-only">Your domain</label>
@@ -75,7 +74,7 @@ export default function Page() {
           </button>
         </form>
         <p id="pilot-note" className="formnote" style={{ marginTop: 10 }}>
-          Sign in by email, paste one line, done. No card, no cookies on your visitors, no personal data.{" "}
+          Sign in by email and install the snippet. No card. It sets no cookies; review the documented data flow for your deployment.{" "}
           <Link href="/demo">See the demo page</Link> first if you like.
         </p>
         <p className="formnote"><Link href="/guides/ai-agent-traffic-website-measurement-guide">Read the complete AI traffic measurement guide</Link>.</p>
@@ -137,10 +136,9 @@ export default function Page() {
 
       <section className="shell section centered">
         <div className="callout mid" style={{ maxWidth: "var(--measure)", marginLeft: "auto", marginRight: "auto" }}>
-          <span className="tag">Privacy by construction</span>
+          <span className="tag">Documented data selection</span>
           <p>
-            No cookies, nothing written to the visitor&apos;s device, no network address stored, and for tool calls
-            the names of the input keys but never their values. Raw events are deleted after {RAW_RETENTION_DAYS}{" "}
+            The snippet sets no cookies or local storage entries. Raw network addresses and tool argument values are not stored in event records. Daily salted session hashes remain estimates and may require a privacy assessment. Raw events are deleted after {RAW_RETENTION_DAYS}{" "}
             days; daily totals stay as long as the site does. Everything lives on our own server in Germany, and
             the <Link href="/dpa">data processing agreement</Link> is concluded the moment you add a site. Removing the
             site deletes all of it.

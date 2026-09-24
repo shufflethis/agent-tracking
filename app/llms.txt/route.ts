@@ -5,7 +5,7 @@ export const revalidate = 3600;
 
 const BODY = `# ${SITE_HOST}
 
-> Agent Tracking is analytics for AI agents on a website: it records which AI assistants send visitors, which AI crawlers and live fetchers read pages (verified against vendor IP ranges), which MCP and WebMCP tools an agent calls inside the browser, and whether the agent reaches a goal. One script tag, no cookies, no personal data. Open source (AGPL-3.0), hosted in Germany, self-hostable.
+> Agent Tracking combines recognized assistant referrals, supported browser WebMCP observations, optional origin-log crawler evidence and site-server outcome receipts. A browser goal marker is an attempt, not a confirmed business result or agent actor. The snippet sets no cookies. Open source (AGPL-3.0), hosted in Germany, self-hostable.
 
 ## Not to be confused with
 

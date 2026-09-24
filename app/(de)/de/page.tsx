@@ -15,10 +15,10 @@ export const revalidate = 3600;
 export const metadata: Metadata = {
   title: { absolute: "Agent Tracking: KI-Agenten-Analytics für deine Website" },
   description:
-    "Sieh, welche KI-Assistenten Besucher schicken, welche Crawler deine Seiten lesen, welche MCP- und WebMCP-Tools Agenten aufrufen und ob sie ans Ziel kommen. Ein Script-Tag, keine Cookies.",
+    "Erkannte KI-Referrals, unterstützte Browser-Tools, optionale verifizierte Crawler-Logs und serverbestätigte Abschlüsse mit sichtbaren Messgrenzen.",
   alternates: alternatesForLocale("/", "de"),
   robots: { index: true, follow: true, "max-image-preview": "large", "max-snippet": -1 },
-  openGraph: { title: "Agent Tracking: sieh, was KI-Agenten auf deiner Website tun", description: "KI-Referrals, verifizierte Crawler-Abrufe, MCP- und WebMCP-Tool-Aufrufe, Agenten-Conversions. Ein Script-Tag, keine Cookies. Open Source, Hosting in Deutschland.", url: "/de", type: "website" },
+  openGraph: { title: "Agent Tracking: sieh, was KI-Agenten auf deiner Website tun", description: "Erkannte KI-Referrals, unterstützte WebMCP-Beobachtungen, optionale Crawler-Log-Prüfung und Serverbelege. Open Source.", url: "/de", type: "website" },
   twitter: { card: "summary_large_image" },
 };
 
@@ -28,7 +28,7 @@ const PAGE_LD = {
   "@id": `${SITE_ORIGIN}/de#webpage`,
   url: `${SITE_ORIGIN}/de`,
   name: "Agent Tracking: KI-Agenten-Analytics für deine Website",
-  description: "Sieh, welche KI-Assistenten Besucher schicken, welche Crawler deine Seiten lesen, welche MCP- und WebMCP-Tools Agenten aufrufen und ob sie ans Ziel kommen.",
+  description: "Erkannte Assistenten-Referrals, Browser-Tool-Beobachtungen, optionale Crawler-Logs und Serverbelege mit expliziten Messgrenzen.",
   inLanguage: "de",
   dateModified: LEGAL.revised,
   isPartOf: { "@id": `${SITE_ORIGIN}/#site` },
@@ -53,11 +53,10 @@ export default function Page() {
           Miss die Agenten auf deiner Site.
         </h1>
         <p style={{ fontSize: "clamp(17px,2.1vw,22px)", lineHeight: 1.55, color: "var(--ink)", maxWidth: "52ch", marginTop: 0, marginBottom: 14 }}>
-          Agent Tracking ist KI-Agenten-Analytics für Websites: Es erfasst, welche KI-Assistenten Besucher schicken, welche KI-Crawler deine Seiten lesen, welche MCP- und WebMCP-Tools ein Agent aufruft und ob der Agent ein Ziel erreicht.
+          Sieh erkannte Assistenten-Referrals und im Browser beobachtbare Tool-Aktivität. Ergänze Origin-Logs für Crawler-Anfragen und Serverbelege für bestätigte Anfragen oder Buchungen.
         </p>
         <p style={{ fontSize: "clamp(15px,1.6vw,18px)", lineHeight: 1.55, color: "var(--ink-2)", maxWidth: "52ch", marginTop: 0, marginBottom: 28 }}>
-          Ein Script erfasst erkennbare Besuche aus Assistenten und Browser-Tools. Ergänze dein Server-Log für
-          Crawler, die kein JavaScript ausführen. Vier Ansichten halten diese Signale getrennt.
+          Das Snippet beobachtet unterstützte Browseraktionen. Logs und Serverintegrationen liefern getrennte Belege; ein Browser-Zielmarker bestätigt weder einen Abschluss noch den Akteur.
         </p>
         <form className="scanform" action="/login" method="get" style={{ maxWidth: 560 }} {...{ toolname: "start_free_pilot", tooldescription: "Startet die kostenlose Agent-Tracking-Pilotphase für eine Domain: öffnet die Anmeldeseite mit vorausgefüllter Domain." }}>
           <input type="hidden" name="lang" value="de" />
@@ -68,8 +67,7 @@ export default function Page() {
           </button>
         </form>
         <p id="pilot-note" className="formnote" style={{ marginTop: 10 }}>
-          Anmeldung per E-Mail, eine Zeile einfügen, fertig. Keine Karte, keine Cookies bei deinen Besuchern, keine
-          personenbezogenen Daten. Vorher die <Link href="/demo">Demo-Seite</Link> ansehen geht auch.
+          Anmeldung per E-Mail und Snippet einbauen. Keine Karte. Das Snippet setzt keine Cookies; prüfe den dokumentierten Datenfluss für deine Installation. Vorher die <Link href="/demo">Demo-Seite</Link> ansehen geht auch.
         </p>
         <p className="formnote"><Link href="/de/guides/ki-agenten-traffic-website-messen-leitfaden">Ausführlichen Leitfaden zur Messung von KI-Traffic lesen</Link>.</p>
       </section>
@@ -129,10 +127,9 @@ export default function Page() {
 
       <section className="shell section centered">
         <div className="callout mid" style={{ maxWidth: "var(--measure)", marginLeft: "auto", marginRight: "auto" }}>
-          <span className="tag">Datenschutz von Anfang an</span>
+          <span className="tag">Dokumentierte Datenauswahl</span>
           <p>
-            Keine Cookies, nichts auf dem Endgerät der Besucher, keine gespeicherte Netzwerkadresse, und bei
-            Tool-Aufrufen die Namen der Eingabefelder, nie deren Werte. Rohdaten werden nach {RAW_RETENTION_DAYS} Tagen
+            Das Snippet setzt keine Cookies oder Local-Storage-Einträge. Rohe Netzwerkadressen und Tool-Argumentwerte werden nicht als Ereignisse gespeichert. Täglich gesalzene Session-Hashes bleiben Näherungen und können eine Datenschutzprüfung erfordern. Rohdaten werden nach {RAW_RETENTION_DAYS} Tagen
             gelöscht, Tagessummen bleiben, solange die Site besteht. Alles liegt auf unserem eigenen Server in
             Deutschland, und der <Link href="/de/avv">Auftragsverarbeitungsvertrag</Link> wird in dem Moment
             geschlossen, in dem du eine Site hinzufügst. Site entfernen löscht alles.

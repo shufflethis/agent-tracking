@@ -9,7 +9,7 @@ export const metadata: Metadata = {
     template: `%s · ${SITE_NAME}`,
   },
   description:
-    "One line of script shows which AI assistants send visitors, which agents fetch your pages, which WebMCP tools they call and whether they finish. No cookies, no personal data. Open source, hosted in Germany.",
+    "Recognized assistant referrals and supported browser WebMCP observations, with optional crawler logs and server-confirmed outcome receipts. Evidence limits stay visible. Open source.",
   openGraph: { type: "website", siteName: SITE_NAME, locale: "en_GB" },
 };
 

@@ -6,5 +6,5 @@ export const size = OG_SIZE;
 export const contentType = "image/png";
 
 export default function Image() {
-  return genericImage("See what AI agents do on your website.", "AI referrals, verified crawler fetches, MCP and WebMCP tool calls, agent conversions. One script tag, no cookies.");
+  return genericImage("See evidence of AI activity on your site.", "Identifiable AI referrals, log-verified fetches and instrumented tool calls. Goal attempts and confirmed outcomes stay distinct.");
 }
