@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import type { ActionCopy } from "@/lib/tracking/copy";
@@ -73,12 +74,13 @@ export function VerifyButton({ domain, verified, c }: { domain: string; verified
           setBusy(false);
           if (!r.ok) return setNote(r.detail ?? c.couldNotCheck);
           setNote(r.verified ? c.found : (r.detail ?? c.notFound));
-          if (r.verified) router.refresh();
+          router.refresh();
         }}
       >
         {busy ? c.checking : verified ? c.checkAgain : c.checkSnippet}
       </button>
       {note ? <span style={{ fontSize: 13, color: "var(--muted)" }}>{note}</span> : null}
+      {note === c.found ? <Link href={`/app/${encodeURIComponent(domain)}#measurement`} style={{ fontSize: 13 }}>{c.nextAfterVerify}</Link> : null}
     </span>
   );
 }

@@ -1,5 +1,5 @@
 import { SOURCES_VERSION } from "./classify";
-import { getSite, hasFreshLogSource, ingestHealth, logAttemptSummary, logSourceStates, verificationAudit, type Account } from "./db";
+import { getSite, hasFreshLogSource, ingestHealth, lastSiteCheck, logAttemptSummary, logSourceStates, verificationAudit, type Account } from "./db";
 import { activitySignals, interactions, loadDashboard } from "./dashboard";
 import { planFor } from "./plans";
 import { REPORTING_DEFINITIONS, reportingTotals } from "./reporting";
@@ -29,6 +29,15 @@ export function statsFor(domain: string, account: Account, days: number, now = D
     generatedAt: new Date(now).toISOString(),
     sourcesVersion: SOURCES_VERSION,
     verified: Boolean(site.verified_at),
+    measurementStatus: {
+      snippetLastSuccessAt: site.verified_at ? new Date(site.verified_at).toISOString() : null,
+      snippetLastCheck: lastSiteCheck(site.domain, "snippet"),
+      firstAcceptedBeaconAt: site.first_beacon_at ? new Date(site.first_beacon_at).toISOString() : null,
+      lastAcceptedBeaconAt: site.last_beacon_at ? new Date(site.last_beacon_at).toISOString() : null,
+      logSourceFresh: hasFreshLogSource(site.domain, now),
+      lastRealToolCallAt: site.last_tool_call_at ? new Date(site.last_tool_call_at).toISOString() : null,
+      confirmedOutcomeSourceConfigured: false,
+    },
     reportingDefinitions: REPORTING_DEFINITIONS,
     ingestHealth: ingestHealth(site.domain, days, now).map((r) => ({ ...r, lastAt: new Date(r.lastAt).toISOString() })),
     logSources: logSourceStates(site.domain).map((s) => ({ ...s, lastImportAt: s.lastImportAt ? new Date(s.lastImportAt).toISOString() : null, lastLogAt: s.lastLogAt ? new Date(s.lastLogAt).toISOString() : null })),

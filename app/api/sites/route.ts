@@ -1,11 +1,12 @@
 import { assertPublicHost } from "@/lib/public-host";
+import { randomUUID } from "node:crypto";
 import { CONTACT_EMAIL } from "@/lib/site";
 import { snippetInstalled } from "@/lib/verify-snippet";
 import { fetchScore } from "@/lib/tracking/score";
 import { clientIp, take } from "@/lib/ratelimit";
 import { currentAccount } from "@/lib/tracking/auth";
 import { normalizeDomain } from "@/lib/tracking/classify";
-import { addSite, getSite, markVerified, removeSite, setPublicShare, setScore, sitesFor } from "@/lib/tracking/db";
+import { addSite, getSite, markVerified, recordSiteCheck, removeSite, setPublicShare, setScore, sitesFor } from "@/lib/tracking/db";
 import { planFor } from "@/lib/tracking/plans";
 
 export const runtime = "nodejs";
@@ -50,12 +51,16 @@ export async function POST(request: Request) {
       // An outbound fetch of someone's homepage, so it spends the crawl budget.
       const budget = take(clientIp(request.headers), "crawls");
       if (!budget.ok) return problem("Too many checks. Try again in a while.", 429);
+      const testId = randomUUID();
+      const at = Date.now();
       const found = await snippetInstalled(domain);
+      const detailCode = found.ok ? "installed" : found.detail.includes("data-domain") ? "domain_mismatch" : found.detail.includes("not found") ? "snippet_missing" : found.detail.includes("answered") ? "homepage_http_error" : found.detail.includes("redirect") ? "redirect_issue" : "fetch_failed";
+      recordSiteCheck(domain, { testId, kind: "snippet", attemptedAt: at, success: found.ok, detailCode });
       if (found.ok) {
         markVerified(domain);
-        return Response.json({ ok: true, verified: true });
+        return Response.json({ ok: true, verified: true, testId });
       }
-      return Response.json({ ok: true, verified: false, detail: found.detail });
+      return Response.json({ ok: true, verified: false, detail: found.detail, testId });
     }
     case "share": {
       const site = getSite(domain);
@@ -70,10 +75,13 @@ export async function POST(request: Request) {
       if (!site || site.owner !== account.email) return problem("Not your site.", 403);
       const budget = take(clientIp(request.headers), "crawls");
       if (!budget.ok) return problem("Too many checks. Try again in a while.", 429);
+      const testId = randomUUID();
+      const at = Date.now();
       const scored = await fetchScore(domain);
+      recordSiteCheck(domain, { testId, kind: "score", attemptedAt: at, success: scored.ok, detailCode: scored.ok ? "scored" : "check_failed" });
       if (!scored.ok) return problem(scored.detail, 502);
       setScore(domain, scored.score, scored.grade);
-      return Response.json({ ok: true, score: scored.score, grade: scored.grade });
+      return Response.json({ ok: true, score: scored.score, grade: scored.grade, testId });
     }
     case "remove": {
       if (!removeSite(domain, account.email)) return problem("Not your site.", 403);

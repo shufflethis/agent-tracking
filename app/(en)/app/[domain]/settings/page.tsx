@@ -9,7 +9,7 @@ import { actionStrings, dashCopy, dashLang, numberLocale } from "@/lib/tracking/
 import { PLANS, planFor, priceIdFor } from "@/lib/tracking/plans";
 import { snippetFor } from "@/lib/tracking/snippet";
 import { SITE_ORIGIN } from "@/lib/site";
-import { hasFreshLogSource, logSourceStates } from "@/lib/tracking/db";
+import { hasFreshLogSource, lastSiteCheck, logSourceStates } from "@/lib/tracking/db";
 
 // Rendered per request, not at build: the host, the entity on the legal pages and the
 // snippet line come from the environment, and a self-hosted copy must print its own.
@@ -35,6 +35,7 @@ export default async function Page({ params, searchParams }: { params: Promise<{
   const docsHref = lang === "de" ? "/de/docs" : "/docs";
   const logSources = logSourceStates(site.domain);
   const logFresh = hasFreshLogSource(site.domain);
+  const snippetCheck = lastSiteCheck(site.domain, "snippet");
   const extras = `${plan.manifestAlerts ? `, ${c.manifestAlerts}` : ""}${plan.whiteLabelBadge ? `, ${c.whiteLabel}` : ""}`;
 
   return (
@@ -51,7 +52,7 @@ export default async function Page({ params, searchParams }: { params: Promise<{
           <h2 style={{ fontSize: 22, marginBottom: 6, display: "flex", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
             {c.installTitle}
             <span className={`chip ${site.verified_at ? "pass" : "partial"}`} style={{ fontSize: 13, fontWeight: 500 }}>
-              <span aria-hidden="true">{site.verified_at ? "✓ " : "○ "}</span>{site.verified_at ? listCopy.verified : listCopy.notVerified}
+              {site.verified_at ? listCopy.verified : listCopy.notVerified}
             </span>
           </h2>
           <p style={{ color: "var(--ink-2)", maxWidth: "62ch", marginBottom: 14 }}>
@@ -62,6 +63,19 @@ export default async function Page({ params, searchParams }: { params: Promise<{
           <h3 style={{ fontSize: 18, margin: "24px 0 6px" }}>{c.verifyTitle}</h3>
           <p style={{ color: "var(--ink-2)", maxWidth: "62ch", marginBottom: 14 }}>{site.verified_at ? c.verifiedOn(new Date(site.verified_at).toISOString().slice(0, 10)) : c.verifyText}</p>
           <VerifyButton domain={site.domain} verified={Boolean(site.verified_at)} c={a} />
+        </div>
+
+        <div className="card" id="measurement" style={{ padding: 28, scrollMarginTop: 20 }}>
+          <h2 style={{ fontSize: 22, marginBottom: 12 }}>{c.setupStatusTitle}</h2>
+          <ul style={{ margin: 0, paddingLeft: 20, display: "grid", gap: 8, color: "var(--ink-2)" }}>
+            <li>{site.verified_at ? c.verifiedOn(new Date(site.verified_at).toISOString().slice(0, 10)) : c.verifyText}</li>
+            <li>{snippetCheck ? c.lastSnippetCheck(new Date(snippetCheck.attemptedAt).toISOString(), snippetCheck.success ? c.checkPassed : `${c.checkFailed}: ${snippetCheck.detailCode}`, snippetCheck.testId) : c.noSnippetCheck}</li>
+            <li>{site.first_beacon_at ? c.firstBeacon(new Date(site.first_beacon_at).toISOString()) : c.noBeacon}</li>
+            {site.last_beacon_at && <li>{c.lastBeacon(new Date(site.last_beacon_at).toISOString())}</li>}
+            <li>{logFresh ? c.logFresh : c.logStale}</li>
+            <li>{site.last_tool_call_at ? c.toolCapture(new Date(site.last_tool_call_at).toISOString()) : c.noToolCapture}</li>
+            <li>{c.noOutcomeSource}</li>
+          </ul>
         </div>
 
         <div className="card" style={{ padding: 28 }}>

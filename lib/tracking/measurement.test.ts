@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, it } from "node:test";
 import { sanitizeBatch } from "./classify";
-import { addSite, closeDb, dailyRows, db, ensureAccount, ingestHealth, recordEvents, toolRows, usageThisMonth, verificationAudit, type StoredEvent } from "./db";
+import { addSite, closeDb, dailyRows, db, ensureAccount, getSite, ingestHealth, lastSiteCheck, markVerified, recordEvents, recordSiteCheck, toolRows, usageThisMonth, verificationAudit, type StoredEvent } from "./db";
 import { POST as ingestBrowserBatch } from "../../app/api/event/route";
 
 const NOW = Date.UTC(2026, 8, 24, 12);
@@ -35,6 +35,22 @@ describe("versioned measurements", () => {
     assert.equal(v2?.events[0].occurredAt, NOW);
     assert.equal("verified" in (v2?.events[0] ?? {}), false);
     assert.equal("transport" in (v2?.events[0] ?? {}), false);
+  });
+  it("separates install checks from accepted beacons and retains a failed recheck", () => {
+    ensureAccount("a@example.com", NOW);
+    addSite("example.com", "a@example.com", NOW);
+    recordSiteCheck("example.com", { testId: "setup-1", kind: "snippet", attemptedAt: NOW, success: true, detailCode: "installed" });
+    markVerified("example.com", NOW);
+    recordSiteCheck("example.com", { testId: "setup-2", kind: "snippet", attemptedAt: NOW + 1, success: false, detailCode: "snippet_missing" });
+    assert.equal(getSite("example.com")?.verified_at, NOW);
+    assert.equal(lastSiteCheck("example.com", "snippet")?.testId, "setup-2");
+    assert.equal(lastSiteCheck("example.com", "snippet")?.success, false);
+    assert.equal(getSite("example.com")?.first_beacon_at, null);
+    recordEvents("example.com", "a@example.com", [call("event-0000000080")], NOW + 2);
+    assert.equal(getSite("example.com")?.first_beacon_at, NOW + 2);
+    assert.equal(getSite("example.com")?.last_beacon_at, NOW + 2);
+    assert.equal(getSite("example.com")?.last_tool_call_at, NOW + 2);
+    assert.equal(usageThisMonth("a@example.com", NOW + 2), 1, "only the real tool call consumes usage");
   });
 
   it("deduplicates a retry atomically without merging distinct events or sites", () => {

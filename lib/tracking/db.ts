@@ -238,6 +238,17 @@ function migrate(instance: DatabaseSync): void {
     }
     instance.prepare("insert into schema_migrations (version, applied_at) values (8, ?)").run(Date.now());
   }
+  if ((current.version ?? 0) < 9) {
+    instance.exec("alter table sites add column first_beacon_at integer");
+    instance.exec("alter table sites add column last_beacon_at integer");
+    instance.exec("alter table sites add column last_tool_call_at integer");
+    instance.exec(`create table site_checks (
+      test_id text primary key, domain text not null, kind text not null,
+      attempted_at integer not null, success integer not null, detail_code text not null
+    )`);
+    instance.exec("create index site_checks_domain_time on site_checks(domain, attempted_at)");
+    instance.prepare("insert into schema_migrations (version, applied_at) values (9, ?)").run(Date.now());
+  }
   instance.exec("commit");
   } catch (err) {
     instance.exec("rollback");
@@ -384,6 +395,9 @@ export type Site = {
   log_since: number | null;
   /** Time of the newest log line imported; older lines in a re-sent file are skipped. */
   log_last_t: number | null;
+  first_beacon_at: number | null;
+  last_beacon_at: number | null;
+  last_tool_call_at: number | null;
 };
 
 export function getSite(domain: string): Site | null {
@@ -418,6 +432,7 @@ export function removeSite(domain: string, owner: string): boolean {
   d.prepare("delete from ingest_health where domain = ?").run(key);
   d.prepare("delete from verification_audit where domain = ?").run(key);
   d.prepare("delete from tool_session_receipts where domain = ?").run(key);
+  d.prepare("delete from site_checks where domain = ?").run(key);
   d.prepare("delete from log_attempts where domain = ?").run(key);
   d.prepare("delete from log_records where domain = ?").run(key);
   d.prepare("delete from log_sources where domain = ?").run(key);
@@ -428,6 +443,20 @@ export function removeSite(domain: string, owner: string): boolean {
 
 export function markVerified(domain: string, now = Date.now()): void {
   db().prepare("update sites set verified_at = ? where domain = ?").run(now, domain.toLowerCase());
+}
+
+export type SiteCheck = { testId: string; kind: "snippet" | "score" | "tool_capture"; attemptedAt: number; success: boolean; detailCode: string };
+
+/** Setup checks are separately identified observations and never enter usage or event counters. */
+export function recordSiteCheck(domain: string, check: SiteCheck): void {
+  db().prepare("insert into site_checks (test_id, domain, kind, attempted_at, success, detail_code) values (?, ?, ?, ?, ?, ?)")
+    .run(check.testId, domain.toLowerCase(), check.kind, check.attemptedAt, check.success ? 1 : 0, check.detailCode);
+}
+
+export function lastSiteCheck(domain: string, kind: SiteCheck["kind"]): SiteCheck | null {
+  const row = db().prepare("select test_id as testId, kind, attempted_at as attemptedAt, success, detail_code as detailCode from site_checks where domain = ? and kind = ? order by attempted_at desc limit 1")
+    .get(domain.toLowerCase(), kind) as (Omit<SiteCheck, "success"> & { success: number }) | undefined;
+  return row ? { ...row, success: Boolean(row.success) } : null;
 }
 
 /** Fetches for this site come from the server log from now on. Idempotent. */
@@ -541,6 +570,7 @@ export function recordEvents(domain: string, owner: string, events: StoredEvent[
   try {
     let acceptedUsage = 0;
     let accepted = 0;
+    let toolCallObserved = false;
     let duplicates = 0;
     let quotaDropped = 0;
     // The read and usage update share the write transaction, so concurrent
@@ -604,6 +634,7 @@ export function recordEvents(domain: string, owner: string, events: StoredEvent[
           }
         }
       } else if (e.kind === "tool_call") {
+        if (!e.simulated) toolCallObserved = true;
         bump.run(domain, day, e.simulated ? "tool_call_sim" : "tool_call", name ?? "?", errors, msTotal);
         if (!e.simulated && e.session && Number(sessionReceipt.run(domain, day, e.session).changes)) bump.run(domain, day, "tool_session_estimate", "all", 0, 0);
         if (!e.simulated) {
@@ -636,6 +667,8 @@ export function recordEvents(domain: string, owner: string, events: StoredEvent[
     }
     // Plain human views are free; only the rows that are kept count against the plan.
     addUsage(owner, acceptedUsage, now);
+    if (accepted) d.prepare("update sites set first_beacon_at = coalesce(first_beacon_at, ?), last_beacon_at = ? where domain = ?").run(now, now, domain);
+    if (toolCallObserved) d.prepare("update sites set last_tool_call_at = ? where domain = ?").run(now, domain);
     d.exec("commit");
     return { accepted, duplicates, quotaDropped };
   } catch (err) {
