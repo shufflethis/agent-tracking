@@ -1,4 +1,5 @@
 import type { DashLang } from "@/lib/tracking/copy";
+import { SEO_GUIDES_DE, SEO_GUIDES_EN } from "@/lib/seo-guides";
 
 /**
  * Question-shaped guides: each answers one thing a person types into a search
@@ -16,7 +17,9 @@ export type Guide = {
   sections: GuideSection[];
   faq: { q: string; a: string }[];
   related: string[];
-  /** ISO date of the last substantive change, for lastmod and datePublished. */
+  /** Original publication date when the article has since been revised. */
+  published?: string;
+  /** ISO date of the last substantive change, for lastmod and dateModified. */
   updated: string;
 };
 
@@ -52,7 +55,7 @@ const EN: Guide[] = [
       { q: "Can I measure agents without a script on the page?", a: "Partly. The server log gives you crawler fetches and bursts. Referrals and tool calls happen in the browser and need the snippet." },
       { q: "Does it slow the site down?", a: "The snippet is 4.5 KB, loads deferred and sends small batches with sendBeacon. Nothing blocks rendering." },
     ],
-    related: ["see-whether-ai-agents-buy-on-your-site", "which-ai-assistants-send-visitors", "which-ai-crawlers-read-my-pages"],
+    related: ["ai-agent-traffic-website-measurement-guide", "which-ai-assistants-send-visitors", "which-ai-crawlers-read-my-pages"],
     updated: "2026-09-08",
   },
   {
@@ -205,7 +208,7 @@ const EN: Guide[] = [
       { q: "Does every ChatGPT click carry a referrer?", a: "No. Some clients strip it. Those visits are counted as ordinary views, so the number is a floor, never an estimate." },
       { q: "Is the person identified?", a: "No. The session id is a daily-salted hash, the address is not stored and no cookie is set." },
     ],
-    related: ["which-ai-assistants-send-visitors", "how-to-track-ai-agents-visiting-your-website"],
+    related: ["ai-agent-traffic-website-measurement-guide", "which-ai-assistants-send-visitors", "how-to-track-ai-agents-visiting-your-website"],
     updated: "2026-09-08",
   },
   {
@@ -213,19 +216,38 @@ const EN: Guide[] = [
     question: "Can Google Analytics or Plausible track AI agents?",
     title: "Can Google Analytics or Plausible track AI agents?",
     summary:
-      "Partly. Web analytics can show visits with an assistant referrer if you build and maintain the segment yourself. It cannot see crawlers, which never run its script; it cannot see MCP or WebMCP tool calls, which never leave the browser; and it cannot tell an agent's conversion from a person's. Agent Tracking covers those three and runs beside your analytics rather than replacing it.",
+      "Partly. GA4 and Plausible can show identifiable visits sent by assistants; Plausible already groups known sources in an AI Assistants channel. Crawler requests need server or edge logs, and browser tool calls need specific instrumentation. Agent Tracking brings these signals together, while ordinary web analytics remains useful for human visits and their conversions.",
     sections: [
-      { h: "What web analytics sees", p: ["A referral from chatgpt.com or perplexity.ai is a normal page view with a referrer, and GA4, Plausible and Matomo record it. Whether they name the assistant depends on you: GA4 needs a custom channel group, Plausible a filter on referrer, Matomo a segment. Each of them has to be updated when an assistant changes its domain."] },
-      { h: "What it cannot see", p: ["GPTBot, ClaudeBot and PerplexityBot fetch HTML and never execute JavaScript, so no analytics script fires; only the server log knows they were there. A WebMCP tool call happens inside the visitor's browser between the assistant and the page; no request reaches any analytics endpoint. And a purchase completed by an agent looks exactly like a purchase completed by a person, so nothing separates the two."] },
+      { h: "What web analytics sees", p: ["A person arriving from chatgpt.com or perplexity.ai is a normal visit with a referrer. GA4 can analyze that source; [Plausible now has an AI Assistants channel](https://plausible.io/docs/top-referrers) with individual sources, landing pages and conversions. A missing referrer still cannot be reliably reconstructed. Agent Tracking also attributes identifiable referrals but does not replace a full human analytics view."] },
+      { h: "What requires extra instrumentation", p: ["GPTBot and similar crawlers usually fetch HTML without executing a browser analytics script; their requests require server or edge logs. A WebMCP call is a browser event that needs explicit tracking. Both GA4 and Plausible can record custom events when configured, but neither automatically identifies every on-page model-context call. Attribution of a completed goal depends on the available session and event signals; an AI-referred human purchase should remain distinct from an autonomous agent action."] },
       { h: "What Agent Tracking adds", p: ["Crawler fetches from the server log, verified against the vendors' published IP ranges and grouped into bursts. Tool calls with duration, success rate, error class and input key names. Conversions attributed to agents through a goal marker. And assistant referrals from a maintained list, so nobody has to build the segment."] },
-      { h: "Use both", p: ["Keep your analytics for people. Add one script tag for agents. The two do not overlap, and the agent dashboard stays small enough to read in a minute."], code: SNIPPET, codeLang: "html" },
+      { h: "Use the right source for each event", p: ["Use web analytics for visitors and conversions, server logs for crawlers, and specific event instrumentation for browser tools. The tools can overlap on identifiable AI referrals; keep definitions consistent instead of adding their totals together. See the [full AI traffic measurement guide](/guides/ai-agent-traffic-website-measurement-guide) for a repeatable setup."], code: SNIPPET, codeLang: "html" },
+      { h: "Compare the questions each product answers", p: [
+        "For human acquisition, GA4 and Plausible are mature choices. They can show where identifiable visitors came from, which pages they landed on and which configured goals they completed. Plausible explicitly groups known assistant sources under AI Assistants, and GA4 can be configured to report these sources through its traffic-source dimensions. Agent Tracking also shows assistant referrals, but its primary purpose is to put them beside requests from crawlers and actions by agents. It is not intended to replace the broad reporting of a general web analytics tool.",
+        "For crawler activity, a browser tag is the wrong data source. Google says [GA4 automatically excludes known bots](https://support.google.com/analytics/answer/9888366?hl=en), and [Plausible filters known bots](https://plausible.io/docs/bot-traffic-filtering) too. That is sensible for human analytics; it means a crawler report needs server logs or an edge service. Agent Tracking imports origin logs. A CDN such as Cloudflare can see requests handled at the edge, including some that never reach the origin.",
+        "For WebMCP actions, ask whether the tool call and its outcome are recorded automatically. A custom event in GA4 or Plausible can count a call when the site sends one, but somebody must write and maintain that instrumentation. Agent Tracking's snippet observes supported browser tool APIs and can pair calls with goal markers. Remote MCP servers require their own server-side logs; an on-page snippet cannot inspect them."
+      ] },
+      { h: "A concrete example with three numbers", p: [
+        "Suppose a product page receives eight identifiable ChatGPT referrals this week. Plausible's AI Assistants channel can show those visits and their conversions, and GA4 can show the same source if the reports are configured. The server log also contains 120 requests claiming to be GPTBot, of which 95 match the operator's current published ranges. The page exposes an availability tool that agents called six times, with one validation error and two confirmed reservations.",
+        "The eight visits, 95 verified fetches and six tool calls are separate populations. Do not add them to report 109 AI visitors. The bot requests may never have led to a visible answer; the referrals may come from answers generated from other sources; and the tool calls may occur during visits classified in several ways. The useful conclusions are narrower: the page received identifiable assistant traffic, a verified bot fetched it, and one tool error needs attention.",
+        "A user who clicks through from ChatGPT and then reserves a product is an AI-referred human conversion. An assistant that invokes the availability tool is an agent interaction. If the final reservation is not instrumented as a goal, the six calls do not tell you how many reservations succeeded. [Mark the completed goal](/guides/see-whether-ai-agents-buy-on-your-site) before you claim a conversion rate."
+      ] },
+      { h: "Where GA4 and Plausible are stronger", p: [
+        "GA4 and Plausible cover the rest of the human visitor journey: campaigns, landing pages, engagement and configured outcomes. Plausible is especially straightforward when the question is simply which assistants send people and whether those people convert; it already maintains the AI channel. GA4 can be a better fit if the organization relies on its broader reporting and advertising integrations. Prices, privacy settings and limits change, so compare their current official documentation and contract terms rather than a copied feature table.",
+        "If assistant referrals are the only question, start in the analytics product you already use. Introducing a second product for an eight-click sample may create more work than insight. Add log processing when crawler behavior matters, and browser tool instrumentation when agents can actually perform tasks on the site. This order makes the measurement proportional to the decisions you will make."
+      ] },
+      { h: "Where Agent Tracking adds a different view", p: [
+        "Agent Tracking is designed for websites that need the three sources together: identifiable assistant referrals, verified crawler fetches from an uploaded log, and calls to on-page MCP or WebMCP tools. It displays verification status, fetch bursts, tool errors and goal events. The code is public under AGPL-3.0, can be self-hosted and has a hosted Free plan with limits. That makes its data flow inspectable, but self-hosting still requires a server and maintenance.",
+        "The practical choice is often coexistence. Leave GA4 or Plausible in place for human analytics. Add Agent Tracking when the team has a real question about crawler requests or agent actions that the existing dashboard cannot answer from its current data source. Use consistent dates and page definitions when comparing their referral counts; privacy settings, ad blockers and classification lists can cause differences."
+      ] },
     ],
     faq: [
       { q: "Does Agent Tracking replace my analytics?", a: "No. It counts a different population. Human traffic appears only as a daily total for context." },
-      { q: "Can I build all of this in GA4 with enough work?", a: "The referral part, yes. The crawler part needs log processing outside GA4, and tool calls and agent conversions need code in the page that GA4 does not provide." },
+      { q: "Can I build all of this in GA4 with enough work?", a: "Identifiable referrals and custom tool events can be configured in GA4. Verified crawler requests still require log or edge processing, and agent attribution needs carefully defined events." },
     ],
-    related: ["tool-to-track-agentic-use-of-your-website", "see-chatgpt-referral-traffic", "what-is-the-difference-to-agentops-and-langsmith"],
-    updated: "2026-09-08",
+    related: ["ai-agent-traffic-website-measurement-guide", "see-chatgpt-referral-traffic", "what-is-the-difference-to-agentops-and-langsmith"],
+    published: "2026-09-08",
+    updated: "2026-09-24",
   },
   {
     slug: "what-is-the-difference-to-agentops-and-langsmith",
@@ -248,22 +270,23 @@ const EN: Guide[] = [
   },
   {
     slug: "cloudflare-ai-audit-or-agent-tracking",
-    question: "Do I need Cloudflare AI Audit if I have Agent Tracking, or the other way round?",
-    title: "Cloudflare AI Audit and Agent Tracking: what each one covers",
+    question: "How does Cloudflare AI Crawl Control compare with Agent Tracking?",
+    title: "Cloudflare AI Crawl Control vs Agent Tracking",
     summary:
-      "Cloudflare AI Audit counts and controls crawlers at the edge, for sites behind Cloudflare, and can block or charge them. Agent Tracking measures referrals, fetches and tool calls in the page and from your own log, needs no CDN, verifies crawlers against vendor IP ranges and follows agents through to a goal. If you want to block crawlers, use Cloudflare. If you want to know what agents do on the site and whether they finish, use Agent Tracking. Many sites use both.",
+      "Cloudflare AI Crawl Control, formerly AI Audit, monitors crawler requests at the edge and can apply access rules. It also offers referral analytics on supported plans. Agent Tracking uses a page snippet and optional origin logs for assistant referrals, crawler fetches, browser tool calls and goals. The right choice depends on where your site runs and which events you need.",
     sections: [
-      { h: "What a CDN bot audit does well", p: ["It sits in front of the site, so it sees every request including the ones your origin never gets, and it can act: allow, block, challenge, or charge per crawl. For a publisher whose main concern is training crawlers taking content, that control is the point."] },
-      { h: "What it does not see", p: ["A visitor sent by ChatGPT is a person to the CDN, not an agent. A WebMCP tool call happens inside the browser and never crosses the edge. Whether an agent completed a booking is invisible from a request log. And it only works if your DNS runs through Cloudflare."] },
+      { h: "What edge analytics does well", p: ["[Cloudflare AI Crawl Control](https://developers.cloudflare.com/ai-crawl-control/) sees requests handled by Cloudflare, including cache hits that never reach an origin log. It provides crawler controls, request metrics and, on supported plans, referral analytics. Its free-plan crawler identification uses user-agent strings; advanced detection requires Bot Management. Check the current plan details before comparing specific features."] },
+      { h: "What still needs browser events", p: ["Cloudflare can report referrer data, so assistant referrals are not exclusive to an on-page product. A WebMCP tool call entirely inside the browser and a confirmed goal still need specific page instrumentation. Cloudflare's edge view requires the site to use Cloudflare as a proxy; Agent Tracking can run with other hosting arrangements."] },
       { h: "What Agent Tracking covers instead", p: ["Referrals attributed to the assistant, crawler fetches from your own log verified against the vendors' address ranges and grouped into bursts, tool calls with success and duration, and conversions reached by agents. It never blocks; it measures. It works on any host, with one script tag and an optional log upload."] },
-      { h: "Using both", p: ["Let Cloudflare enforce your crawler policy at the edge. Let Agent Tracking tell you which assistants send business, which tools work and where agents give up. The crawler counts will roughly agree; the rest only exists on one side."] },
+      { h: "Compare the datasets", p: ["If both are installed, compare the same time window and HTML paths. Counts can differ because the edge sees cache hits and blocks, while an origin log sees only requests that reach the server. Use Agent Tracking for on-page tool and goal events if those matter. The [full measurement guide](/guides/ai-agent-traffic-website-measurement-guide) shows how to keep the signals separate."] },
     ],
     faq: [
       { q: "Can Agent Tracking block a crawler?", a: "No, by design. Blocking belongs in robots.txt or at the edge; this tool tells you what is happening so that decision is informed." },
       { q: "Does Agent Tracking need Cloudflare?", a: "No. It needs a script tag on the page and, for crawlers, an access log from any web server." },
     ],
     related: ["which-ai-crawlers-read-my-pages", "can-google-analytics-track-ai-agents"],
-    updated: "2026-09-08",
+    published: "2026-09-08",
+    updated: "2026-09-24",
   },
   {
     slug: "analytics-for-webmcp-tools",
@@ -300,7 +323,7 @@ const EN: Guide[] = [
       { q: "Can you share benchmarks from your customers?", a: "Not yet, and not without their consent. The pilot is days old. When there are enough sites and owners agree, aggregate ranges by site type will be published here." },
       { q: "Do page views by people count against my quota?", a: "No. Only agent events count. Plain page views appear as a total for context." },
     ],
-    related: ["which-ai-crawlers-read-my-pages", "how-to-track-ai-agents-visiting-your-website"],
+    related: ["ai-traffic-outlook-2026-2027", "which-ai-crawlers-read-my-pages", "how-to-track-ai-agents-visiting-your-website"],
     updated: "2026-09-08",
   },
   {
@@ -308,10 +331,10 @@ const EN: Guide[] = [
     question: "Which pages do AI assistants cite from my site?",
     title: "How to find out which pages AI assistants cite from your site",
     summary:
-      "Two signals answer this. Referrals show which page a person landed on after an assistant cited it, per assistant. Fetch bursts show which pages an assistant pulled together to answer a question, before anyone clicked. Agent Tracking records both, so the Pages view lists the pages assistants actually use, not the ones you hoped they would.",
+      "Referrals identify pages people reached from an assistant. Fetch logs identify pages a bot requested. Neither signal proves that a specific page appeared as a citation in an answer. Use them to find candidate pages, then check visible answers separately if citation evidence is required.",
     sections: [
-      { h: "Citations leave two traces", p: ["When ChatGPT or Perplexity cites you, two things happen. First the assistant fetches the page, often together with two or three related pages, within seconds: a burst. Later, maybe, a person clicks the citation and arrives with the assistant as referrer. The burst tells you what was considered; the referral tells you what was chosen."] },
-      { h: "Where to look", p: ["The Pages view lists pages by agent fetches and tool calls. The Agents view lists recent bursts with the pages in each one. The referral rows in the Agents view, combined with the Pages view, show landing pages per assistant. Compare the three: a page that is fetched in bursts but never referred to is cited without a click, or considered and dropped."] },
+      { h: "What the traces show", p: ["A referral shows an identifiable click from an assistant to a landing page. A burst shows several requests close together in an available server log. Either may happen without a visible citation, and citations may occur without a measurable click. Treat these as evidence of visits and requests, not a citation count."] },
+      { h: "Where to look", p: ["The Pages view lists pages by agent fetches and tool calls. The Agents view lists recent bursts and referrals. Compare requested paths with landing pages to choose content to investigate. A page fetched without a referral may have been considered, ignored, served without a click, or used for another purpose; the available data cannot distinguish these outcomes."] },
       { h: "Set it up", p: ["Referrals need the snippet on every page. Bursts need the server log, uploaded once or sent daily. Both together take about ten minutes."], code: SNIPPET, codeLang: "html" },
       { h: "Turning it into a loop", p: ["Change a page assistants keep fetching but never send people to, and watch the referral row for two weeks. That is generative engine optimisation with a measurement in it. Ask the same question from Claude or ChatGPT through the MCP tool if you prefer words to tables."], code: MCP, codeLang: "json" },
     ],
@@ -320,7 +343,8 @@ const EN: Guide[] = [
       { q: "Does this work for Google AI Overviews?", a: "Fetches by Google-Extended and Google's user-triggered fetchers are counted from the log. Referrals from AI Overviews arrive as ordinary Google referrals and cannot be separated by referrer alone." },
     ],
     related: ["see-chatgpt-referral-traffic", "which-ai-assistants-send-visitors", "which-ai-crawlers-read-my-pages"],
-    updated: "2026-09-08",
+    published: "2026-09-08",
+    updated: "2026-09-24",
   },
   {
     slug: "is-this-request-really-gptbot",
@@ -390,7 +414,7 @@ const EN: Guide[] = [
     summary:
       "Yes, but it depends on what you mean by agentic visitor, because there are three different things and most analytics only sees one of them: a referral (a person sent by an assistant), a fetch (the agent itself loading pages, verified by IP range and grouped into bursts), and a tool call (an assistant operating your MCP or WebMCP tools inside the browser). Behaviour is the combination of all three, and only the combination says whether an agent finished what it came for.",
     sections: [
-      { h: "Level 1: referrals", p: ["A person clicks a link inside ChatGPT, Perplexity, Claude or Copilot. The visit arrives with a referrer such as chatgpt.com or perplexity.ai, and OpenAI often adds utm_source=chatgpt.com. GA4 or Plausible can show these if you build a segment by host name and keep it updated as assistants change domains. Agent Tracking keeps that list in one versioned file and shows each assistant as its own row."] },
+      { h: "Level 1: referrals", p: ["A person clicks a link inside ChatGPT, Perplexity, Claude or Copilot. The visit may arrive with a referrer such as chatgpt.com or perplexity.ai, and some links add utm_source. GA4 can analyze the sources; Plausible now groups known ones in its AI Assistants channel. Agent Tracking also shows identifiable assistant referrals separately. A missing referrer cannot be inferred reliably."] },
       { h: "Level 2: fetches", p: ["The agent itself loads your pages: GPTBot, ClaudeBot, PerplexityBot, OAI-SearchBot, or live fetchers such as ChatGPT-User. Most of them never execute JavaScript, so standard analytics scripts never fire; the only place they exist is your server log. Two things matter here. Verification: anyone can fake a user agent string, so the request address has to be checked against the ranges OpenAI, Perplexity, Microsoft, Google and Apple publish. Bursts: one agent fetching five pages in four seconds is a live assistant answering a prompt right now, not a routine crawl."], code: LOG, codeLang: "sh" },
       { h: "Level 3: tool calls and in-browser execution", p: ["If your site exposes MCP or WebMCP tools, an assistant calls them inside the visitor's browser. No separate page request hits a server, so only on-page event tracking can capture it: call duration, error rates, tools nobody calls, and goal completion such as a checkout. The snippet wraps the browser's model context API and records the names of the input keys, never their values."], code: SNIPPET, codeLang: "html" },
       { h: "Behaviour is the combination", p: ["Which pages a burst hits, which tools fail, and whether the assistant actually finishes the intended goal. If you only care about level 2, a server log parser plus the vendors' IP lists gets you most of the way there. If you want all three on one board, open source and self-hostable, that is what Agent Tracking is. AgentOps or LangSmith handle observability for agents you build yourself and will not show third-party visitors on your website."] },
@@ -422,7 +446,7 @@ const DE: Guide[] = [
       { q: "Kann ich Agenten ohne Script auf der Seite messen?", a: "Teilweise. Das Server-Log liefert Crawler-Abrufe und Bursts. Referrals und Tool-Aufrufe passieren im Browser und brauchen das Snippet." },
       { q: "Bremst es die Site?", a: "Das Snippet hat 4,5 KB, lädt mit defer und schickt kleine Batches per sendBeacon. Nichts blockiert das Rendern." },
     ],
-    related: ["sehen-ob-ki-agenten-auf-der-site-kaufen", "welche-ki-assistenten-schicken-besucher", "welche-ki-crawler-lesen-meine-seiten"],
+    related: ["ki-agenten-traffic-website-messen-leitfaden", "welche-ki-assistenten-schicken-besucher", "welche-ki-crawler-lesen-meine-seiten"],
     updated: "2026-09-08",
   },
   {
@@ -575,7 +599,7 @@ const DE: Guide[] = [
       { q: "Trägt jeder ChatGPT-Klick einen Referrer?", a: "Nein. Manche Clients entfernen ihn. Diese Besuche zählen als normale Aufrufe, die Zahl ist also eine Untergrenze, nie eine Schätzung." },
       { q: "Wird die Person identifiziert?", a: "Nein. Die Sitzungskennung ist ein täglich neu gesalzener Hash, die Adresse wird nicht gespeichert, kein Cookie gesetzt." },
     ],
-    related: ["welche-ki-assistenten-schicken-besucher", "ki-agenten-auf-der-website-tracken"],
+    related: ["ki-agenten-traffic-website-messen-leitfaden", "welche-ki-assistenten-schicken-besucher", "ki-agenten-auf-der-website-tracken"],
     updated: "2026-09-08",
   },
   {
@@ -583,19 +607,42 @@ const DE: Guide[] = [
     question: "Kann Google Analytics oder Plausible KI-Agenten messen?",
     title: "Kann Google Analytics oder Plausible KI-Agenten messen?",
     summary:
-      "Teilweise. Web-Analytics kann Besuche mit Assistenten-Referrer zeigen, wenn du das Segment selbst baust und pflegst. Es sieht keine Crawler, die sein Script nie ausführen; es sieht keine MCP- oder WebMCP-Tool-Aufrufe, die den Browser nie verlassen; und es kann die Conversion eines Agenten nicht von der eines Menschen unterscheiden. Agent Tracking deckt diese drei ab und läuft neben deinem Analytics, nicht statt dessen.",
+      "Teilweise. GA4 und Plausible zeigen erkennbare Besuche aus Assistenten; Plausible gruppiert bekannte Quellen bereits im Kanal AI Assistants. Crawler-Anfragen brauchen Server- oder Edge-Logs, Browser-Tools eine gezielte Instrumentierung. Agent Tracking führt diese Signale zusammen; gewöhnliche Webanalyse bleibt für menschliche Besucher und deren Conversions nützlich.",
     sections: [
-      { h: "Was Web-Analytics sieht", p: ["Ein Referral von chatgpt.com oder perplexity.ai ist ein normaler Seitenaufruf mit Referrer, und GA4, Plausible und Matomo erfassen ihn. Ob sie den Assistenten benennen, hängt von dir ab: GA4 braucht eine eigene Channel-Gruppe, Plausible einen Filter auf den Referrer, Matomo ein Segment. Jedes davon muss aktualisiert werden, wenn ein Assistent seine Domain ändert."] },
-      { h: "Was es nicht sehen kann", p: ["GPTBot, ClaudeBot und PerplexityBot holen HTML und führen nie JavaScript aus, also feuert kein Analytics-Script; nur das Server-Log weiß, dass sie da waren. Ein WebMCP-Tool-Aufruf passiert im Browser des Besuchers zwischen Assistent und Seite; keine Anfrage erreicht einen Analytics-Endpunkt. Und ein von einem Agenten abgeschlossener Kauf sieht genau aus wie einer von einem Menschen, nichts trennt die beiden."] },
+      { h: "Was Web-Analytics sieht", p: ["Ein Mensch, der von chatgpt.com oder perplexity.ai kommt, ist ein gewöhnlicher Besuch mit Referrer. GA4 kann die Quelle auswerten; [Plausible hat inzwischen einen Kanal AI Assistants](https://plausible.io/docs/top-referrers) mit einzelnen Quellen, Einstiegsseiten und Conversions. Ein fehlender Referrer lässt sich weiterhin nicht sicher rekonstruieren. Agent Tracking ordnet erkennbare Referrals ebenfalls zu, ersetzt aber keine vollständige Analyse menschlicher Besucher."] },
+      { h: "Was zusätzliche Instrumentierung braucht", p: ["GPTBot und ähnliche Crawler holen HTML meist ohne ein Webanalyse-Script auszuführen; ihre Anfragen benötigen Server- oder Edge-Logs. Ein WebMCP-Aufruf ist ein Browser-Ereignis, das gezielt erfasst werden muss. GA4 und Plausible können konfigurierte eigene Events zählen, erkennen aber nicht automatisch jeden Model-Context-Aufruf. Die Zuordnung eines Zielabschlusses hängt von Session- und Event-Signalen ab. Ein menschlicher Kauf nach einem KI-Referral bleibt etwas anderes als eine autonome Agentenaktion."] },
       { h: "Was Agent Tracking ergänzt", p: ["Crawler-Abrufe aus dem Server-Log, gegen die veröffentlichten IP-Bereiche der Anbieter verifiziert und zu Bursts gruppiert. Tool-Aufrufe mit Dauer, Erfolgsquote, Fehlerklasse und Feldnamen. Über einen Zielmarker Agenten zugeschriebene Conversions. Und Assistenten-Referrals aus einer gepflegten Liste, damit niemand das Segment bauen muss."] },
-      { h: "Beides nutzen", p: ["Behalte dein Analytics für Menschen. Ergänze ein Script-Tag für Agenten. Die beiden überschneiden sich nicht, und das Agenten-Dashboard bleibt klein genug, um es in einer Minute zu lesen."], code: SNIPPET, codeLang: "html" },
+      { h: "Für jedes Ereignis die passende Quelle", p: ["Nutze Webanalyse für Besucher und Conversions, Server-Logs für Crawler und gezielte Events für Browser-Tools. Bei erkennbaren KI-Referrals können sich die Werkzeuge überschneiden; addiere die Zählungen deshalb nicht. Der [ausführliche KI-Traffic-Leitfaden](/de/guides/ki-agenten-traffic-website-messen-leitfaden) beschreibt den Aufbau."], code: SNIPPET, codeLang: "html" },
+      { h: "Welche Fragen jedes Produkt beantwortet", p: [
+        "Für die Herkunft menschlicher Besucher sind GA4 und Plausible ausgereifte Werkzeuge. Sie zeigen erkennbare Quellen, Einstiegsseiten und konfigurierte Ziele. Plausible gruppiert bekannte Assistenten im Kanal AI Assistants; GA4 kann solche Quellen über seine Traffic-Dimensionen auswerten. Agent Tracking zeigt Referrals ebenfalls, stellt sie aber neben Crawler-Anfragen und Agentenaktionen. Es ist keine vollständige Webanalyse für den gesamten Besucherweg.",
+        "Für Crawler ist ein Browser-Script die falsche Datenquelle. Laut Google [schließt GA4 bekannte Bots automatisch aus](https://support.google.com/analytics/answer/9888366?hl=en), und [Plausible filtert bekannte Bots](https://plausible.io/docs/bot-traffic-filtering). Für eine Crawler-Auswertung sind deshalb Server-Logs oder Edge-Daten nötig. Agent Tracking importiert Origin-Logs. Ein CDN wie Cloudflare sieht auch Anfragen, die wegen Cache oder Blockierung nie am Origin ankommen.",
+        "Bei WebMCP-Aktionen lautet die Frage, ob Aufruf und Ergebnis automatisch erfasst werden. GA4 oder Plausible können eigene Events zählen, wenn die Website sie sendet. Die Instrumentierung muss jemand schreiben und pflegen. Das Snippet von Agent Tracking beobachtet unterstützte Browser-Tool-APIs und kann Aufrufe mit Zielmarkern verbinden. Ein entfernter MCP-Server braucht seine eigenen Logs; ein Script auf der Webseite kann ihn nicht von innen beobachten."
+      ] },
+      { h: "Ein Beispiel mit drei verschiedenen Zahlen", p: [
+        "Angenommen, eine Produktseite erhält diese Woche acht erkennbare ChatGPT-Referrals. Plausible kann die Besuche und deren Conversions im KI-Kanal anzeigen; GA4 kann die Quelle bei entsprechender Konfiguration ebenfalls zeigen. Im Server-Log stehen zusätzlich 120 Anfragen mit dem User-Agent GPTBot. Davon passen 95 zu den aktuellen veröffentlichten IP-Bereichen des Betreibers. Auf derselben Seite wurde ein Verfügbarkeits-Tool sechsmal aufgerufen, mit einem Validierungsfehler und zwei bestätigten Reservierungen.",
+        "Die acht Besuche, 95 verifizierten Abrufe und sechs Tool-Aufrufe sind verschiedene Populationen. Addiere sie nicht zu 109 KI-Besuchern. Die Bot-Anfragen müssen nie zu einer sichtbaren Antwort geführt haben; die Referrals können aus Antworten stammen, die andere Quellen nutzten. Der sinnvolle Befund ist enger: Die Seite bekam erkennbaren Traffic aus ChatGPT, ein verifizierter Bot lud sie, und ein Tool-Fehler braucht Aufmerksamkeit.",
+        "Klickt ein Mensch aus ChatGPT auf die Seite und reserviert, ist das eine menschliche Conversion aus einem KI-Referral. Ruft ein Assistent das Verfügbarkeits-Tool auf, ist das eine Agenteninteraktion. Ohne ein Event für die abgeschlossene Reservierung verraten sechs Tool-Aufrufe keine Abschlussquote. [Markiere das erreichte Ziel](/de/guides/sehen-ob-ki-agenten-auf-der-site-kaufen), bevor du eine Conversion-Rate angibst."
+      ] },
+      { h: "Wo GA4 und Plausible mehr leisten", p: [
+        "GA4 und Plausible decken den übrigen Weg menschlicher Besucher ab: Kampagnen, Einstiegsseiten, Engagement und konfigurierte Ergebnisse. Plausible ist für die Frage nach Assistenten-Referrals besonders direkt, weil es den KI-Kanal schon pflegt. GA4 passt gut, wenn eine Organisation dessen umfangreichere Berichte und Werbeintegrationen bereits nutzt. Preise, Datenschutzoptionen und Grenzen ändern sich; vergleiche dafür die aktuelle Dokumentation und die Vertragsbedingungen der Anbieter.",
+        "Wenn du nur wissen willst, welche Assistenten Menschen schicken, beginne im bereits verwendeten Analytics-Produkt. Ein zweites Werkzeug für eine Stichprobe mit acht Klicks kann mehr Arbeit als Erkenntnis bringen. Ergänze Log-Verarbeitung, sobald Crawler-Verhalten eine Entscheidung beeinflusst. Instrumentiere Browser-Tools, sobald Agenten auf deiner Website tatsächlich Aufgaben ausführen können."
+      ] },
+      { h: "Was Agent Tracking zusätzlich verbindet", p: [
+        "Agent Tracking kombiniert erkennbare Assistenten-Referrals, verifizierte Crawler-Abrufe aus hochgeladenen Logs und Aufrufe von Onpage-MCP- oder WebMCP-Tools. Es zeigt Verifikationsstatus, Abruf-Bursts, Tool-Fehler und Zielereignisse. Der Code ist unter AGPL-3.0 öffentlich, lässt sich selbst hosten und es gibt einen gehosteten Free-Plan mit Grenzen. Das macht den Datenfluss prüfbar; Selbsthosting benötigt aber weiterhin Server und Wartung.",
+        "In vielen Fällen werden die Produkte nebeneinander genutzt. GA4 oder Plausible bleiben für menschliche Besuche. Agent Tracking kommt hinzu, wenn Fragen zu Crawler-Anfragen oder Agentenaktionen mit der bestehenden Datenquelle unbeantwortet bleiben. Vergleiche Referral-Zahlen nur bei gleichem Zeitraum und gleichen Seitendefinitionen; Datenschutzeinstellungen, Blocker und Klassifikationslisten können Unterschiede verursachen."
+      ] },
+      { h: "So prüfst du den Vergleich für deine Website", p: [
+        "Beginne mit drei Fragen an dein bestehendes Analytics: Wie viele erkennbare Menschen kamen in den letzten vier Wochen aus Assistenten? Auf welchen Seiten landeten sie? Welche konfigurierten Ziele erreichten sie? Wenn diese Fragen beantwortet sind, prüfe das Server-Log auf Crawler-Anfragen und deren HTTP-Status. Vergleiche Stichproben mit den veröffentlichten IP-Bereichen der Betreiber. Erst danach lohnt sich die Frage nach WebMCP-Aufrufen: Bietet die Site überhaupt Tools an, und welche Entscheidung würde eine Fehlerrate verändern?",
+        "Dokumentiere anschließend für jede Zahl Quelle, Zeitraum und Definition. So kannst du in drei Monaten denselben Bericht wiederholen. Ein Anbieterwechsel nur wegen eines neu benannten KI-Kanals ist selten nötig. Wichtiger ist, dass das Werkzeug die Ereignisse sieht, über die dein Team entscheiden muss, und dass niemand Bot-Anfragen als menschliche Sitzungen oder Referrals als bewiesene Zitate präsentiert."
+      ] },
     ],
     faq: [
       { q: "Ersetzt Agent Tracking mein Analytics?", a: "Nein. Es zählt eine andere Population. Menschlicher Traffic erscheint nur als Tagessumme zur Einordnung." },
-      { q: "Kann ich das alles mit genug Aufwand in GA4 bauen?", a: "Den Referral-Teil, ja. Der Crawler-Teil braucht Log-Verarbeitung außerhalb von GA4, und Tool-Aufrufe und Agenten-Conversions brauchen Code in der Seite, den GA4 nicht liefert." },
+      { q: "Kann ich das alles mit genug Aufwand in GA4 bauen?", a: "Erkennbare Referrals und eigene Tool-Events lassen sich in GA4 konfigurieren. Verifizierte Crawler-Anfragen brauchen zusätzlich Logs oder Edge-Daten; Agenten-Zuordnung braucht sauber definierte Events." },
     ],
-    related: ["tool-fuer-agentische-nutzung-der-website", "chatgpt-referral-traffic-sehen", "unterschied-zu-agentops-und-langsmith"],
-    updated: "2026-09-08",
+    related: ["ki-agenten-traffic-website-messen-leitfaden", "chatgpt-referral-traffic-sehen", "unterschied-zu-agentops-und-langsmith"],
+    published: "2026-09-08",
+    updated: "2026-09-24",
   },
   {
     slug: "unterschied-zu-agentops-und-langsmith",
@@ -618,22 +665,23 @@ const DE: Guide[] = [
   },
   {
     slug: "cloudflare-ai-audit-oder-agent-tracking",
-    question: "Brauche ich Cloudflare AI Audit, wenn ich Agent Tracking habe, oder umgekehrt?",
-    title: "Cloudflare AI Audit und Agent Tracking: was beide abdecken",
+    question: "Wie unterscheidet sich Cloudflare AI Crawl Control von Agent Tracking?",
+    title: "Cloudflare AI Crawl Control und Agent Tracking im Vergleich",
     summary:
-      "Cloudflare AI Audit zählt und steuert Crawler am Netzrand, für Sites hinter Cloudflare, und kann sie blockieren oder Geld verlangen. Agent Tracking misst Referrals, Abrufe und Tool-Aufrufe in der Seite und aus deinem eigenen Log, braucht kein CDN, verifiziert Crawler gegen Anbieter-IP-Bereiche und folgt Agenten bis zum Ziel. Wer Crawler blockieren will, nimmt Cloudflare. Wer wissen will, was Agenten auf der Site tun und ob sie ans Ziel kommen, nimmt Agent Tracking. Viele Sites nutzen beides.",
+      "Cloudflare AI Crawl Control, früher AI Audit, beobachtet Crawler-Anfragen am Netzrand und kann Zugriffsregeln anwenden. Auf unterstützten Plänen gibt es auch Referral-Analysen. Agent Tracking nutzt ein Seiten-Snippet und optional Origin-Logs für Assistenten-Referrals, Crawler-Abrufe, Browser-Tools und Ziele. Die Wahl hängt von Hosting und benötigten Ereignissen ab.",
     sections: [
-      { h: "Was ein CDN-Bot-Audit gut kann", p: ["Es sitzt vor der Site, sieht also jede Anfrage, auch die, die dein Origin nie bekommt, und es kann handeln: erlauben, blockieren, prüfen oder pro Crawl abrechnen. Für einen Verlag, dem es vor allem um Trainings-Crawler geht, die Inhalte abgreifen, ist diese Kontrolle der Punkt."] },
-      { h: "Was es nicht sieht", p: ["Ein von ChatGPT geschickter Besucher ist für das CDN ein Mensch, kein Agent. Ein WebMCP-Tool-Aufruf passiert im Browser und überquert nie den Netzrand. Ob ein Agent eine Buchung abgeschlossen hat, ist aus einem Anfrage-Log unsichtbar. Und es funktioniert nur, wenn dein DNS über Cloudflare läuft."] },
+      { h: "Was Edge-Analytics gut kann", p: ["[Cloudflare AI Crawl Control](https://developers.cloudflare.com/ai-crawl-control/) sieht Anfragen, die Cloudflare bearbeitet, auch Cache-Treffer, die im Origin-Log fehlen. Es bietet Crawler-Regeln, Anfragemetriken und auf unterstützten Plänen Referral-Analysen. Im Free-Plan beruht die Crawler-Erkennung auf User-Agent-Strings; fortgeschrittene Erkennung braucht Bot Management. Prüfe vor einem Funktionsvergleich die aktuellen Plangrenzen."] },
+      { h: "Wofür Browser-Ereignisse nötig sind", p: ["Cloudflare kann Referrer auswerten; Assistenten-Referrals sind deshalb kein exklusives Merkmal eines Onpage-Produkts. Ein vollständig im Browser ausgeführter WebMCP-Aufruf und ein bestätigtes Ziel brauchen dennoch gezielte Instrumentierung auf der Seite. Die Edge-Sicht setzt Cloudflare als Proxy voraus; Agent Tracking funktioniert auch mit anderem Hosting."] },
       { h: "Was Agent Tracking stattdessen abdeckt", p: ["Dem Assistenten zugeordnete Referrals, Crawler-Abrufe aus deinem eigenen Log, gegen die Adressbereiche der Anbieter verifiziert und zu Bursts gruppiert, Tool-Aufrufe mit Erfolg und Dauer und von Agenten erreichte Conversions. Es blockiert nie; es misst. Es läuft auf jedem Host, mit einem Script-Tag und einem optionalen Log-Upload."] },
-      { h: "Beides nutzen", p: ["Lass Cloudflare deine Crawler-Regeln am Netzrand durchsetzen. Lass Agent Tracking dir sagen, welche Assistenten Geschäft schicken, welche Tools funktionieren und wo Agenten aufgeben. Die Crawler-Zahlen werden ungefähr übereinstimmen; der Rest existiert nur auf einer Seite."] },
+      { h: "Die Datensätze vergleichen", p: ["Wenn beides installiert ist, vergleiche denselben Zeitraum und dieselben HTML-Pfade. Zahlen können abweichen: Die Edge sieht Cache-Treffer und Blockierungen, das Origin-Log nur Anfragen, die den Server erreichen. Für Browser-Tools und Ziele ergänzt Agent Tracking die Daten. Der [Messleitfaden](/de/guides/ki-agenten-traffic-website-messen-leitfaden) zeigt die Trennung."] },
     ],
     faq: [
       { q: "Kann Agent Tracking einen Crawler blockieren?", a: "Nein, mit Absicht. Blockieren gehört in die robots.txt oder an den Netzrand; dieses Tool sagt dir, was passiert, damit die Entscheidung informiert ist." },
       { q: "Braucht Agent Tracking Cloudflare?", a: "Nein. Es braucht ein Script-Tag auf der Seite und, für Crawler, ein Access-Log von irgendeinem Webserver." },
     ],
     related: ["welche-ki-crawler-lesen-meine-seiten", "kann-google-analytics-ki-agenten-messen"],
-    updated: "2026-09-08",
+    published: "2026-09-08",
+    updated: "2026-09-24",
   },
   {
     slug: "analytics-fuer-webmcp-tools",
@@ -670,7 +718,7 @@ const DE: Guide[] = [
       { q: "Könnt ihr Benchmarks eurer Kunden teilen?", a: "Noch nicht, und nicht ohne deren Zustimmung. Die Pilotphase ist Tage alt. Wenn es genug Sites gibt und die Betreiber einverstanden sind, erscheinen hier aggregierte Spannen je Site-Typ." },
       { q: "Zählen Seitenaufrufe von Menschen auf mein Kontingent?", a: "Nein. Nur Agenten-Ereignisse zählen. Reine Seitenaufrufe erscheinen als Summe zur Einordnung." },
     ],
-    related: ["welche-ki-crawler-lesen-meine-seiten", "ki-agenten-auf-der-website-tracken"],
+    related: ["ki-traffic-ausblick-2026-2027", "welche-ki-crawler-lesen-meine-seiten", "ki-agenten-auf-der-website-tracken"],
     updated: "2026-09-08",
   },
   {
@@ -678,10 +726,10 @@ const DE: Guide[] = [
     question: "Welche Seiten zitieren KI-Assistenten von meiner Site?",
     title: "Herausfinden, welche Seiten KI-Assistenten von deiner Site zitieren",
     summary:
-      "Zwei Signale beantworten das. Referrals zeigen, auf welcher Seite ein Mensch gelandet ist, nachdem ein Assistent sie zitiert hat, je Assistent. Abruf-Bursts zeigen, welche Seiten ein Assistent zusammengezogen hat, um eine Frage zu beantworten, bevor jemand geklickt hat. Agent Tracking erfasst beides, sodass die Seiten-Ansicht die Seiten listet, die Assistenten wirklich nutzen, nicht die, von denen du es gehofft hast.",
+      "Referrals zeigen Seiten, auf denen Menschen aus einem Assistenten landeten. Logs zeigen Seiten, die ein Bot angefragt hat. Keines der Signale beweist, dass eine bestimmte Seite sichtbar zitiert wurde. Nutze sie zur Auswahl interessanter Seiten und prüfe Antworten getrennt, wenn du Belege für Zitate brauchst.",
     sections: [
-      { h: "Zitate hinterlassen zwei Spuren", p: ["Wenn ChatGPT oder Perplexity dich zitiert, passieren zwei Dinge. Zuerst holt der Assistent die Seite, oft zusammen mit zwei oder drei verwandten Seiten, innerhalb von Sekunden: ein Burst. Später, vielleicht, klickt ein Mensch das Zitat und kommt mit dem Assistenten als Referrer. Der Burst sagt, was erwogen wurde; das Referral sagt, was gewählt wurde."] },
-      { h: "Wo du hinschaust", p: ["Die Seiten-Ansicht listet Seiten nach Agenten-Abrufen und Tool-Aufrufen. Die Agenten-Ansicht listet die jüngsten Bursts mit ihren Seiten. Die Referral-Zeilen der Agenten-Ansicht zeigen zusammen mit der Seiten-Ansicht die Landingpages je Assistent. Vergleich die drei: Eine Seite, die in Bursts geholt, aber nie verlinkt wird, wird ohne Klick zitiert, oder erwogen und verworfen."] },
+      { h: "Was die Spuren zeigen", p: ["Ein Referral zeigt einen erkennbaren Klick aus einem Assistenten auf eine Einstiegsseite. Ein Burst zeigt mehrere zeitnahe Anfragen im verfügbaren Server-Log. Beides kann ohne sichtbares Zitat vorkommen; ein Zitat kann auch ohne messbaren Klick erscheinen. Es sind Belege für Besuche und Anfragen, keine Zitat-Zählung."] },
+      { h: "Wo du hinschaust", p: ["Die Seiten-Ansicht listet Agenten-Abrufe und Tool-Aufrufe. Die Agenten-Ansicht zeigt jüngste Bursts und Referrals. Vergleiche angefragte Pfade mit Einstiegsseiten, um Inhalte für eine nähere Prüfung auszuwählen. Eine abgerufene Seite ohne Referral kann berücksichtigt, ignoriert, ohne Klick ausgegeben oder für etwas anderes genutzt worden sein."] },
       { h: "Einrichten", p: ["Referrals brauchen das Snippet auf jeder Seite. Bursts brauchen das Server-Log, einmal hochgeladen oder täglich geschickt. Beides zusammen dauert etwa zehn Minuten."], code: SNIPPET, codeLang: "html" },
       { h: "Daraus eine Schleife machen", p: ["Ändere eine Seite, die Assistenten ständig holen, aber nie Menschen hinschicken, und beobachte die Referral-Zeile zwei Wochen. Das ist Generative Engine Optimization mit einer Messung darin. Stell dieselbe Frage Claude oder ChatGPT über das MCP-Tool, wenn dir Worte lieber sind als Tabellen."], code: MCP, codeLang: "json" },
     ],
@@ -690,7 +738,8 @@ const DE: Guide[] = [
       { q: "Funktioniert das für Google AI Overviews?", a: "Abrufe durch Google-Extended und Googles nutzerausgelöste Fetcher werden aus dem Log gezählt. Referrals aus AI Overviews kommen als normale Google-Referrals und lassen sich über den Referrer allein nicht trennen." },
     ],
     related: ["chatgpt-referral-traffic-sehen", "welche-ki-assistenten-schicken-besucher", "welche-ki-crawler-lesen-meine-seiten"],
-    updated: "2026-09-08",
+    published: "2026-09-08",
+    updated: "2026-09-24",
   },
   {
     slug: "ist-diese-anfrage-wirklich-gptbot",
@@ -760,7 +809,7 @@ const DE: Guide[] = [
     summary:
       "Ja, aber es kommt darauf an, was du mit agentischem Besucher meinst, denn es sind drei verschiedene Dinge, und die meisten Analytics sehen nur eines davon: ein Referral (ein Mensch, den ein Assistent geschickt hat), ein Abruf (der Agent lädt selbst Seiten, verifiziert über IP-Bereiche und zu Bursts gruppiert) und ein Tool-Aufruf (ein Assistent bedient deine MCP- oder WebMCP-Tools im Browser). Verhalten ist die Kombination aller drei, und nur die Kombination sagt, ob ein Agent erledigt hat, wofür er kam.",
     sections: [
-      { h: "Ebene 1: Referrals", p: ["Ein Mensch klickt einen Link in ChatGPT, Perplexity, Claude oder Copilot. Der Besuch kommt mit einem Referrer wie chatgpt.com oder perplexity.ai, und OpenAI hängt oft utm_source=chatgpt.com an. GA4 oder Plausible können das zeigen, wenn du ein Segment nach Hostname baust und es pflegst, wenn Assistenten ihre Domains ändern. Agent Tracking hält diese Liste in einer versionierten Datei und zeigt jeden Assistenten als eigene Zeile."] },
+      { h: "Ebene 1: Referrals", p: ["Ein Mensch klickt einen Link in ChatGPT, Perplexity, Claude oder Copilot. Der Besuch kann mit einem Referrer wie chatgpt.com oder perplexity.ai kommen; manche Links tragen zusätzlich utm_source. GA4 kann solche Quellen auswerten, Plausible gruppiert bekannte Quellen inzwischen im Kanal AI Assistants. Agent Tracking zeigt erkennbare Assistenten-Referrals ebenfalls getrennt. Ein fehlender Referrer lässt sich nicht sicher erschließen."] },
       { h: "Ebene 2: Abrufe", p: ["Der Agent lädt selbst deine Seiten: GPTBot, ClaudeBot, PerplexityBot, OAI-SearchBot oder Live-Fetcher wie ChatGPT-User. Die meisten führen nie JavaScript aus, also feuert kein Analytics-Script; sie existieren nur im Server-Log. Zwei Dinge zählen hier. Verifikation: Jeder kann einen User-Agent-String fälschen, also muss die Adresse gegen die Bereiche geprüft werden, die OpenAI, Perplexity, Microsoft, Google und Apple veröffentlichen. Bursts: Ein Agent, der fünf Seiten in vier Sekunden holt, ist ein Live-Assistent, der gerade eine Frage beantwortet, kein Routine-Crawl."], code: LOG, codeLang: "sh" },
       { h: "Ebene 3: Tool-Aufrufe und Ausführung im Browser", p: ["Wenn deine Site MCP- oder WebMCP-Tools bereitstellt, ruft ein Assistent sie im Browser des Besuchers auf. Keine eigene Seitenanfrage erreicht einen Server, also kann nur ein Event-Tracking auf der Seite es erfassen: Dauer, Fehlerquoten, Tools, die niemand aufruft, und Zielabschlüsse wie ein Checkout. Das Snippet umhüllt die Model-Context-API des Browsers und erfasst die Namen der Eingabefelder, nie deren Werte."], code: SNIPPET, codeLang: "html" },
       { h: "Verhalten ist die Kombination", p: ["Welche Seiten ein Burst trifft, welche Tools scheitern und ob der Assistent das eigentliche Ziel erreicht. Wenn dich nur Ebene 2 interessiert, bringt dich ein Log-Parser plus die IP-Listen der Anbieter weit. Wenn du alle drei auf einem Board willst, Open Source und selbst hostbar, ist das Agent Tracking. AgentOps oder LangSmith kümmern sich um Observability für Agenten, die du selbst baust, und zeigen keine fremden Besucher auf deiner Website."] },
@@ -775,7 +824,7 @@ const DE: Guide[] = [
 ];
 
 export function guides(lang: DashLang): Guide[] {
-  return lang === "de" ? DE : EN;
+  return lang === "de" ? [...DE, ...SEO_GUIDES_DE] : [...EN, ...SEO_GUIDES_EN];
 }
 
 export function guideBySlug(lang: DashLang, slug: string): Guide | undefined {

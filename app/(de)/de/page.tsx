@@ -56,9 +56,8 @@ export default function Page() {
           Agent Tracking ist KI-Agenten-Analytics für Websites: Es erfasst, welche KI-Assistenten Besucher schicken, welche KI-Crawler deine Seiten lesen, welche MCP- und WebMCP-Tools ein Agent aufruft und ob der Agent ein Ziel erreicht.
         </p>
         <p style={{ fontSize: "clamp(15px,1.6vw,18px)", lineHeight: 1.55, color: "var(--ink-2)", maxWidth: "52ch", marginTop: 0, marginBottom: 28 }}>
-          Deine Analytics zählt Menschen. Sie sieht nicht den Besucher, den ChatGPT geschickt hat, die Seite, die
-          ClaudeBot abgerufen hat, oder das WebMCP-Tool, das ein Assistent im Browser aufgerufen hat. Eine Zeile
-          Script sieht das und zeigt es in vier Ansichten.
+          Ein Script erfasst erkennbare Besuche aus Assistenten und Browser-Tools. Ergänze dein Server-Log für
+          Crawler, die kein JavaScript ausführen. Vier Ansichten halten diese Signale getrennt.
         </p>
         <form className="scanform" action="/login" method="get" style={{ maxWidth: 560 }} {...{ toolname: "start_free_pilot", tooldescription: "Startet die kostenlose Agent-Tracking-Pilotphase für eine Domain: öffnet die Anmeldeseite mit vorausgefüllter Domain." }}>
           <input type="hidden" name="lang" value="de" />
@@ -72,6 +71,7 @@ export default function Page() {
           Anmeldung per E-Mail, eine Zeile einfügen, fertig. Keine Karte, keine Cookies bei deinen Besuchern, keine
           personenbezogenen Daten. Vorher die <Link href="/demo">Demo-Seite</Link> ansehen geht auch.
         </p>
+        <p className="formnote"><Link href="/de/guides/ki-agenten-traffic-website-messen-leitfaden">Ausführlichen Leitfaden zur Messung von KI-Traffic lesen</Link>.</p>
       </section>
 
       <Positioning lang="de" />

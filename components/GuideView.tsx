@@ -3,6 +3,18 @@ import { counterpart, guides, type Guide } from "@/lib/guides";
 import { AUTHOR, SITE_ORIGIN } from "@/lib/site";
 import type { DashLang } from "@/lib/tracking/copy";
 
+/** A small link-only syntax keeps editorial links in the guide data crawlable. */
+function linkedText(value: string) {
+  const parts = value.split(/(\[[^\]]+\]\((?:https?:\/\/|\/)[^)]+\))/g);
+  return parts.map((part, i) => {
+    const match = /^\[([^\]]+)\]\((https?:\/\/[^)]+|\/[^)]+)\)$/.exec(part);
+    if (!match) return part;
+    return match[2].startsWith("/")
+      ? <Link key={i} href={match[2]}>{match[1]}</Link>
+      : <a key={i} href={match[2]}>{match[1]}</a>;
+  });
+}
+
 /** One guide: question as h1, summary as the quotable answer, steps, FAQ, related. Article and FAQPage schema in the head. */
 export default function GuideView({ lang, guide }: { lang: DashLang; guide: Guide }) {
   const base = lang === "de" ? "/de/guides" : "/guides";
@@ -18,7 +30,7 @@ export default function GuideView({ lang, guide }: { lang: DashLang; guide: Guid
       description: guide.summary,
       inLanguage: lang,
       url,
-      datePublished: guide.updated,
+      datePublished: guide.published ?? guide.updated,
       dateModified: guide.updated,
       image: `${SITE_ORIGIN}/og/home.png`,
       author: { "@id": AUTHOR.name ? `${SITE_ORIGIN}/#author` : `${SITE_ORIGIN}/#org` },
@@ -82,7 +94,7 @@ export default function GuideView({ lang, guide }: { lang: DashLang; guide: Guid
           <section key={s.h}>
             <h2>{s.h}</h2>
             {s.p.map((p) => (
-              <p key={p.slice(0, 40)}>{p}</p>
+              <p key={p.slice(0, 40)}>{linkedText(p)}</p>
             ))}
             {s.code ? <pre className="code">{s.code}</pre> : null}
           </section>

@@ -64,9 +64,8 @@ export default function Page() {
           Agent Tracking is AI agent analytics for websites: it records which AI assistants send visitors, which AI crawlers read your pages, which MCP and WebMCP tools an agent calls, and whether the agent reaches a goal.
         </p>
         <p style={{ fontSize: "clamp(15px,1.6vw,18px)", lineHeight: 1.55, color: "var(--ink-2)", maxWidth: "52ch", marginTop: 0, marginBottom: 28 }}>
-          Your analytics counts people. It does not see the visitor ChatGPT sent, the page ClaudeBot fetched, or
-          the WebMCP tool an assistant called inside the browser. One line of script does, and shows it in four
-          views.
+          See identifiable visits from assistants and browser tool calls with one script. Add your server log to
+          measure crawlers that never run JavaScript. The four views keep these signals separate.
         </p>
         <form className="scanform" action="/login" method="get" style={{ maxWidth: 560 }} {...{ toolname: "start_free_pilot", tooldescription: "Start the free Agent Tracking pilot for a domain: opens the sign-in page with the domain prefilled." }}>
           <label htmlFor="domain" className="sr-only">Your domain</label>
@@ -79,6 +78,7 @@ export default function Page() {
           Sign in by email, paste one line, done. No card, no cookies on your visitors, no personal data.{" "}
           <Link href="/demo">See the demo page</Link> first if you like.
         </p>
+        <p className="formnote"><Link href="/guides/ai-agent-traffic-website-measurement-guide">Read the complete AI traffic measurement guide</Link>.</p>
       </section>
 
       <Positioning lang="en" />
