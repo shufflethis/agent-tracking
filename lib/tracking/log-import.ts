@@ -1,5 +1,5 @@
 import { botShaped } from "./agent-triage";
-import { verifyAgent, type Ranges } from "./bot-ranges";
+import { rangeEvidence, type RangeEvidence, type Ranges } from "./bot-ranges";
 import { matchAgent } from "./classify";
 import { dayKey } from "./db";
 
@@ -20,7 +20,7 @@ import { dayKey } from "./db";
 
 export type LogLine = { ip: string; t: number; method: string; path: string; status: number; ua: string };
 
-export type LogFetch = { day: string; agent: string; path: string };
+export type LogFetch = { day: string; agent: string; path: string; evidence?: RangeEvidence };
 
 export type Burst = { agent: string; start: number; ms: number; paths: string[] };
 
@@ -127,11 +127,12 @@ export function importLines(lines: Iterable<string>, options: ImportOptions = {}
       continue;
     }
     const path = cleanPath(line.path);
-    if (verifyAgent(agent.id, line.ip, options.ranges ?? null) === false) {
-      unverified.push({ day: dayKey(line.t), agent: agent.id, path });
+    const evidence = rangeEvidence(agent.id, line.ip, options.ranges ?? null);
+    if (evidence.status !== "verified") {
+      unverified.push({ day: dayKey(line.t), agent: agent.id, path, evidence });
       continue;
     }
-    fetches.push({ day: dayKey(line.t), agent: agent.id, path });
+    fetches.push({ day: dayKey(line.t), agent: agent.id, path, evidence });
     const key = `${agent.id}|${line.ip}`;
     const entry = perKey.get(key) ?? { agent: agent.id, hits: [] };
     entry.hits.push({ t: line.t, path });

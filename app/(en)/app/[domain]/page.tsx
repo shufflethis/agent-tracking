@@ -5,7 +5,7 @@ import BarChart from "@/components/BarChart";
 import DashboardShell, { Stat, trendNote } from "@/components/DashboardShell";
 import { requireSite } from "@/lib/tracking/auth";
 import { dashCopy, dashLang, numberLocale } from "@/lib/tracking/copy";
-import { interactions, loadDashboard } from "@/lib/tracking/dashboard";
+import { activitySignals, loadDashboard } from "@/lib/tracking/dashboard";
 import { ingestHealth } from "@/lib/tracking/db";
 import { planFor } from "@/lib/tracking/plans";
 
@@ -63,6 +63,7 @@ export default async function Page({ params }: Params) {
   const legend = [
     { label: c.referrals, color: "var(--cyan)" },
     { label: c.fetches, color: "var(--soft-violet)" },
+    { label: c.verifiedFetches, color: "var(--cyan)" },
     { label: c.calls, color: "var(--good)" },
     { label: c.conversions, color: "var(--warn)" },
   ];
@@ -73,6 +74,7 @@ export default async function Page({ params }: Params) {
         <div className="card" style={{ padding: 28, display: "grid", gap: 28, gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))" }}>
           <Stat label={c.referrals} value={String(o.totals.referrals)} note={trendNote(o.totals.referrals, o.previous.referrals, lang)} />
           <Stat label={c.fetches} value={String(o.totals.fetches)} note={trendNote(o.totals.fetches, o.previous.fetches, lang)} />
+          <Stat label={c.verifiedFetches} value={String(o.totals.verifiedFetches)} note={trendNote(o.totals.verifiedFetches, o.previous.verifiedFetches, lang)} />
           <Stat label={c.calls} value={String(o.totals.calls)} note={trendNote(o.totals.calls, o.previous.calls, lang)} />
           <Stat label={c.conversions} value={String(o.totals.conversions)} note={trendNote(o.totals.conversions, o.previous.conversions, lang)} />
           <Stat label={c.goalAttempts} value={String(o.totals.goalAttempts)} note={trendNote(o.totals.goalAttempts, o.previous.goalAttempts, lang)} />
@@ -90,6 +92,7 @@ export default async function Page({ params }: Params) {
             series={[
               { key: "referrals", label: c.referrals, color: "var(--cyan)", values: o.days.map((d) => d.referrals) },
               { key: "fetches", label: c.fetches, color: "var(--soft-violet)", values: o.days.map((d) => d.fetches) },
+              { key: "verifiedFetches", label: c.verifiedFetches, color: "var(--cyan)", values: o.days.map((d) => d.verifiedFetches) },
               { key: "calls", label: c.calls, color: "var(--good)", values: o.days.map((d) => d.calls) },
               { key: "conversions", label: c.conversions, color: "var(--warn)", values: o.days.map((d) => d.conversions) },
             ]}
@@ -138,7 +141,7 @@ export default async function Page({ params }: Params) {
           <div className="card" style={{ padding: 26 }}>
             <p className="smallcaps" style={{ marginBottom: 8 }}>{c.inNumbers}</p>
             <p style={{ color: "var(--ink-2)", margin: 0 }}>
-              {c.numbers(interactions(o).toLocaleString(nl), dash.days, o.totals.views.toLocaleString(nl))}{" "}
+              {c.numbers(activitySignals(o).toLocaleString(nl), dash.days, o.totals.views.toLocaleString(nl))}{" "}
               {site.public_share ? (
                 <Link href={`/stats/${encodeURIComponent(site.domain)}`}>{c.statsPageSame}</Link>
               ) : (

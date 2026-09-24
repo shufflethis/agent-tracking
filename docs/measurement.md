@@ -71,3 +71,16 @@ terminal-state breakdown and appear as unknown in the new series.
 
 Browser API support and the early-registration helper are documented in
 [`webmcp-compatibility.md`](./webmcp-compatibility.md).
+Path and error selection rules are documented in
+[`privacy-selection.md`](./privacy-selection.md).
+
+For crawler fetches, a user-agent match is a claim. Only a request whose
+source IP matches a fresh published provider list enters `ai_fetch_verified`.
+Missing lists or addresses, stale lists, mismatches and providers without a
+published range are separate states. The per-provider success timestamp is
+used for the freshness check (`BOT_RANGE_MAX_AGE_HOURS`, default 72); a
+successful refresh of another provider does not refresh a failed list.
+`verification_audit` retains site, date, transport, provider list key/version,
+method, result and last check time as aggregate evidence. The legacy
+`ai_fetch`/`fetches` counter remains separate and is never promoted from
+historic totals. `verifiedFetches` starts with the new evidence rule.

@@ -1,5 +1,5 @@
 import { normalizeDomain } from "@/lib/tracking/classify";
-import { interactions, loadDashboard } from "@/lib/tracking/dashboard";
+import { activitySignals, interactions, loadDashboard } from "@/lib/tracking/dashboard";
 import { getSite } from "@/lib/tracking/db";
 import { clientIp, take } from "@/lib/ratelimit";
 import { SITE_ORIGIN } from "@/lib/site";
@@ -27,8 +27,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ doma
       days: 30,
       generatedAt: new Date().toISOString(),
       reportingDefinitions: REPORTING_DEFINITIONS,
-      totals: { ...o.totals, ...reportingTotals(o.totals), interactions: interactions(o) },
-      agents: dash.agents.filter((a) => a.count > 0).slice(0, 12).map((a) => ({ id: a.id, label: a.label, kind: a.kind, count: a.count, share: Math.round(a.share * 1000) / 1000, verifiable: a.verifiable, unverified: a.unverified })),
+      totals: { ...o.totals, ...reportingTotals(o.totals), interactions: interactions(o), activitySignals: activitySignals(o) },
+      agents: dash.agents.filter((a) => a.count > 0 || a.unverified || a.missing || a.stale || a.unavailable).slice(0, 12).map((a) => ({ id: a.id, label: a.label, kind: a.kind, count: a.count, verifiedCount: a.verifiedCount, legacyCount: a.legacyCount, missing: a.missing, stale: a.stale, unavailable: a.unavailable, share: Math.round(a.share * 1000) / 1000, verifiable: a.verifiable, unverified: a.unverified })),
       pages: dash.pages.slice(0, 12),
       page: `${SITE_ORIGIN}/stats/${encodeURIComponent(site.domain)}`,
     },

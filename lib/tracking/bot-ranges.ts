@@ -14,7 +14,33 @@ import { readFileSync } from "node:fs";
  * the import reads the file. No fetch happens on a request path.
  */
 
-export type Ranges = { fetchedAt: string; lists: Record<string, string[]> };
+export type Ranges = {
+  fetchedAt: string;
+  lists: Record<string, string[]>;
+  /** Last successful refresh for each provider. A global fetch timestamp is not evidence of freshness. */
+  updatedAt?: Record<string, string>;
+  failedAt?: Record<string, string>;
+};
+
+export type RangeEvidence = {
+  status: "verified" | "mismatch" | "missing" | "stale" | "unavailable";
+  method: "ip_range" | "none";
+  source: string | null;
+  sourceVersion: string | null;
+  checkedAt: number;
+};
+
+export const RANGE_MAX_AGE_HOURS = Math.max(1, Math.min(720, Number(process.env.BOT_RANGE_MAX_AGE_HOURS) || 72));
+
+export function rangeSourceHealth(ranges: Ranges | null, now = Date.now()): { key: string; status: "fresh" | "stale" | "missing"; updatedAt: string | null; failedAt: string | null }[] {
+  return RANGE_SOURCES.map(({ key }) => {
+    const updatedAt = ranges?.updatedAt?.[key] ?? null;
+    const failedAt = ranges?.failedAt?.[key] ?? null;
+    const time = Date.parse(updatedAt ?? "");
+    const status = !ranges?.lists[key]?.length || !Number.isFinite(time) ? "missing" : now - time > RANGE_MAX_AGE_HOURS * 3_600_000 || time > now + 300_000 ? "stale" : "fresh";
+    return { key, status, updatedAt, failedAt };
+  });
+}
 
 export const RANGE_SOURCES: { key: string; url: string; agents: string[] }[] = [
   { key: "openai-gptbot", url: "https://openai.com/gptbot.json", agents: ["gptbot"] },
@@ -49,6 +75,9 @@ export function loadRanges(path = rangesFile()): Ranges | null {
 /** Fetch every list; a list that fails keeps its previous entries. */
 export async function fetchRanges(previous: Ranges | null, fetchImpl: typeof fetch = fetch): Promise<{ ranges: Ranges; failed: string[] }> {
   const lists: Record<string, string[]> = { ...(previous?.lists ?? {}) };
+  const updatedAt = { ...(previous?.updatedAt ?? {}) };
+  const failedAt = { ...(previous?.failedAt ?? {}) };
+  const attemptedAt = new Date().toISOString();
   const failed: string[] = [];
   for (const source of RANGE_SOURCES) {
     try {
@@ -58,11 +87,14 @@ export async function fetchRanges(previous: Ranges | null, fetchImpl: typeof fet
       const prefixes = (data.prefixes ?? []).map((p) => p.ipv4Prefix ?? p.ipv6Prefix).filter((p): p is string => Boolean(p));
       if (prefixes.length === 0) throw new Error("empty list");
       lists[source.key] = prefixes;
+      updatedAt[source.key] = attemptedAt;
+      delete failedAt[source.key];
     } catch {
       failed.push(source.key);
+      failedAt[source.key] = attemptedAt;
     }
   }
-  return { ranges: { fetchedAt: new Date().toISOString(), lists }, failed };
+  return { ranges: { fetchedAt: attemptedAt, lists, updatedAt, failedAt }, failed };
 }
 
 /* ------------------------------------------------------------------ cidr */
@@ -129,9 +161,17 @@ export function inCidr(ip: string, cidr: string): boolean {
 
 /** true: inside the vendor's ranges. false: claims a vendor with a list, from elsewhere. null: nothing to check against. */
 export function verifyAgent(agent: string, ip: string, ranges: Ranges | null): boolean | null {
+  const evidence = rangeEvidence(agent, ip, ranges);
+  return evidence.status === "verified" ? true : evidence.status === "mismatch" ? false : null;
+}
+
+export function rangeEvidence(agent: string, ip: string, ranges: Ranges | null, now = Date.now()): RangeEvidence {
   const key = KEY_FOR_AGENT.get(agent);
-  if (!key || !ranges) return null;
-  const list = ranges.lists[key];
-  if (!list || list.length === 0) return null;
-  return list.some((cidr) => inCidr(ip, cidr));
+  const base = { checkedAt: now, source: key ?? null, sourceVersion: key ? ranges?.updatedAt?.[key] ?? null : null };
+  if (!key) return { ...base, status: "unavailable", method: "none" };
+  const list = ranges?.lists[key];
+  const refreshed = Date.parse(ranges?.updatedAt?.[key] ?? "");
+  if (!list?.length || !Number.isFinite(refreshed) || !parseIp(ip)) return { ...base, status: "missing", method: "ip_range" };
+  if (now - refreshed > RANGE_MAX_AGE_HOURS * 3_600_000 || refreshed > now + 300_000) return { ...base, status: "stale", method: "ip_range" };
+  return { ...base, status: list.some((cidr) => inCidr(ip, cidr)) ? "verified" : "mismatch", method: "ip_range" };
 }

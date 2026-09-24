@@ -6,7 +6,7 @@
 export const MEASUREMENT_VERSION = 2;
 
 export type Transport = "browser" | "log" | "server" | "test";
-export type IdentityStatus = "unknown" | "claimed" | "verified" | "mismatch" | "unavailable" | "stale";
+export type IdentityStatus = "unknown" | "claimed" | "verified" | "mismatch" | "missing" | "unavailable" | "stale";
 export type TechnicalOutcome = "attempted" | "completed" | "failed" | "cancelled" | "timed_out" | "unknown";
 export type BusinessOutcome = "confirmed" | "failed" | "unconfirmed" | "unknown";
 
@@ -15,6 +15,7 @@ export type IdentityEvidence = {
   status: IdentityStatus;
   /** Version/hash of the source used to check the claim, when there was one. */
   sourceVersion?: string | null;
+  sourceKey?: string | null;
   checkedAt?: number | null;
 };
 

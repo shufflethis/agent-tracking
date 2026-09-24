@@ -5,6 +5,8 @@ import { AGENT_LABELS, SOURCES_VERSION } from "@/lib/tracking/classify";
 import { dashCopy, dashLang } from "@/lib/tracking/copy";
 import { loadDashboard } from "@/lib/tracking/dashboard";
 import { planFor } from "@/lib/tracking/plans";
+import { verificationAudit } from "@/lib/tracking/db";
+import { loadRanges, rangeSourceHealth } from "@/lib/tracking/bot-ranges";
 
 export const metadata: Metadata = { title: "Agents", robots: { index: false, follow: false } };
 export const runtime = "nodejs";
@@ -14,6 +16,8 @@ export default async function Page({ params }: { params: Promise<{ domain: strin
   const { account, site } = await requireSite(decodeURIComponent(domain));
   const c = dashCopy(dashLang(account.lang)).agents;
   const dash = loadDashboard(site.domain, planFor(account.plan).windowDays);
+  const evidence = verificationAudit(site.domain, dash.days).slice(0, 30);
+  const ranges = rangeSourceHealth(loadRanges());
 
   return (
     <DashboardShell account={account} site={site} view="agents">
@@ -46,8 +50,8 @@ export default async function Page({ params }: { params: Promise<{ domain: strin
                       {a.trend === 0 ? c.flat : `${a.trend > 0 ? "+" : ""}${Math.round(a.trend * 100)}%`}
                     </td>
                     <td className="num">{a.bursts ? c.burstCell(a.bursts, a.burstPages) : ""}</td>
-                    <td style={{ fontSize: 13, color: a.unverified ? "var(--warn)" : "var(--muted)" }}>
-                      {a.kind !== "fetch" ? "" : a.verifiable ? (a.unverified ? c.claimedOutside(a.unverified) : c.againstRanges) : c.noRanges}
+                    <td style={{ fontSize: 13, color: a.unverified || a.missing || a.stale ? "var(--warn)" : "var(--muted)" }}>
+                      {a.kind !== "fetch" ? "" : c.evidenceSummary(a.verifiedCount, a.legacyCount, a.unverified, a.missing, a.stale, a.unavailable)}
                     </td>
                   </tr>
                 ))
@@ -90,6 +94,17 @@ export default async function Page({ params }: { params: Promise<{ domain: strin
             </div>
           </>
         ) : null}
+        <h2 style={{ fontSize: 20, marginTop: 34, marginBottom: 10 }}>{c.evidenceAudit}</h2>
+        <p style={{ fontSize: 13, color: "var(--muted)" }}>{c.evidenceAuditNote}</p>
+        {evidence.length > 0 && <div className="tablewrap"><table><thead><tr>
+          <th>{c.evidenceCols.day}</th><th>{c.evidenceCols.agent}</th><th>{c.evidenceCols.status}</th><th>{c.evidenceCols.source}</th><th>{c.evidenceCols.updated}</th><th>{c.evidenceCols.checked}</th><th>{c.evidenceCols.count}</th>
+        </tr></thead><tbody>{evidence.map((row) => <tr key={`${row.day}:${row.transport}:${row.agent}:${row.status}:${row.sourceVersion}`}>
+          <td>{row.day}</td><td>{AGENT_LABELS[row.agent] ?? row.agent}</td><td>{row.status}</td><td>{row.sourceKey || row.method}</td>
+          <td>{row.sourceVersion || "—"}</td><td>{new Date(row.lastCheckedAt).toISOString().slice(0, 16)} UTC</td><td className="num">{row.count}</td>
+        </tr>)}</tbody></table></div>}
+        <h2 style={{ fontSize: 20, marginTop: 34, marginBottom: 10 }}>{c.rangeHealth}</h2>
+        <div className="tablewrap"><table><thead><tr><th>{c.rangeHealthCols.provider}</th><th>{c.rangeHealthCols.state}</th><th>{c.rangeHealthCols.updated}</th><th>{c.rangeHealthCols.failed}</th></tr></thead>
+          <tbody>{ranges.map((source) => <tr key={source.key}><td>{source.key}</td><td>{source.status}</td><td>{source.updatedAt ?? "—"}</td><td>{source.failedAt ?? "—"}</td></tr>)}</tbody></table></div>
         <p style={{ fontSize: 13, color: "var(--muted)", marginTop: 14 }}>{c.sourceVersion(SOURCES_VERSION)}</p>
       </section>
     </DashboardShell>

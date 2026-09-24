@@ -4,6 +4,7 @@ import { planFor } from "@/lib/tracking/plans";
 import { dailySalt } from "@/lib/tracking/salt";
 import { clientIp, take } from "@/lib/ratelimit";
 import { BodyLimitError, readLimitedBody } from "@/lib/tracking/request-body";
+import { loadRanges, rangeEvidence, type RangeEvidence } from "@/lib/tracking/bot-ranges";
 // Ingest has its own budget (INGEST in lib/ratelimit.ts): one address here
 // is an office or a crawler, not one person, and a dropped batch is silent.
 
@@ -92,6 +93,7 @@ export async function POST(request: Request) {
 
   const ua = request.headers.get("user-agent");
   const agent = matchAgent(ua);
+  const agentEvidence = agent ? rangeEvidence(agent.id, ip, loadRanges()) : null;
   const salt = await dailySalt();
   const session = sessionHash(salt, site.domain, ua, ip);
   const now = Date.now();
@@ -103,7 +105,7 @@ export async function POST(request: Request) {
       continue;
     }
     const referral = matchReferral(e.referrer, e.utm)?.id ?? null;
-    stored.push(toStored(e, agent?.id ?? null, referral, session));
+    stored.push(toStored(e, agent?.id ?? null, agentEvidence, referral, session));
   }
   try {
     const result = recordEvents(site.domain, site.owner, stored, now, { fetchesFromLog: Boolean(site.log_since), quota: plan.eventsPerMonth });
@@ -116,12 +118,12 @@ export async function POST(request: Request) {
   return done(202);
 }
 
-function toStored(e: CleanEvent, agentId: string | null, referral: string | null, session: string): StoredEvent {
+function toStored(e: CleanEvent, agentId: string | null, evidence: RangeEvidence | null, referral: string | null, session: string): StoredEvent {
   return {
     kind: e.kind,
     name: e.name,
     path: e.path,
-    source: e.kind === "view" ? agentId ? `agent:${agentId}` : referral : null,
+    source: e.kind === "view" ? agentId && evidence?.status === "verified" ? `agent:${agentId}` : referral : null,
     session,
     ms: e.ms,
     ok: e.ok,
@@ -133,8 +135,11 @@ function toStored(e: CleanEvent, agentId: string | null, referral: string | null
     occurredAt: e.occurredAt,
     transport: "browser",
     actorClaim: agentId,
-    identityStatus: agentId ? "claimed" : "unknown",
-    identityEvidence: agentId ? [{ method: "user_agent", status: "claimed" }] : [],
+    identityStatus: evidence?.status ?? "unknown",
+    identityEvidence: agentId ? [
+      { method: "user_agent", status: "claimed" },
+      ...(evidence?.method === "ip_range" ? [{ method: "ip_range" as const, status: evidence.status, sourceKey: evidence.source, sourceVersion: evidence.sourceVersion, checkedAt: evidence.checkedAt }] : []),
+    ] : [],
     referralSource: referral,
     technicalOutcome: e.kind === "tool_call" ? e.state ?? (e.ok === true ? "completed" : e.ok === false ? "failed" : "unknown") : e.kind === "tool_activation_signal" ? "attempted" : e.kind === "tool_cancel_signal" ? "cancelled" : e.kind === "form_attempt" ? e.state ?? "unknown" : e.kind === "goal_attempt" ? "attempted" : "unknown",
     businessOutcome: "unconfirmed",

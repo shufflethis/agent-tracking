@@ -3,7 +3,7 @@ import { escapeHtml } from "../email";
 import { button, heading, layout, paragraph } from "../email-layout";
 import { AGENT_LABELS } from "./classify";
 import type { Dashboard } from "./dashboard";
-import { interactions } from "./dashboard";
+import { activitySignals } from "./dashboard";
 
 /**
  * The weekly mail: one per account, one block per site, numbers only.
@@ -14,11 +14,11 @@ import { interactions } from "./dashboard";
 export type DigestSite = { domain: string; dash: Dashboard; dashboardUrl: string };
 
 export function worthSending(sites: DigestSite[]): boolean {
-  return sites.some((s) => interactions(s.dash.overview) > 0 || s.dash.agents.some((a) => a.unverified > 0));
+  return sites.some((s) => activitySignals(s.dash.overview) > 0 || s.dash.agents.some((a) => a.unverified > 0));
 }
 
 export function renderDigestMail(sites: DigestSite[], unsubscribeUrl: string): { subject: string; text: string; html: string } {
-  const total = sites.reduce((n, s) => n + interactions(s.dash.overview), 0);
+  const total = sites.reduce((n, s) => n + activitySignals(s.dash.overview), 0);
   const subject = sites.length === 1 ? `${sites[0].domain}: ${total} activity signal${total === 1 ? "" : "s"} this week` : `${total} activity signal${total === 1 ? "" : "s"} across ${sites.length} sites this week`;
 
   const textBlocks: string[] = [];
@@ -30,7 +30,7 @@ export function renderDigestMail(sites: DigestSite[], unsubscribeUrl: string): {
     const failing = s.dash.tools.filter((t) => t.errors > 0).map((t) => `${t.name} ${t.errors} error${t.errors === 1 ? "" : "s"}`);
     const bursts = s.dash.agents.reduce((n, a) => n + a.bursts, 0);
     const lines = [
-      `${o.referrals} referral${o.referrals === 1 ? "" : "s"}, ${o.fetches} fetch${o.fetches === 1 ? "" : "es"}, ${o.calls} observed tool call${o.calls === 1 ? "" : "s"}, ${o.conversions} unverified goal signal${o.conversions === 1 ? "" : "s"}${bursts ? `, ${bursts} fetch burst${bursts === 1 ? "" : "s"}` : ""}.`,
+      `${o.referrals} referral${o.referrals === 1 ? "" : "s"}, ${o.verifiedFetches} IP-confirmed fetch${o.verifiedFetches === 1 ? "" : "es"}, ${o.fetches} legacy fetch claim${o.fetches === 1 ? "" : "s"}, ${o.calls} observed tool call${o.calls === 1 ? "" : "s"}, ${o.conversions} unverified goal signal${o.conversions === 1 ? "" : "s"}${bursts ? `, ${bursts} fetch burst${bursts === 1 ? "" : "s"}` : ""}.`,
       "Goal signals use the legacy browser definition; they are not confirmed agent outcomes. Periods with different measurement definitions should not be compared directly.",
       topAgents.length ? `Agents: ${topAgents.join(", ")}.` : "No agent seen this week.",
       topPages.length ? `Pages: ${topPages.join(", ")}.` : "",

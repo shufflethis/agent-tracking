@@ -28,7 +28,7 @@ describe("sanitizeEvent", () => {
     assert.ok(e);
     assert.equal(e.path, "/shop");
     assert.equal(e.ms, 13);
-    assert.deepEqual(e.keys, ["query", "limit"]);
+    assert.deepEqual(e.keys, []);
     assert.equal(e.simulated, false);
   });
   it("refuses unknown kinds and nameless tool events", () => {
@@ -39,9 +39,9 @@ describe("sanitizeEvent", () => {
   it("caps everything", () => {
     const e = sanitizeEvent({ k: "tool_call", n: "x".repeat(500), e: "y".repeat(500), keys: Array.from({ length: 100 }, (_, i) => `k${i}`), ms: 1e9 });
     assert.ok(e);
-    assert.equal(e.name!.length, 128);
-    assert.equal(e.err!.length, 80);
-    assert.equal(e.keys.length, 24);
+    assert.equal(e.name, "[redacted]");
+    assert.equal(e.err, "Error");
+    assert.equal(e.keys.length, 0);
     assert.equal(e.ms, 600_000);
   });
 });
@@ -143,8 +143,9 @@ describe("db", () => {
     const find = (kind: string, name: string) => rows.find((r) => r.kind === kind && r.name === name);
     assert.equal(find("view", "all")?.count, 3);
     assert.equal(find("ai_referral", "chatgpt")?.count, 1);
-    assert.equal(find("ai_fetch", "agent:claudebot")?.count, 1);
-    assert.equal(find("page", "/docs")?.count, 1);
+    assert.equal(find("ai_fetch_verified", "agent:claudebot"), undefined);
+    assert.equal(find("claim_unknown", "agent:claudebot")?.count, 1);
+    assert.equal(find("page", "/pricing")?.count, 1);
     assert.equal(find("tool_call", "search")?.count, 2);
     assert.equal(find("tool_call", "search")?.errors, 1);
     assert.equal(find("tool_call", "search")?.ms_total, 120);

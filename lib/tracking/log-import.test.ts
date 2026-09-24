@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { after, before, describe, it } from "node:test";
-import { closeDb, dailyRows, ensureAccount, addSite, recentBursts, recordBursts, recordEvents, recordLogFetches, setLogSource, getSite, usageThisMonth } from "./db";
+import { closeDb, dailyRows, ensureAccount, addSite, recentBursts, recordBursts, recordEvents, recordLogFetches, setLogSource, getSite, usageThisMonth, verificationAudit } from "./db";
 import { BURST_MIN_PAGES, importLines, isPagePath, parseLine } from "./log-import";
 
 const line = (ip: string, time: string, path: string, ua: string, status = 200, method = "GET") =>
@@ -48,9 +48,10 @@ describe("importLines", () => {
       line("3.3.3.3", "08/Sep/2026:06:00:04 +0200", "/gone", UNKNOWN, 404),
       line("4.4.4.4", "08/Sep/2026:06:00:05 +0200", "/", HUMAN),
     ];
-    const { fetches, unknown } = importLines(lines);
+    const { fetches, unverified, unknown } = importLines(lines);
 
-    assert.deepEqual(fetches.map((f) => f.agent), ["chatgpt-user"]);
+    assert.deepEqual(fetches.map((f) => f.agent), []);
+    assert.equal(unverified[0].evidence?.status, "missing");
     // Two page GETs, not the asset and not the 404; the browser never appears.
     assert.equal(unknown.length, 1);
     assert.equal(unknown[0].ua, UNKNOWN);
@@ -70,12 +71,13 @@ describe("importLines", () => {
       line("2.2.2.2", "08/Sep/2026:06:00:01 +0200", "/", HUMAN),
       "not a log line",
     ];
-    const { fetches, bursts, scanned } = importLines(lines);
+    const { fetches, unverified, bursts, scanned } = importLines(lines, { ranges: { fetchedAt: new Date().toISOString(), updatedAt: { "openai-chatgpt-user": new Date().toISOString() }, lists: { "openai-chatgpt-user": ["1.1.1.0/24"] } } });
     assert.equal(scanned, 10);
     assert.deepEqual(
       fetches.map((f) => `${f.agent} ${f.path}`),
-      ["chatgpt-user /", "chatgpt-user /pricing", "chatgpt-user /docs", "chatgpt-user /later", "claudebot /"],
+      ["chatgpt-user /", "chatgpt-user /pricing", "chatgpt-user /docs", "chatgpt-user /later"],
     );
+    assert.equal(unverified.find((f) => f.agent === "claudebot")?.evidence?.status, "unavailable");
     assert.equal(fetches[0].day, "2026-09-08");
     assert.equal(bursts.length, 1);
     assert.equal(bursts[0].agent, "chatgpt-user");
@@ -84,7 +86,7 @@ describe("importLines", () => {
     assert.ok(bursts[0].paths.length >= BURST_MIN_PAGES);
   });
   it("skips lines already imported and sets apart claimed agents from outside the published ranges", () => {
-    const ranges = { fetchedAt: "x", lists: { "openai-chatgpt-user": ["1.1.1.0/24"] } };
+    const ranges = { fetchedAt: new Date().toISOString(), updatedAt: { "openai-chatgpt-user": new Date().toISOString() }, lists: { "openai-chatgpt-user": ["1.1.1.0/24"] } };
     const lines = [
       line("1.1.1.1", "08/Sep/2026:06:00:00 +0200", "/old", GPT),
       line("1.1.1.1", "08/Sep/2026:06:00:10 +0200", "/real", GPT),
@@ -94,8 +96,9 @@ describe("importLines", () => {
     const since = Date.UTC(2026, 8, 8, 4, 0, 0);
     const r = importLines(lines, { ranges, since });
     assert.equal(r.skipped, 1);
-    assert.deepEqual(r.fetches.map((f) => f.path), ["/real", "/claude"]);
-    assert.deepEqual(r.unverified.map((f) => `${f.agent} ${f.path}`), ["chatgpt-user /fake"]);
+    assert.deepEqual(r.fetches.map((f) => f.path), ["/real"]);
+    assert.deepEqual(r.unverified.map((f) => `${f.agent} ${f.path}`), ["chatgpt-user /fake", "claudebot /claude"]);
+    assert.deepEqual(r.unverified.map((f) => f.evidence?.status), ["mismatch", "unavailable"]);
     assert.equal(r.lastT, Date.UTC(2026, 8, 8, 4, 0, 12));
     assert.equal(r.bursts.length, 0);
   });
@@ -114,11 +117,12 @@ describe("log rows in the store", () => {
     closeDb();
     ensureAccount("l@x.com", NOW);
     addSite("logged.example", "l@x.com", NOW);
+    const evidence = { status: "verified", method: "ip_range", source: "openai-gptbot", sourceVersion: "2026-09-08T00:00:00.000Z", checkedAt: NOW };
     recordLogFetches(
       "logged.example",
       [
-        { day: "2026-09-08", agent: "gptbot", path: "/" },
-        { day: "2026-09-08", agent: "gptbot", path: "/docs" },
+        { day: "2026-09-08", agent: "gptbot", path: "/", evidence },
+        { day: "2026-09-08", agent: "gptbot", path: "/docs", evidence },
       ],
       [{ day: "2026-09-08", agent: "gptbot" }],
       "l@x.com",
@@ -132,7 +136,8 @@ describe("log rows in the store", () => {
     assert.equal(usageThisMonth("l@x.com", NOW), 2, "log fetches count as agent events");
     const rows = dailyRows("logged.example", 30, NOW);
     const find = (kind: string, name: string) => rows.find((r) => r.kind === kind && r.name === name);
-    assert.equal(find("ai_fetch", "agent:gptbot")?.count, 2);
+    assert.equal(find("ai_fetch_verified", "agent:gptbot")?.count, 2);
+    assert.equal(verificationAudit("logged.example", 30, NOW).find((row) => row.status === "verified")?.count, 2);
     assert.equal(find("unverified", "agent:gptbot")?.count, 1);
     assert.equal(find("page", "/docs")?.count, 1);
     assert.equal(find("burst", "agent:gptbot")?.count, 1);
@@ -141,7 +146,7 @@ describe("log rows in the store", () => {
     // A snippet beacon from an agent on a log-fed site: kept as a raw row, not counted as a fetch again.
     const view = { kind: "view", name: null, path: "/", source: "agent:chatgpt-user", session: "s", ms: null, ok: null, err: null, keys: [], declarative: false, simulated: false };
     recordEvents("logged.example", "l@x.com", [view], NOW, { fetchesFromLog: true });
-    assert.equal(dailyRows("logged.example", 30, NOW).find((r) => r.kind === "ai_fetch" && r.name === "agent:chatgpt-user"), undefined);
+    assert.equal(dailyRows("logged.example", 30, NOW).find((r) => r.kind === "ai_fetch_verified" && r.name === "agent:chatgpt-user"), undefined);
     recordEvents("logged.example", "l@x.com", [{ ...view, source: "chatgpt" }], NOW, { fetchesFromLog: true });
     assert.equal(dailyRows("logged.example", 30, NOW).find((r) => r.kind === "ai_referral" && r.name === "chatgpt")?.count, 1);
   });

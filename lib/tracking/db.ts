@@ -3,6 +3,7 @@ import { dirname, join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import type { CleanEvent } from "./classify";
 import { MEASUREMENT_VERSION, type BusinessOutcome, type IdentityEvidence, type IdentityStatus, type TechnicalOutcome, type Transport } from "./measurement";
+import { redactPath, safeErrorClass, safeEventName } from "./privacy";
 import { RAW_RETENTION_DAYS, type PlanId } from "./plans";
 
 /**
@@ -169,6 +170,22 @@ function migrate(instance: DatabaseSync): void {
     instance.exec("alter table tools add column capture_mode text not null default 'legacy_unknown'");
     instance.prepare("insert into schema_migrations (version, applied_at) values (4, ?)").run(Date.now());
   }
+  if ((current.version ?? 0) < 5) {
+    instance.exec(`create table verification_audit (
+      domain text not null,
+      day text not null,
+      transport text not null,
+      agent text not null,
+      status text not null,
+      method text not null,
+      source_key text not null,
+      source_version text not null,
+      count integer not null default 0,
+      last_checked_at integer not null,
+      primary key (domain, day, transport, agent, status, method, source_key, source_version)
+    )`);
+    instance.prepare("insert into schema_migrations (version, applied_at) values (5, ?)").run(Date.now());
+  }
   instance.exec("commit");
   } catch (err) {
     instance.exec("rollback");
@@ -198,6 +215,25 @@ export function ingestHealth(domain: string, days = 30, now = Date.now()): { out
   const cutoff = dayKey(now - (days - 1) * 86_400_000);
   return db().prepare("select outcome, sum(count) as count, max(last_at) as lastAt from ingest_health where domain = ? and day >= ? group by outcome")
     .all(domain.toLowerCase(), cutoff) as { outcome: IngestOutcome; count: number; lastAt: number }[];
+}
+
+type VerificationRecord = { status: string; method?: string; sourceKey?: string | null; sourceVersion?: string | null; checkedAt?: number | null };
+
+function bumpVerification(d: DatabaseSync, domain: string, day: string, transport: Transport, agent: string, evidence: VerificationRecord, now: number): void {
+  d.prepare(`insert into verification_audit (domain, day, transport, agent, status, method, source_key, source_version, count, last_checked_at)
+    values (?, ?, ?, ?, ?, ?, ?, ?, 1, ?)
+    on conflict(domain, day, transport, agent, status, method, source_key, source_version)
+    do update set count = count + 1, last_checked_at = max(last_checked_at, excluded.last_checked_at)`)
+    .run(domain.toLowerCase(), day, transport, agent, evidence.status, evidence.method ?? "none", evidence.sourceKey ?? "", evidence.sourceVersion ?? "", evidence.checkedAt ?? now);
+}
+
+export type VerificationAuditRow = { day: string; transport: string; agent: string; status: string; method: string; sourceKey: string; sourceVersion: string; count: number; lastCheckedAt: number };
+
+export function verificationAudit(domain: string, days = 30, now = Date.now()): VerificationAuditRow[] {
+  const cutoff = dayKey(now - (days - 1) * 86_400_000);
+  return db().prepare(`select day, transport, agent, status, method, source_key as sourceKey, source_version as sourceVersion,
+    count, last_checked_at as lastCheckedAt from verification_audit where domain = ? and day >= ? order by day desc, agent, status`)
+    .all(domain.toLowerCase(), cutoff) as VerificationAuditRow[];
 }
 
 /* ---------------------------------------------------------------- accounts */
@@ -322,6 +358,7 @@ export function removeSite(domain: string, owner: string): boolean {
   d.prepare("delete from event_receipts where domain = ?").run(key);
   d.prepare("delete from daily where domain = ?").run(key);
   d.prepare("delete from ingest_health where domain = ?").run(key);
+  d.prepare("delete from verification_audit where domain = ?").run(key);
   d.prepare("delete from tools where domain = ?").run(key);
   d.prepare("delete from sites where domain = ?").run(key);
   return true;
@@ -447,18 +484,21 @@ export function recordEvents(domain: string, owner: string, events: StoredEvent[
     // batches cannot both spend the same remaining slots.
     const used = usageThisMonth(owner, now);
     for (const e of events) {
+      const path = redactPath(e.path);
+      const name = safeEventName(e.name);
+      const errorClass = safeErrorClass(e.err);
       const transport = e.transport ?? "browser";
       if (e.eventId && existingReceipt.get(domain, transport, e.eventId)) { duplicates++; continue; }
       const chargeable = e.kind === "tool_call" && !e.simulated;
       if (chargeable && options.quota !== undefined && used + acceptedUsage >= options.quota) { quotaDropped++; continue; }
       if (e.eventId && Number(insertReceipt.run(domain, transport, e.eventId, now).changes) === 0) { duplicates++; continue; }
       accepted++;
-      const keep = e.kind !== "view" || e.source !== null;
+      const keep = e.kind !== "view" || e.source !== null || e.actorClaim != null;
       if (keep) {
         const occurredAt = e.occurredAt && Math.abs(e.occurredAt - now) <= 86_400_000 ? e.occurredAt : now;
         insertEvent.run(
-          domain, now, e.kind, e.name, e.path, e.source, e.session, e.ms, e.ok === null ? null : e.ok ? 1 : 0,
-          e.err, e.keys.length ? JSON.stringify(e.keys) : null, e.declarative ? 1 : 0, e.simulated ? 1 : 0,
+          domain, now, e.kind, name, path, e.source, e.session, e.ms, e.ok === null ? null : e.ok ? 1 : 0,
+          errorClass, null, e.declarative ? 1 : 0, e.simulated ? 1 : 0,
           e.eventId ?? null, MEASUREMENT_VERSION, transport, occurredAt, now, e.actorClaim ?? null,
           e.identityStatus ?? "unknown", JSON.stringify(e.identityEvidence ?? []), e.referralSource ?? null,
           e.technicalOutcome ?? (e.ok === true ? "completed" : e.ok === false ? "failed" : "unknown"),
@@ -470,44 +510,56 @@ export function recordEvents(domain: string, owner: string, events: StoredEvent[
       const msTotal = e.ms ?? 0;
       if (e.kind === "view") {
         bump.run(domain, day, "view", "all", 0, 0);
+        const claim = e.actorClaim ?? (e.source?.startsWith("agent:") ? e.source.slice(6) : null);
+        if (claim) {
+          const range = e.identityEvidence?.find((item) => item.method === "ip_range");
+          bumpVerification(d, domain, day, transport, claim, {
+            status: e.identityStatus ?? "unknown", method: range?.method ?? "none", sourceKey: range?.sourceKey,
+            sourceVersion: range?.sourceVersion, checkedAt: range?.checkedAt,
+          }, now);
+        }
+        if (claim && e.identityStatus !== "verified") {
+          const status = e.identityStatus === "mismatch" ? "unverified" : `claim_${e.identityStatus ?? "unknown"}`;
+          bump.run(domain, day, status, `agent:${claim}`, 0, 0);
+        }
         if (e.source) {
           const isFetch = e.source.startsWith("agent:");
           // When the server log feeds this site, it already holds every agent
           // fetch, including the ones that ran the snippet; counting those
           // here too would double them. Referrals are people, not in the log's
           // agent lines, and still count.
-          if (!(isFetch && options.fetchesFromLog)) {
-            bump.run(domain, day, isFetch ? "ai_fetch" : "ai_referral", e.source, 0, 0);
-            bump.run(domain, day, "page", e.path, 0, 0);
+          if (!(isFetch && (options.fetchesFromLog || e.identityStatus !== "verified"))) {
+            bump.run(domain, day, isFetch ? "ai_fetch_verified" : "ai_referral", e.source, 0, 0);
+            bump.run(domain, day, "page", path, 0, 0);
           }
         }
       } else if (e.kind === "tool_call") {
-        bump.run(domain, day, e.simulated ? "tool_call_sim" : "tool_call", e.name ?? "?", errors, msTotal);
+        bump.run(domain, day, e.simulated ? "tool_call_sim" : "tool_call", name ?? "?", errors, msTotal);
         if (!e.simulated) {
           const state = e.technicalOutcome ?? (e.ok === true ? "completed" : e.ok === false ? "failed" : "unknown");
-          bump.run(domain, day, `tool_${state}`, e.name ?? "?", 0, 0);
+          bump.run(domain, day, `tool_${state}`, name ?? "?", 0, 0);
         }
-        if (!e.simulated) bump.run(domain, day, "tool_page", e.path, 0, 0);
-        if (e.err && !e.simulated) bump.run(domain, day, "tool_error", `${e.name ?? "?"} ${e.err}`, 0, 0);
+        if (!e.simulated) bump.run(domain, day, "tool_page", path, 0, 0);
+        if (errorClass && !e.simulated) bump.run(domain, day, "tool_error", `${name ?? "?"} ${errorClass}`, 0, 0);
       } else if (e.kind === "tool_registered") {
-        bump.run(domain, day, "tool_registered", e.name ?? "?", 0, 0);
+        bump.run(domain, day, "tool_registered", name ?? "?", 0, 0);
       } else if (e.kind === "tool_discovered") {
-        bump.run(domain, day, "tool_discovered", e.name ?? "?", 0, 0);
-        discoveredTool.run(domain, e.name ?? "?", e.schemaHash ?? null, now, now);
+        bump.run(domain, day, "tool_discovered", name ?? "?", 0, 0);
+        discoveredTool.run(domain, name ?? "?", e.schemaHash ?? null, now, now);
       } else if (e.kind === "tool_removed") {
-        bump.run(domain, day, "tool_removed", e.name ?? "?", 0, 0);
-        removedTool.run(now, domain, e.name ?? "?");
+        bump.run(domain, day, "tool_removed", name ?? "?", 0, 0);
+        removedTool.run(now, domain, name ?? "?");
       } else if (e.kind === "tool_activation_signal" || e.kind === "tool_cancel_signal") {
-        bump.run(domain, day, e.kind, e.name ?? "?", 0, 0);
+        bump.run(domain, day, e.kind, name ?? "?", 0, 0);
       } else if (e.kind === "agent_conversion") {
-        bump.run(domain, day, e.simulated ? "conversion_sim" : "conversion", e.name ?? "?", 0, 0);
+        bump.run(domain, day, e.simulated ? "conversion_sim" : "conversion", name ?? "?", 0, 0);
       } else if (e.kind === "goal_attempt") {
-        bump.run(domain, day, e.simulated ? "goal_attempt_sim" : "goal_attempt", e.name ?? "?", 0, 0);
+        bump.run(domain, day, e.simulated ? "goal_attempt_sim" : "goal_attempt", name ?? "?", 0, 0);
       } else if (e.kind === "form_attempt") {
-        bump.run(domain, day, "form_attempt", e.name ?? "?", 0, 0);
+        bump.run(domain, day, "form_attempt", name ?? "?", 0, 0);
       }
-      if (e.kind === "tool_registered" && e.name) {
-        tool.run(domain, e.name, e.descriptionHash ?? null, e.schemaHash ?? null, now, now, e.declarative ? 1 : 0);
+      if (e.kind === "tool_registered" && name) {
+        tool.run(domain, name, e.descriptionHash ?? null, e.schemaHash ?? null, now, now, e.declarative ? 1 : 0);
       }
       if (chargeable) acceptedUsage++;
     }
@@ -542,7 +594,7 @@ export function pruneRaw(now = Date.now()): number {
 /* -------------------------------------------------------------- log import */
 
 /** Daily fetch counters from the server log: the same rows the snippet would write for an agent that ran it. */
-export function recordLogFetches(domain: string, fetches: { day: string; agent: string; path: string }[], unverified: { day: string; agent: string }[] = [], owner: string | null = null, now = Date.now()): void {
+export function recordLogFetches(domain: string, fetches: { day: string; agent: string; path: string; evidence?: { status: string; method: string; source: string | null; sourceVersion: string | null; checkedAt: number } }[], unverified: { day: string; agent: string; evidence?: { status: string; method: string; source: string | null; sourceVersion: string | null; checkedAt: number } }[] = [], owner: string | null = null, now = Date.now()): void {
   if (fetches.length === 0 && unverified.length === 0) return;
   const d = db();
   const bump = d.prepare(
@@ -550,14 +602,26 @@ export function recordLogFetches(domain: string, fetches: { day: string; agent: 
   );
   d.exec("begin");
   try {
+    let acceptedFetches = 0;
     for (const f of fetches) {
-      bump.run(domain.toLowerCase(), f.day, "ai_fetch", `agent:${f.agent}`);
-      bump.run(domain.toLowerCase(), f.day, "page", f.path);
+      if (f.evidence?.status !== "verified") {
+        bump.run(domain.toLowerCase(), f.day, `claim_${f.evidence?.status ?? "missing"}`, `agent:${f.agent}`);
+        continue;
+      }
+      bump.run(domain.toLowerCase(), f.day, "ai_fetch_verified", `agent:${f.agent}`);
+      bump.run(domain.toLowerCase(), f.day, "page", redactPath(f.path));
+      acceptedFetches++;
+      bumpVerification(d, domain, f.day, "log", f.agent, { status: "verified", method: f.evidence.method, sourceKey: f.evidence.source, sourceVersion: f.evidence.sourceVersion, checkedAt: f.evidence.checkedAt }, now);
     }
-    // Claimed an agent with published ranges, came from elsewhere: shown, not counted.
-    for (const u of unverified) bump.run(domain.toLowerCase(), u.day, "unverified", `agent:${u.agent}`);
+    // Preserve the old mismatch counter's meaning; other non-evidence states
+    // have their own dimensions and never enter confirmed fetch counts.
+    for (const u of unverified) {
+      const status = u.evidence?.status ?? "mismatch";
+      bump.run(domain.toLowerCase(), u.day, status === "mismatch" ? "unverified" : `claim_${status}`, `agent:${u.agent}`);
+      bumpVerification(d, domain, u.day, "log", u.agent, { status, method: u.evidence?.method, sourceKey: u.evidence?.source, sourceVersion: u.evidence?.sourceVersion, checkedAt: u.evidence?.checkedAt }, now);
+    }
     // A fetch from the log is an agent event like any other for the quota.
-    if (owner && fetches.length) addUsage(owner, fetches.length, now);
+    if (owner && acceptedFetches) addUsage(owner, acceptedFetches, now);
     d.exec("commit");
   } catch (err) {
     d.exec("rollback");
@@ -581,8 +645,9 @@ export function recordBursts(domain: string, bursts: { agent: string; start: num
   d.exec("begin");
   try {
     for (const b of bursts) {
-      bump.run(domain.toLowerCase(), dayKey(b.start), `agent:${b.agent}`, b.paths.length);
-      insert.run(domain.toLowerCase(), b.start, b.agent, b.paths[0] ?? "/", `agent:${b.agent}`, b.ms, JSON.stringify(b.paths));
+      const paths = b.paths.map((path) => redactPath(path));
+      bump.run(domain.toLowerCase(), dayKey(b.start), `agent:${b.agent}`, paths.length);
+      insert.run(domain.toLowerCase(), b.start, b.agent, paths[0] ?? "/", `agent:${b.agent}`, b.ms, JSON.stringify(paths));
     }
     d.exec("commit");
   } catch (err) {
@@ -595,7 +660,7 @@ export type BurstRow = { t: number; agent: string; ms: number; paths: string[] }
 
 export function recentBursts(domain: string, limit = 12): BurstRow[] {
   const rows = db().prepare("select t, name, ms, keys from events where domain = ? and kind = 'fetch_burst' order by t desc limit ?").all(domain.toLowerCase(), limit) as { t: number; name: string; ms: number; keys: string | null }[];
-  return rows.map((r) => ({ t: r.t, agent: r.name, ms: r.ms, paths: r.keys ? (JSON.parse(r.keys) as string[]) : [] }));
+  return rows.map((r) => ({ t: r.t, agent: r.name, ms: r.ms, paths: r.keys ? (JSON.parse(r.keys) as string[]).map((path) => redactPath(path)) : [] }));
 }
 
 export type DailyRow = { day: string; kind: string; name: string; count: number; errors: number; ms_total: number };

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { fetchRanges, inCidr, parseIp, verifiable, verifyAgent, type Ranges } from "./bot-ranges";
+import { fetchRanges, inCidr, parseIp, rangeEvidence, rangeSourceHealth, verifiable, verifyAgent, type Ranges } from "./bot-ranges";
 
 describe("cidr", () => {
   it("matches v4 and v6 prefixes and refuses junk", () => {
@@ -18,7 +18,7 @@ describe("cidr", () => {
 });
 
 describe("verifyAgent", () => {
-  const ranges: Ranges = { fetchedAt: "x", lists: { "openai-gptbot": ["132.196.86.0/24"], "perplexity-bot": ["107.20.236.150/32"] } };
+  const ranges: Ranges = { fetchedAt: new Date().toISOString(), updatedAt: { "openai-gptbot": new Date().toISOString(), "perplexity-bot": new Date().toISOString() }, lists: { "openai-gptbot": ["132.196.86.0/24"], "perplexity-bot": ["107.20.236.150/32"] } };
   it("answers true, false or null depending on whether there is a list", () => {
     assert.equal(verifyAgent("gptbot", "132.196.86.9", ranges), true);
     assert.equal(verifyAgent("gptbot", "5.5.5.5", ranges), false);
@@ -28,11 +28,23 @@ describe("verifyAgent", () => {
     assert.equal(verifiable("gptbot"), true);
     assert.equal(verifiable("claudebot"), false);
   });
+  it("separates missing, stale, mismatch and no published list", () => {
+    const now = Date.UTC(2026, 8, 25, 12);
+    const sample: Ranges = { fetchedAt: new Date(now).toISOString(), lists: { "openai-gptbot": ["132.196.86.0/24"] }, updatedAt: { "openai-gptbot": new Date(now).toISOString() } };
+    assert.equal(rangeEvidence("gptbot", "132.196.86.9", sample, now).status, "verified");
+    assert.equal(rangeEvidence("gptbot", "5.5.5.5", sample, now).status, "mismatch");
+    assert.equal(rangeEvidence("chatgpt-user", "5.5.5.5", sample, now).status, "missing");
+    assert.equal(rangeEvidence("claudebot", "5.5.5.5", sample, now).status, "unavailable");
+    assert.equal(rangeEvidence("gptbot", "132.196.86.9", sample, now + 73 * 3_600_000).status, "stale");
+    assert.equal(rangeEvidence("gptbot", "unknown", sample, now).status, "missing");
+    assert.equal(rangeSourceHealth(sample, now).find((row) => row.key === "openai-gptbot")?.status, "fresh");
+    assert.equal(rangeSourceHealth(sample, now + 73 * 3_600_000).find((row) => row.key === "openai-gptbot")?.status, "stale");
+  });
 });
 
 describe("fetchRanges", () => {
   it("keeps the previous list for a source that fails", async () => {
-    const previous: Ranges = { fetchedAt: "old", lists: { "openai-gptbot": ["1.1.1.0/24"] } };
+    const previous: Ranges = { fetchedAt: "old", lists: { "openai-gptbot": ["1.1.1.0/24"] }, updatedAt: { "openai-gptbot": "2026-09-01T00:00:00.000Z" } };
     const fake = (async (url: string | URL | Request) => {
       const u = String(url);
       if (u.includes("gptbot.json")) return new Response("nope", { status: 500 });
@@ -42,5 +54,8 @@ describe("fetchRanges", () => {
     assert.deepEqual(failed, ["openai-gptbot"]);
     assert.deepEqual(ranges.lists["openai-gptbot"], ["1.1.1.0/24"]);
     assert.deepEqual(ranges.lists["perplexity-bot"], ["9.9.9.0/24"]);
+    assert.equal(ranges.updatedAt?.["openai-gptbot"], "2026-09-01T00:00:00.000Z");
+    assert.ok(ranges.failedAt?.["openai-gptbot"]);
+    assert.ok(ranges.updatedAt?.["perplexity-bot"]);
   });
 });

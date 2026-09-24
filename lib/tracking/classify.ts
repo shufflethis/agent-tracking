@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { eventId } from "./measurement";
 import type { TechnicalOutcome } from "./measurement";
+import { redactPath, safeErrorClass, safeEventName } from "./privacy";
 import sources from "./ai-sources.json";
 
 /**
@@ -95,16 +96,14 @@ export function sanitizeEvent(raw: unknown): CleanEvent | null {
 
   // A path is a path: leading slash, no query, no fragment. Query strings are
   // where tokens and search terms live, and neither is ours to keep.
-  let path = str(r.p, CAP.path) ?? "/";
-  path = path.split(/[?#]/)[0] || "/";
-  if (!path.startsWith("/")) path = `/${path}`;
+  const path = redactPath(r.p);
 
-  const name = str(r.n, CAP.name);
+  const name = safeEventName(r.n);
   if ((kind === "tool_registered" || kind === "tool_discovered" || kind === "tool_removed" || kind === "tool_activation_signal" || kind === "tool_cancel_signal" || kind === "tool_call" || kind === "form_attempt" || kind === "goal_attempt" || kind === "agent_conversion") && !name) return null;
 
-  const keys = Array.isArray(r.keys)
-    ? r.keys.filter((k): k is string => typeof k === "string" && k.length > 0).slice(0, CAP.keys).map((k) => k.slice(0, CAP.key))
-    : [];
+  // Legacy snippets sent argument key names. Dynamic keys can themselves be
+  // user data, so the current contract drops them entirely.
+  const keys: string[] = [];
 
   const ms = typeof r.ms === "number" && Number.isFinite(r.ms) ? Math.min(Math.max(Math.round(r.ms), 0), 600_000) : null;
 
@@ -125,7 +124,7 @@ export function sanitizeEvent(raw: unknown): CleanEvent | null {
     ms,
     ok: typeof r.ok === "boolean" ? r.ok : null,
     state: typeof r.s === "string" && (["attempted", "completed", "failed", "cancelled", "timed_out", "unknown"] as string[]).includes(r.s) ? r.s as TechnicalOutcome : null,
-    err: str(r.e, CAP.err),
+    err: safeErrorClass(r.e),
     keys,
     declarative: r.d === true || r.d === 1,
     simulated: r.sim === true || r.sim === 1,

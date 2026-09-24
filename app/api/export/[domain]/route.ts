@@ -3,6 +3,7 @@ import { currentAccount } from "@/lib/tracking/auth";
 import { normalizeDomain } from "@/lib/tracking/classify";
 import { dailyRows, getSite } from "@/lib/tracking/db";
 import { planFor } from "@/lib/tracking/plans";
+import { safeCounterName } from "@/lib/tracking/privacy";
 
 export const runtime = "nodejs";
 
@@ -22,7 +23,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ doma
   if (!site || site.owner !== account.email) return new Response("No site with that domain on this account.", { status: 404 });
   const days = planFor(account.plan).windowDays;
   const rows = dailyRows(site.domain, days);
-  const lines = ["day,kind,name,count,errors,ms_total,definition_version,definition", ...rows.map((r) => [r.day, r.kind, r.name, r.count, r.errors, r.ms_total, r.kind === "conversion" ? 1 : 2, r.kind === "conversion" ? "unverified_browser_goal_signal" : "observed_counter"].map(csvCell).join(","))];
+  const lines = ["day,kind,name,count,errors,ms_total,definition_version,definition", ...rows.map((r) => [r.day, r.kind, safeCounterName(r.kind, r.name), r.count, r.errors, r.ms_total, r.kind === "conversion" ? 1 : 2, r.kind === "conversion" ? "unverified_browser_goal_signal" : "observed_counter"].map(csvCell).join(","))];
   return new Response(lines.join("\n") + "\n", {
     headers: {
       "content-type": "text/csv; charset=utf-8",

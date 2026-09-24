@@ -5,7 +5,7 @@ import { notFound } from "next/navigation";
 import BarChart from "@/components/BarChart";
 import ShareBar from "@/components/ShareBar";
 import { normalizeDomain } from "@/lib/tracking/classify";
-import { interactions, loadDashboard } from "@/lib/tracking/dashboard";
+import { activitySignals, loadDashboard } from "@/lib/tracking/dashboard";
 import { getSite } from "@/lib/tracking/db";
 import { snippetFor } from "@/lib/tracking/snippet";
 
@@ -30,7 +30,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const host = normalizeDomain(decodeURIComponent(domain));
   const site = host ? getSite(host) : null;
   if (!site || !site.public_share) return { title: "Stats", robots: { index: false } };
-  const n = interactions(loadDashboard(site.domain, 30).overview);
+  const n = activitySignals(loadDashboard(site.domain, 30).overview);
   const title = `${site.domain}: ${n.toLocaleString("en-GB")} activity signals in 30 days`;
   const description = `AI referral, fetch and observed tool-call signals on ${site.domain}, measured by ${SITE_HOST}. Historical browser goal signals are unverified.`;
   return {
@@ -49,7 +49,7 @@ export default async function Page({ params }: Params) {
   if (!site || !site.public_share) notFound();
   const dash = loadDashboard(site.domain, 30);
   const o = dash.overview;
-  const n = interactions(o);
+  const n = activitySignals(o);
   const url = `${SITE_ORIGIN}/stats/${encodeURIComponent(site.domain)}`;
 
   return (
@@ -59,14 +59,15 @@ export default async function Page({ params }: Params) {
           <p className="eyebrow" style={{ marginBottom: 10 }}>Agent Tracking</p>
           <h1 style={{ fontSize: "clamp(26px,4vw,40px)", marginBottom: 8, wordBreak: "break-word" }}>{site.domain}</h1>
           <p className="dek" style={{ margin: 0, maxWidth: "56ch" }}>
-            <b style={{ color: "var(--ink)" }}>{n.toLocaleString("en-GB")}</b> activity signals in the last 30 days: visitors referred by assistants, claimed or verified fetches,
+            <b style={{ color: "var(--ink)" }}>{n.toLocaleString("en-GB")}</b> activity signals in the last 30 days: visitors referred by assistants, historical fetch claims, IP-confirmed crawler requests,
             WebMCP tools called, and unverified browser goal signals.
           </p>
         </div>
         <div className="card" style={{ padding: 28, display: "grid", gap: 28, gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))" }}>
           {[
             ["AI referrals", o.totals.referrals],
-            ["AI fetches", o.totals.fetches],
+            ["IP-confirmed fetches", o.totals.verifiedFetches],
+            ["Legacy fetch claims", o.totals.fetches],
             ["Tool calls", o.totals.calls],
             ["Unverified goal signals", o.totals.conversions],
           ].map(([label, value]) => (
@@ -83,7 +84,8 @@ export default async function Page({ params }: Params) {
             days={o.days.map((d) => d.day)}
             series={[
               { key: "referrals", label: "AI referrals", color: "var(--cyan)", values: o.days.map((d) => d.referrals) },
-              { key: "fetches", label: "AI fetches", color: "var(--soft-violet)", values: o.days.map((d) => d.fetches) },
+              { key: "fetches", label: "Legacy fetch claims", color: "var(--soft-violet)", values: o.days.map((d) => d.fetches) },
+              { key: "verifiedFetches", label: "IP-confirmed fetches", color: "var(--cyan)", values: o.days.map((d) => d.verifiedFetches) },
               { key: "calls", label: "Tool calls", color: "var(--good)", values: o.days.map((d) => d.calls) },
               { key: "conversions", label: "Unverified goal signals", color: "var(--warn)", values: o.days.map((d) => d.conversions) },
             ]}

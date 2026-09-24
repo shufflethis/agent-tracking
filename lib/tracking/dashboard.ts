@@ -1,6 +1,7 @@
 import { verifiable } from "./bot-ranges";
 import { AGENT_LABELS, REFERRER_LABELS } from "./classify";
 import { dailyRows, recentBursts, sessionsPerDay, toolRows, type BurstRow, type DailyRow } from "./db";
+import { redactPath, safeCounterName, safeEventName } from "./privacy";
 
 /**
  * The four views, computed from daily counters.
@@ -9,16 +10,16 @@ import { dailyRows, recentBursts, sessionsPerDay, toolRows, type BurstRow, type 
  * exported loaders at the bottom are the only thing that touches the store.
  */
 
-export type Series = { day: string; referrals: number; fetches: number; calls: number; conversions: number; goalAttempts: number; formAttempts: number; views: number };
+export type Series = { day: string; referrals: number; fetches: number; verifiedFetches: number; calls: number; conversions: number; goalAttempts: number; formAttempts: number; views: number };
 
 export type Overview = {
   days: Series[];
-  totals: { referrals: number; fetches: number; calls: number; conversions: number; goalAttempts: number; formAttempts: number; views: number; sessions: number };
+  totals: { referrals: number; fetches: number; verifiedFetches: number; calls: number; conversions: number; goalAttempts: number; formAttempts: number; views: number; sessions: number };
   /** Same window one period earlier, for the trend arrows. */
-  previous: { referrals: number; fetches: number; calls: number; conversions: number; goalAttempts: number; formAttempts: number };
+  previous: { referrals: number; fetches: number; verifiedFetches: number; calls: number; conversions: number; goalAttempts: number; formAttempts: number };
 };
 
-export type AgentRow = { id: string; label: string; kind: "referral" | "fetch"; count: number; share: number; trend: number; bursts: number; burstPages: number; unverified: number; verifiable: boolean };
+export type AgentRow = { id: string; label: string; kind: "referral" | "fetch"; count: number; verifiedCount: number; legacyCount: number; missing: number; stale: number; unavailable: number; share: number; trend: number; bursts: number; burstPages: number; unverified: number; verifiable: boolean };
 
 export type ToolStat = {
   name: string;
@@ -53,18 +54,19 @@ export function overview(rows: DailyRow[], sessions: { day: string; sessions: nu
   const dayList = listDays(days, now);
   const cutoff = dayList[0];
   const previousStart = listDays(days * 2, now)[0];
-  const blank = () => ({ referrals: 0, fetches: 0, calls: 0, conversions: 0, goalAttempts: 0, formAttempts: 0, views: 0 });
+  const blank = () => ({ referrals: 0, fetches: 0, verifiedFetches: 0, calls: 0, conversions: 0, goalAttempts: 0, formAttempts: 0, views: 0 });
   const perDay = new Map(dayList.map((d) => [d, blank()]));
-  const previous = { referrals: 0, fetches: 0, calls: 0, conversions: 0, goalAttempts: 0, formAttempts: 0 };
+  const previous = { referrals: 0, fetches: 0, verifiedFetches: 0, calls: 0, conversions: 0, goalAttempts: 0, formAttempts: 0 };
 
   for (const r of rows) {
     const inWindow = r.day >= cutoff;
     const inPrevious = !inWindow && r.day >= previousStart;
     const current = inWindow ? perDay.get(r.day) : undefined;
-    const target: { referrals: number; fetches: number; calls: number; conversions: number; goalAttempts: number; formAttempts: number } | undefined = current ?? (inPrevious ? previous : undefined);
+    const target: { referrals: number; fetches: number; verifiedFetches: number; calls: number; conversions: number; goalAttempts: number; formAttempts: number } | undefined = current ?? (inPrevious ? previous : undefined);
     if (!target) continue;
     if (r.kind === "ai_referral") target.referrals += r.count;
     else if (r.kind === "ai_fetch") target.fetches += r.count;
+    else if (r.kind === "ai_fetch_verified") target.verifiedFetches += r.count;
     else if (r.kind === "tool_call") target.calls += r.count;
     else if (r.kind === "conversion") target.conversions += r.count;
     else if (r.kind === "goal_attempt") target.goalAttempts += r.count;
@@ -73,8 +75,8 @@ export function overview(rows: DailyRow[], sessions: { day: string; sessions: nu
   }
   const series: Series[] = dayList.map((day) => ({ day, ...perDay.get(day)! }));
   const totals = series.reduce(
-    (acc, s) => ({ referrals: acc.referrals + s.referrals, fetches: acc.fetches + s.fetches, calls: acc.calls + s.calls, conversions: acc.conversions + s.conversions, goalAttempts: acc.goalAttempts + s.goalAttempts, formAttempts: acc.formAttempts + s.formAttempts, views: acc.views + s.views, sessions: acc.sessions }),
-    { referrals: 0, fetches: 0, calls: 0, conversions: 0, goalAttempts: 0, formAttempts: 0, views: 0, sessions: 0 },
+    (acc, s) => ({ referrals: acc.referrals + s.referrals, fetches: acc.fetches + s.fetches, verifiedFetches: acc.verifiedFetches + s.verifiedFetches, calls: acc.calls + s.calls, conversions: acc.conversions + s.conversions, goalAttempts: acc.goalAttempts + s.goalAttempts, formAttempts: acc.formAttempts + s.formAttempts, views: acc.views + s.views, sessions: acc.sessions }),
+    { referrals: 0, fetches: 0, verifiedFetches: 0, calls: 0, conversions: 0, goalAttempts: 0, formAttempts: 0, views: 0, sessions: 0 },
   );
   totals.sessions = sessions.filter((s) => s.day >= cutoff).reduce((n, s) => n + s.sessions, 0);
   return { days: series, totals, previous };
@@ -88,10 +90,21 @@ export function agents(rows: DailyRow[], days: number, now: number): AgentRow[] 
   const before = new Map<string, number>();
   const bursts = new Map<string, { n: number; pages: number }>();
   const unverified = new Map<string, number>();
+  const verified = new Map<string, number>();
+  const legacy = new Map<string, number>();
+  const missing = new Map<string, number>();
+  const stale = new Map<string, number>();
+  const unavailable = new Map<string, number>();
   for (const r of rows) {
     if (r.kind === "unverified" && r.day >= cutoff) {
       unverified.set(r.name, (unverified.get(r.name) ?? 0) + r.count);
       continue;
+    }
+    if (r.day >= cutoff) {
+      const evidenceMap = r.kind === "claim_missing" ? missing : r.kind === "claim_stale" ? stale : r.kind === "claim_unavailable" ? unavailable : null;
+      if (evidenceMap) { evidenceMap.set(r.name, (evidenceMap.get(r.name) ?? 0) + r.count); continue; }
+      if (r.kind === "ai_fetch_verified") verified.set(r.name, (verified.get(r.name) ?? 0) + r.count);
+      if (r.kind === "ai_fetch") legacy.set(r.name, (legacy.get(r.name) ?? 0) + r.count);
     }
     if (r.kind === "burst" && r.day >= cutoff) {
       const b = bursts.get(r.name) ?? { n: 0, pages: 0 };
@@ -100,13 +113,14 @@ export function agents(rows: DailyRow[], days: number, now: number): AgentRow[] 
       bursts.set(r.name, b);
       continue;
     }
-    if (r.kind !== "ai_referral" && r.kind !== "ai_fetch") continue;
+    if (r.kind !== "ai_referral" && r.kind !== "ai_fetch" && r.kind !== "ai_fetch_verified") continue;
     const map = r.day >= cutoff ? current : r.day >= previousStart ? before : null;
     if (!map) continue;
     map.set(r.name, (map.get(r.name) ?? 0) + r.count);
   }
   // An agent seen only as unverified still gets a row, so the count is not hidden.
   for (const name of unverified.keys()) if (!current.has(name)) current.set(name, 0);
+  for (const map of [missing, stale, unavailable]) for (const name of map.keys()) if (!current.has(name)) current.set(name, 0);
   const total = [...current.values()].reduce((n, c) => n + c, 0);
   return [...current.entries()]
     .map(([name, count]) => {
@@ -118,6 +132,11 @@ export function agents(rows: DailyRow[], days: number, now: number): AgentRow[] 
         label: (isFetch ? AGENT_LABELS[id] : REFERRER_LABELS[id]) ?? id,
         kind: isFetch ? ("fetch" as const) : ("referral" as const),
         count,
+        verifiedCount: verified.get(name) ?? 0,
+        legacyCount: legacy.get(name) ?? 0,
+        missing: missing.get(name) ?? 0,
+        stale: stale.get(name) ?? 0,
+        unavailable: unavailable.get(name) ?? 0,
         share: total ? count / total : 0,
         trend: prev === 0 ? (count > 0 ? 1 : 0) : (count - prev) / prev,
         bursts: bursts.get(name)?.n ?? 0,
@@ -133,8 +152,9 @@ export function tools(rows: DailyRow[], registry: ReturnType<typeof toolRows>, d
   const cutoff = listDays(days, now)[0];
   const stats = new Map<string, { calls: number; errors: number; ms: number; simulated: number; completed: number; failed: number; cancelled: number; timedOut: number; unknown: number; errs: Map<string, number> }>();
   const get = (name: string) => {
-    const s = stats.get(name) ?? { calls: 0, errors: 0, ms: 0, simulated: 0, completed: 0, failed: 0, cancelled: 0, timedOut: 0, unknown: 0, errs: new Map<string, number>() };
-    stats.set(name, s);
+    const key = safeEventName(name) ?? "[redacted]";
+    const s = stats.get(key) ?? { calls: 0, errors: 0, ms: 0, simulated: 0, completed: 0, failed: 0, cancelled: 0, timedOut: 0, unknown: 0, errs: new Map<string, number>() };
+    stats.set(key, s);
     return s;
   };
   for (const r of rows) {
@@ -152,18 +172,19 @@ export function tools(rows: DailyRow[], registry: ReturnType<typeof toolRows>, d
     else if (r.kind === "tool_timed_out") get(r.name).timedOut += r.count;
     else if (r.kind === "tool_unknown" || r.kind === "tool_attempted") get(r.name).unknown += r.count;
     else if (r.kind === "tool_error") {
-      const at = r.name.indexOf(" ");
-      const tool = at > 0 ? r.name.slice(0, at) : r.name;
-      const message = at > 0 ? r.name.slice(at + 1) : "error";
+      const safe = safeCounterName(r.kind, r.name);
+      const at = safe.indexOf(" ");
+      const tool = at > 0 ? safe.slice(0, at) : safe;
+      const message = at > 0 ? safe.slice(at + 1) : "Error";
       const s = get(tool);
       s.errs.set(message, (s.errs.get(message) ?? 0) + r.count);
     }
   }
-  const names = new Set([...registry.map((t) => t.name), ...stats.keys()]);
+  const names = new Set([...registry.map((t) => safeEventName(t.name) ?? "[redacted]"), ...stats.keys()]);
   return [...names]
     .map((name) => {
       const s = stats.get(name);
-      const reg = registry.find((t) => t.name === name);
+      const reg = registry.find((t) => (safeEventName(t.name) ?? "[redacted]") === name);
       const calls = s?.calls ?? 0;
       const classified = (s?.completed ?? 0) + (s?.failed ?? 0) + (s?.cancelled ?? 0) + (s?.timedOut ?? 0) + (s?.unknown ?? 0);
       return {
@@ -196,10 +217,11 @@ export function pages(rows: DailyRow[], days: number, now: number, limit = 50): 
   for (const r of rows) {
     if (r.day < cutoff) continue;
     if (r.kind !== "page" && r.kind !== "tool_page") continue;
-    const row = map.get(r.name) ?? { path: r.name, fetches: 0, calls: 0 };
+    const path = redactPath(r.name);
+    const row = map.get(path) ?? { path, fetches: 0, calls: 0 };
     if (r.kind === "page") row.fetches += r.count;
     else row.calls += r.count;
-    map.set(r.name, row);
+    map.set(path, row);
   }
   return [...map.values()].sort((a, b) => b.fetches + b.calls - (a.fetches + a.calls)).slice(0, limit);
 }
@@ -225,4 +247,9 @@ export function loadDashboard(domain: string, days: number, now = Date.now()): D
 /** The one number the public share page shows: interactions in the window. */
 export function interactions(o: Overview): number {
   return o.totals.referrals + o.totals.fetches + o.totals.calls + o.totals.conversions;
+}
+
+/** Current activity sum. This is a sum of signals, never a distinct-agent count. */
+export function activitySignals(o: Overview): number {
+  return interactions(o) + o.totals.verifiedFetches;
 }

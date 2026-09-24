@@ -1,11 +1,11 @@
 import assert from "node:assert/strict";
 import { DatabaseSync } from "node:sqlite";
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, it } from "node:test";
 import { sanitizeBatch } from "./classify";
-import { addSite, closeDb, dailyRows, db, ensureAccount, ingestHealth, recordEvents, toolRows, usageThisMonth, type StoredEvent } from "./db";
+import { addSite, closeDb, dailyRows, db, ensureAccount, ingestHealth, recordEvents, toolRows, usageThisMonth, verificationAudit, type StoredEvent } from "./db";
 import { POST as ingestBrowserBatch } from "../../app/api/event/route";
 
 const NOW = Date.UTC(2026, 8, 24, 12);
@@ -18,11 +18,13 @@ const call = (eventId: string): StoredEvent => ({
 describe("versioned measurements", () => {
   beforeEach(() => {
     process.env.TRACKING_DB = ":memory:";
+    process.env.BOT_RANGES_FILE = join(tmpdir(), `agent-tracking-tests-no-ranges-${process.pid}`);
     closeDb();
   });
   afterEach(() => {
     closeDb();
     delete process.env.TRACKING_DB;
+    delete process.env.BOT_RANGES_FILE;
   });
 
   it("accepts legacy batches and requires stable IDs in version 2", () => {
@@ -85,6 +87,21 @@ describe("versioned measurements", () => {
     assert.deepEqual(toolRows("example.com").map((tool) => [tool.schema_hash, tool.active, tool.capture_mode]), [["schema-c", 1, "wrapped"]]);
   });
 
+  it("does not persist browser error text, form values or sensitive paths", () => {
+    ensureAccount("a@example.com", NOW);
+    addSite("example.com", "a@example.com", NOW);
+    const secret = "secret@example.com token=top-secret";
+    recordEvents("example.com", "a@example.com", [{
+      ...call("event-0000000030"), path: "/users/secret@example.com?token=top-secret", err: secret,
+      keys: [secret], name: "book", ok: false,
+    }], NOW);
+    const raw = JSON.stringify(db().prepare("select path, err, keys from events where domain = ?").all("example.com"));
+    const aggregates = JSON.stringify(dailyRows("example.com", 1, NOW));
+    assert.equal(raw.includes(secret), false);
+    assert.equal(aggregates.includes(secret), false);
+    assert.match(raw, /\[redacted\]/);
+  });
+
   it("keeps forged browser verification and business claims out of server evidence", async () => {
     const dir = mkdtempSync(join(tmpdir(), "agent-tracking-salt-"));
     process.env.TRACKING_SALT_FILE = join(dir, "salt.json");
@@ -102,7 +119,8 @@ describe("versioned measurements", () => {
       assert.equal(dailyRows("example.com", 1, Date.now()).find((r) => r.kind === "tool_call")?.count, 2);
       const rows = db().prepare("select transport, identity_status, business_outcome from events where domain = ?").all("example.com") as { transport: string; identity_status: string; business_outcome: string }[];
       assert.equal(rows.length, 2);
-      assert.ok(rows.every((r) => r.transport === "browser" && r.identity_status === "claimed" && r.business_outcome === "unconfirmed"));
+      assert.ok(rows.every((r) => r.transport === "browser" && r.identity_status === "missing" && r.business_outcome === "unconfirmed"));
+      assert.equal(verificationAudit("example.com")[0]?.status, undefined, "tool events are not crawler fetch evidence");
     } finally {
       delete process.env.TRACKING_SALT_FILE;
       rmSync(dir, { recursive: true, force: true });
@@ -144,6 +162,53 @@ describe("versioned measurements", () => {
     }
   });
 
+  it("keeps a UA-only browser fetch claim out of IP-confirmed counts", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "agent-tracking-salt-"));
+    process.env.TRACKING_SALT_FILE = join(dir, "salt.json");
+    try {
+      ensureAccount("a@example.com", NOW);
+      addSite("example.com", "a@example.com", NOW);
+      await ingestBrowserBatch(new Request("https://agenttracking.co/api/event", {
+        method: "POST",
+        headers: { origin: "https://example.com", "content-type": "text/plain", "user-agent": "GPTBot/1.0", "x-real-ip": "203.0.113.1" },
+        body: JSON.stringify({ d: "example.com", v: 2, e: [{ k: "view", id: "event-0000000007" }] }),
+      }));
+      const rows = dailyRows("example.com", 1, Date.now());
+      assert.equal(rows.find((row) => row.kind === "ai_fetch_verified"), undefined);
+      assert.equal(rows.find((row) => row.kind === "claim_missing")?.count, 1);
+      const audit = verificationAudit("example.com");
+      assert.equal(audit[0]?.status, "missing");
+      assert.equal(audit[0]?.method, "ip_range");
+    } finally {
+      delete process.env.TRACKING_SALT_FILE;
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("counts a browser crawler request only when its IP matches a fresh provider list", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "agent-tracking-ranges-"));
+    process.env.TRACKING_SALT_FILE = join(dir, "salt.json");
+    process.env.BOT_RANGES_FILE = join(dir, "ranges.json");
+    const updatedAt = new Date().toISOString();
+    writeFileSync(process.env.BOT_RANGES_FILE, JSON.stringify({ fetchedAt: updatedAt, updatedAt: { "openai-gptbot": updatedAt }, lists: { "openai-gptbot": ["203.0.113.0/24"] } }));
+    try {
+      ensureAccount("a@example.com", NOW);
+      addSite("example.com", "a@example.com", NOW);
+      await ingestBrowserBatch(new Request("https://agenttracking.co/api/event", {
+        method: "POST",
+        headers: { origin: "https://example.com", "content-type": "text/plain", "user-agent": "GPTBot/1.0", "x-real-ip": "203.0.113.1" },
+        body: JSON.stringify({ d: "example.com", v: 2, e: [{ k: "view", id: "event-0000000008" }] }),
+      }));
+      const rows = dailyRows("example.com", 1, Date.now());
+      assert.equal(rows.find((row) => row.kind === "ai_fetch_verified")?.count, 1);
+      assert.equal(verificationAudit("example.com")[0]?.sourceVersion, updatedAt);
+      assert.equal(verificationAudit("example.com")[0]?.sourceKey, "openai-gptbot");
+    } finally {
+      delete process.env.TRACKING_SALT_FILE;
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
   it("migrates a populated legacy database and can open it repeatedly", () => {
     const dir = mkdtempSync(join(tmpdir(), "agent-tracking-measurement-"));
     const path = join(dir, "legacy.sqlite");
@@ -163,6 +228,7 @@ describe("versioned measurements", () => {
       assert.equal((db().prepare("select count(*) as n from schema_migrations where version = 2").get() as { n: number }).n, 1);
       assert.equal((db().prepare("select count(*) as n from schema_migrations where version = 3").get() as { n: number }).n, 1);
       assert.equal((db().prepare("select count(*) as n from schema_migrations where version = 4").get() as { n: number }).n, 1);
+      assert.equal((db().prepare("select count(*) as n from schema_migrations where version = 5").get() as { n: number }).n, 1);
       assert.equal((db().prepare("select count(*) as n from events").get() as { n: number }).n, 1);
     } finally {
       closeDb();
