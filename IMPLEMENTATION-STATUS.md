@@ -22,7 +22,8 @@ Stand: 2026-09-25. Arbeitsgrundlage: `IMPLEMENTATION-PROMPT.md`.
 | F14 | erledigt | Migration v9: separate Setup-Test-IDs für Snippet-/Score-Checks, letzter Versuch neben letztem Erfolg, erster/letzter angenommener Beacon seit Einführung des Status, letzter echter Toolaufruf; Logfrische und Abschlussquelle getrennt angezeigt. Warnung nach fehlgeschlagenem Recheck und direkter Link zum Messzustand; API ergänzt. 101 Tests und Typecheck. | F15 beginnen. |
 | F15 | erledigt | Migration v10: persistierte Scan-Jobs/-Versuche, Cron-Heartbeat, monatliche Wiederholung, Fehlercode und Recovery; 24h-Hinweis nur bei fälligem Job und frischem Cron. Deaktivierter Check-Service ohne Termin, Recheck setzt Termin nicht neu. Nullzustände im Dashboard/Public-Stats und API-Datenstatus. 103 Tests, Typecheck und Next-Build bestanden. | F16 beginnen. |
 | F16 | erledigt | Migration v11, getrennte widerrufbare Site-/Zweck-Schreibzugänge, begrenzte Serverendpunkte für Belege und Remote-MCP-Telemetrie, idempotente Site-Verknüpfung, lokale SQLite-Anfrageintegration und TS-Hilfe. Browser-IDs belegen keinen Agenten; UI/API trennen Versuche, Serverabschlüsse und Remote-Calls samt Nennern. 5 gezielte Tests inkl. HTTP-Rechten und Out-of-order; 107 Gesamttests, Typecheck und Produktionsbuild bestanden. | F17 beginnen. |
-| F17–F22 | offen | Noch nicht implementiert. | Der Reihenfolge im Umsetzungsauftrag folgen. |
+| F17 | erledigt | Migration v12, echter deterministischer Chrome/CDP-Runner, lokale Vorher/Nachher-Fixture, Ziel- und Browserrequest-Grenzen, zwölf Sekunden, eine Ausführung, persistente synthetische Site-Runs, geschützte API/UI und explizit nicht eingerichteter Modellmodus. Browser- und Idempotenztests, 111 Gesamttests, Typecheck und Produktionsbuild bestanden. | F18 beginnen. |
+| F18–F22 | offen | Noch nicht implementiert. | Der Reihenfolge im Umsetzungsauftrag folgen. |
 
 ## Entscheidungen
 

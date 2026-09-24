@@ -1,0 +1,9 @@
+# Kontrollierte Anfrageprüfung
+
+`/app/{site}/tests` führt eine **deterministische Chrome-Browserprüfung** für eine Anfrage-Teststrecke aus. Das ist kein fremder Agententest. Ein modellgesteuerter Provider ist nicht eingerichtet; die API meldet für `mode=model_agent` HTTP 501 und speichert keinen Scheinerfolg.
+
+Ziele sind nur `https://test.{site}` oder `https://staging.{site}`. Die DNS-Adressen müssen öffentlich sein. Jeder Browserrequest wird auf denselben Origin beschränkt; Weiterleitungen und Ressourcen auf andere Origins werden blockiert. Pro Prozess läuft höchstens ein Test gleichzeitig, höchstens zwölf Sekunden. Die Start-API ist nur für den Site-Eigentümer mit Sitzung zugänglich. Ziel-URL und IDs werden begrenzt und validiert. Ein erneuter Aufruf mit derselben Run-ID gibt den vorhandenen Run zurück. Unterbrochene Läufe werden beim nächsten Start als Timeout markiert.
+
+Die Stagingseite muss ein Formular `#agenttracking-test-form[data-agenttracking-test="true"]` mit den Feldern `name`, `email`, `message` und einem Submit-Button anbieten. Der Test verwendet ausschließlich `Agent Tracking Test`, `agenttracking-test@example.invalid` und einen synthetischen Hinweistext. Ein fachlich erfolgreiches **Testsystem** setzt nach dem Absenden `[data-agenttracking-success="true"]`. Das Testsystem darf daraus keine echte Nachricht, Buchung oder Zahlung erzeugen. Fehlt der Marker, scheitert der Test. Das Repo enthält einen lokalen HTTP-Fixture-Test, der vor einer Korrektur scheitert und danach besteht. Loopback ist nur mit `NODE_ENV=test TRACKING_RUNNER_LOCAL=1` erlaubt.
+
+Die Run-Tabelle speichert Run-ID, Ziel, Modus, Zeiten, bereinigte Schrittnamen und Fehlerklasse sowie optionale Release-/Tool-/Schemaversionen. Alle Runs sind `synthetic=1`. Sie werden weder als Browserbeacon noch als Agent-Traffic verbucht.

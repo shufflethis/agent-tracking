@@ -21,6 +21,7 @@ export default function DashboardShell({ account, site, view, children }: { acco
     { slug: "agents", label: c.shell.views.agents },
     { slug: "tools", label: c.shell.views.tools },
     { slug: "pages", label: c.shell.views.pages },
+    { slug: "tests", label: lang === "de" ? "Tests" : "Tests" },
     { slug: "settings", label: c.shell.views.settings },
   ];
   return (

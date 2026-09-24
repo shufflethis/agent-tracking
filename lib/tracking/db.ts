@@ -299,6 +299,19 @@ function migrate(instance: DatabaseSync): void {
     instance.exec("create index server_tool_calls_task on server_tool_calls(domain, task_id)");
     instance.prepare("insert into schema_migrations (version, applied_at) values (11, ?)").run(Date.now());
   }
+  if ((current.version ?? 0) < 12) {
+    instance.exec(`create table task_runs (
+      domain text not null, run_id text not null, task_kind text not null,
+      target_url text not null, mode text not null, status text not null,
+      started_at integer not null, finished_at integer, deadline_at integer not null,
+      result text, steps_json text not null default '[]', error_class text,
+      release_id text, tool_version text, schema_version text, model_version text,
+      synthetic integer not null default 1,
+      primary key (domain, run_id)
+    )`);
+    instance.exec("create index task_runs_domain_time on task_runs(domain, started_at)");
+    instance.prepare("insert into schema_migrations (version, applied_at) values (12, ?)").run(Date.now());
+  }
   instance.exec("commit");
   } catch (err) {
     instance.exec("rollback");
