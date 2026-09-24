@@ -1,19 +1,20 @@
 import { db, getSite } from "./db";
 import { eventId } from "./measurement";
 import { taskRun } from "./task-runs";
+import { recipeById } from "./diagnostic-recipes";
 
 export const FINDING_CATEGORIES = ["form_discovery", "tool_schema", "tool_execution", "navigation", "verification", "outcome_linkage", "other"] as const;
 export const FINDING_STATUSES = ["open", "in_progress", "fixed", "retest_confirmed"] as const;
 export type FindingCategory = typeof FINDING_CATEGORIES[number];
 export type FindingStatus = typeof FINDING_STATUSES[number];
-export type Finding = { findingId: string; taskRunId: string; fixId: string | null; evidenceRefs: string[]; category: FindingCategory; description: string; assignee: string | null; status: FindingStatus; correction: string | null; retestRunId: string | null; createdAt: number; updatedAt: number };
+export type Finding = { findingId: string; taskRunId: string; fixId: string | null; recipeId: string | null; evidenceRefs: string[]; category: FindingCategory; description: string; assignee: string | null; status: FindingStatus; correction: string | null; retestRunId: string | null; createdAt: number; updatedAt: number };
 
 const text = (raw: unknown, max: number) => typeof raw === "string" && raw.trim().length > 0 && raw.length <= max && !/[\x00-\x08\x0b\x0c\x0e-\x1f]/.test(raw) ? raw.trim() : null;
 const optionalText = (raw: unknown, max: number) => raw === null || raw === undefined || raw === "" ? null : text(raw, max);
 
 export function findingsFor(domain: string): Finding[] {
   const rows = db().prepare("select * from findings where domain=? order by updated_at desc limit 500").all(domain.toLowerCase()) as Record<string, any>[];
-  return rows.map((r) => ({ findingId: r.finding_id, taskRunId: r.task_run_id, fixId: r.fix_id, evidenceRefs: JSON.parse(r.evidence_json), category: r.category, description: r.description, assignee: r.assignee, status: r.status, correction: r.correction, retestRunId: r.retest_run_id, createdAt: r.created_at, updatedAt: r.updated_at }));
+  return rows.map((r) => ({ findingId: r.finding_id, taskRunId: r.task_run_id, fixId: r.fix_id, recipeId: r.recipe_id, evidenceRefs: JSON.parse(r.evidence_json), category: r.category, description: r.description, assignee: r.assignee, status: r.status, correction: r.correction, retestRunId: r.retest_run_id, createdAt: r.created_at, updatedAt: r.updated_at }));
 }
 
 export function saveFinding(domain: string, owner: string, raw: Record<string, unknown>, now = Date.now()): Finding {
@@ -21,8 +22,10 @@ export function saveFinding(domain: string, owner: string, raw: Record<string, u
   const findingId = eventId(raw.findingId), taskRunId = eventId(raw.taskRunId), retestRunId = raw.retestRunId == null || raw.retestRunId === "" ? null : eventId(raw.retestRunId), fixId = raw.fixId == null || raw.fixId === "" ? null : eventId(raw.fixId);
   if (!findingId || !taskRunId || raw.retestRunId && !retestRunId || raw.fixId && !fixId) throw new Error("invalid_id");
   const category = FINDING_CATEGORIES.find((c) => c === raw.category), status = FINDING_STATUSES.find((s) => s === raw.status);
+  const recipeId = raw.recipeId == null || raw.recipeId === "" ? null : typeof raw.recipeId === "string" ? raw.recipeId : null;
   const description = text(raw.description, 2000), correction = optionalText(raw.correction, 2000), assignee = optionalText(raw.assignee, 254);
   if (!category || !status || !description || raw.correction && !correction || raw.assignee && (!assignee || !/^[^\s@]+@[^\s@]+$/.test(assignee))) throw new Error("invalid_finding");
+  if (raw.recipeId && (!recipeId || recipeById(recipeId)?.category !== category)) throw new Error("invalid_recipe");
   if (!Array.isArray(raw.evidenceRefs) || raw.evidenceRefs.length < 1 || raw.evidenceRefs.length > 10 || raw.evidenceRefs.some((v) => typeof v !== "string" || !/^(run|outcome):[A-Za-z0-9_-]{16,64}$/.test(v))) throw new Error("invalid_evidence");
   if (!taskRun(domain, taskRunId)) throw new Error("task_run_missing");
   const evidenceRefs = [...new Set(raw.evidenceRefs as string[])];
@@ -40,12 +43,12 @@ export function saveFinding(domain: string, owner: string, raw: Record<string, u
       .get(domain.toLowerCase(), fixId, taskRunId, retestRunId);
     if (!linked) throw new Error("retest_not_linked");
   }
-  db().prepare(`insert into findings (domain, finding_id, task_run_id, fix_id, evidence_json, category, description, assignee, status, correction, retest_run_id, created_at, updated_at)
-    values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  db().prepare(`insert into findings (domain, finding_id, task_run_id, fix_id, recipe_id, evidence_json, category, description, assignee, status, correction, retest_run_id, created_at, updated_at)
+    values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     on conflict(domain, finding_id) do update set task_run_id=excluded.task_run_id, fix_id=excluded.fix_id,
-    evidence_json=excluded.evidence_json, category=excluded.category, description=excluded.description,
+    recipe_id=excluded.recipe_id, evidence_json=excluded.evidence_json, category=excluded.category, description=excluded.description,
     assignee=excluded.assignee, status=excluded.status, correction=excluded.correction,
     retest_run_id=excluded.retest_run_id, updated_at=excluded.updated_at`)
-    .run(domain.toLowerCase(), findingId, taskRunId, fixId, JSON.stringify(evidenceRefs), category, description, assignee, status, correction, retestRunId, now, now);
+    .run(domain.toLowerCase(), findingId, taskRunId, fixId, recipeId, JSON.stringify(evidenceRefs), category, description, assignee, status, correction, retestRunId, now, now);
   return findingsFor(domain).find((f) => f.findingId === findingId)!;
 }

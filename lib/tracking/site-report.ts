@@ -4,6 +4,7 @@ import { outcomeSummary, serverToolSummary, writeTokenConfigured } from "./serve
 import { taskFixesFor } from "./task-fixes";
 import { taskRunsFor } from "./task-runs";
 import { loadDashboard } from "./dashboard";
+import { DIAGNOSTIC_RECIPES, RECIPE_CATALOG_VERSION } from "./diagnostic-recipes";
 
 export function siteReport(domain: string, days = 30, now = Date.now()) {
   const site = getSite(domain);
@@ -24,6 +25,7 @@ export function siteReport(domain: string, days = 30, now = Date.now()) {
       ingestIssues: health.filter((r) => r.outcome !== "accepted_batch"),
     },
     findings,
+    recipeCatalog: { version: RECIPE_CATALOG_VERSION, suggestions: DIAGNOSTIC_RECIPES },
     fixes: taskFixesFor(domain),
     runs: taskRunsFor(domain, 100),
     openPoints: findings.filter((f) => f.status !== "retest_confirmed"),

@@ -25,7 +25,8 @@ Stand: 2026-09-25. Arbeitsgrundlage: `IMPLEMENTATION-PROMPT.md`.
 | F17 | erledigt | Migration v12, echter deterministischer Chrome/CDP-Runner, lokale Vorher/Nachher-Fixture, Ziel- und Browserrequest-Grenzen, zwölf Sekunden, eine Ausführung, persistente synthetische Site-Runs, geschützte API/UI und explizit nicht eingerichteter Modellmodus. Browser- und Idempotenztests, 111 Gesamttests, Typecheck und Produktionsbuild bestanden. | F18 beginnen. |
 | F18 | erledigt | Migration v13 für Site-Versionshistorie und dokumentierte Korrekturbelege; API/UI verknüpfen Vorher-/Nachher-Runs derselben Aufgabe mit Stichprobe, Versionen, Bedingungen und Unknown-Anteil. Lokale Fixture scheitert und besteht nach Änderung auf derselben URL; 112 Gesamttests, Typecheck und Produktionsbuild bestanden. Kein Umsatzkausalitätsclaim. | F19 beginnen. |
 | F19 | erledigt | Migration v14 mit Site-Leserechten, siebentägigen widerrufbaren E-Mail-gebundenen Einladungslinks ohne Versand, Befunden mit Evidenz/Korrektur/Nachtest, geschützter druckbarer HTML-Bericht und JSON-Export. Mandanten-/Rollen-/Reporttests, 115 Gesamttests, Typecheck und Produktionsbuild bestanden. | F20 beginnen. |
-| F20–F22 | offen | Noch nicht implementiert. | Der Reihenfolge im Umsetzungsauftrag folgen. |
+| F20 | erledigt | Migration v15 verknüpft Befunde mit einem versionierten allgemeinen Rezeptkatalog; Vorschläge und konkrete nachgetestete Kundenfälle bleiben getrennt. Keine Kundenspuren oder globalen Erfolgsclaims im Katalog. Gezielte Site-/Rezepttests und Typecheck bestanden. | F21 beginnen. |
+| F21–F22 | offen | Noch nicht implementiert. | Der Reihenfolge im Umsetzungsauftrag folgen. |
 
 ## Entscheidungen
 

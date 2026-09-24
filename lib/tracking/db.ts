@@ -350,6 +350,10 @@ function migrate(instance: DatabaseSync): void {
     instance.exec("create index findings_domain_status on findings(domain, status)");
     instance.prepare("insert into schema_migrations (version, applied_at) values (14, ?)").run(Date.now());
   }
+  if ((current.version ?? 0) < 15) {
+    instance.exec("alter table findings add column recipe_id text");
+    instance.prepare("insert into schema_migrations (version, applied_at) values (15, ?)").run(Date.now());
+  }
   instance.exec("commit");
   } catch (err) {
     instance.exec("rollback");
