@@ -3,10 +3,15 @@
   "version": "0.1.0",
   "description": "Measure what AI agents do on your website: referrals, fetches, WebMCP tool calls and conversions. One line of script, no cookies, no personal data.",
   "license": "AGPL-3.0-only",
-  "repository": { "type": "git", "url": "https://github.com/shufflethis/agent-tracking" },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/shufflethis/agent-tracking"
+  },
   "homepage": "https://agenttracking.co",
   "private": true,
-  "engines": { "node": ">=22.13" },
+  "engines": {
+    "node": ">=22.13"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "node scripts/build-snippet.mjs && next build",
@@ -36,6 +41,7 @@
     "@types/node": "22.10.2",
     "@types/react": "19.1.0",
     "@types/react-dom": "19.1.0",
+    "esbuild": "^0.28.2",
     "typescript": "5.7.2"
   }
 }

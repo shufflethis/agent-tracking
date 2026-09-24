@@ -6,6 +6,7 @@ import DashboardShell, { Stat, trendNote } from "@/components/DashboardShell";
 import { requireSite } from "@/lib/tracking/auth";
 import { dashCopy, dashLang, numberLocale } from "@/lib/tracking/copy";
 import { interactions, loadDashboard } from "@/lib/tracking/dashboard";
+import { ingestHealth } from "@/lib/tracking/db";
 import { planFor } from "@/lib/tracking/plans";
 
 // Rendered per request, not at build: the host, the entity on the legal pages and the
@@ -57,6 +58,7 @@ export default async function Page({ params }: Params) {
   const plan = planFor(account.plan);
   const dash = loadDashboard(site.domain, Math.min(plan.windowDays, 30));
   const o = dash.overview;
+  const ingestIssues = ingestHealth(site.domain, dash.days).filter((row) => row.outcome !== "accepted_batch").reduce((n, row) => n + row.count, 0);
   const days = o.days.map((d) => d.day);
   const legend = [
     { label: c.referrals, color: "var(--cyan)" },
@@ -73,8 +75,10 @@ export default async function Page({ params }: Params) {
           <Stat label={c.fetches} value={String(o.totals.fetches)} note={trendNote(o.totals.fetches, o.previous.fetches, lang)} />
           <Stat label={c.calls} value={String(o.totals.calls)} note={trendNote(o.totals.calls, o.previous.calls, lang)} />
           <Stat label={c.conversions} value={String(o.totals.conversions)} note={trendNote(o.totals.conversions, o.previous.conversions, lang)} />
+          <Stat label={c.goalAttempts} value={String(o.totals.goalAttempts)} note={trendNote(o.totals.goalAttempts, o.previous.goalAttempts, lang)} />
           <Stat label={c.sessions} value={String(o.totals.sessions)} note={c.sessionsNote} />
           <p style={{ gridColumn: "1 / -1", color: "var(--muted)", margin: 0, fontSize: 13 }}>{c.legacyGoalNote}</p>
+          {ingestIssues > 0 && <p role="status" style={{ gridColumn: "1 / -1", color: "var(--warn)", margin: 0, fontSize: 13 }}>{c.ingestIssue(ingestIssues)}</p>}
         </div>
       </section>
 

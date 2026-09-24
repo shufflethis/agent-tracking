@@ -1,5 +1,5 @@
 import { SOURCES_VERSION } from "./classify";
-import { getSite, type Account } from "./db";
+import { getSite, ingestHealth, type Account } from "./db";
 import { interactions, loadDashboard } from "./dashboard";
 import { planFor } from "./plans";
 import { REPORTING_DEFINITIONS, reportingTotals } from "./reporting";
@@ -30,6 +30,7 @@ export function statsFor(domain: string, account: Account, days: number, now = D
     sourcesVersion: SOURCES_VERSION,
     verified: Boolean(site.verified_at),
     reportingDefinitions: REPORTING_DEFINITIONS,
+    ingestHealth: ingestHealth(site.domain, days, now).map((r) => ({ ...r, lastAt: new Date(r.lastAt).toISOString() })),
     check: site.last_score === null ? null : { score: site.last_score, grade: site.last_grade, scannedAt: site.last_scanned_at ? new Date(site.last_scanned_at).toISOString() : null },
     totals: { ...dash.overview.totals, ...reportingTotals(dash.overview.totals), interactions: interactions(dash.overview) },
     previous: dash.overview.previous,

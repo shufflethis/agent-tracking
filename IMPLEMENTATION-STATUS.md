@@ -8,8 +8,11 @@ Stand: 2026-09-24. Arbeitsgrundlage: `IMPLEMENTATION-PROMPT.md`.
 | --- | --- | --- | --- |
 | F01 | erledigt | `measurement.ts`, v2-Protocol, serverseitig gesetzte Evidenz, atomare Site/Transport-ID-Deduplizierung und `docs/measurement.md`. Vier Verhaltenstests bestanden; `npm run typecheck` und bisheriger Gesamttest bestanden. | F02 beginnen. |
 | F02 | erledigt | Wiederholbare Migration aus F01; alte `conversion`-Zähler in Dashboard, Statistikseite, JSON-API, CSV, Digest und MCP als unbestätigte Browser-Zielsignale ausgewiesen. Additive API-Felder und Definitionshinweise; Typecheck bestanden. | F03 beginnen. |
-| F03 | in Arbeit | Requestgrößen, Origin-Ausnahme und Drop-Zustände werden geprüft. | Begrenztes Einlesen und Messzustand umsetzen. |
-| F04–F22 | offen | Noch nicht implementiert. | Der Reihenfolge im Umsetzungsauftrag folgen. |
+| F03 | erledigt | Stream-Limits vor dem Puffern, 64-MB-Grenze auch nach gzip, Plattform-Origin-Ausnahme entfernt, interne Drop-Zähler und private Health-Ausgabe. Atomare Browser-Batch-Quote und freie Registrierungen; 76 Tests/Typecheck bestanden. | F04 beginnen. |
+| F04 | erledigt | Snippet sendet `goal_attempt` und `form_attempt`; Klick/Submit derselben Aktion einmal, Wiederholung mit neuer ID. Kein pauschaler Toolerfolg/Abschluss. VM-Browsertest, Route-Test, 78 Gesamttests und Typecheck bestanden; Kernsnippet 5.119 Bytes. | F05 beginnen. |
+| F05 | erledigt | Einmalige technische Endzustände inkl. Cancel/Timeout, unveränderte Rückgabe/Fehler/`this`; fachlicher Abschluss bleibt unbestätigt. Technische Outcome-Serie und UI-Label; VM-Verhaltenstest, Typecheck; echtes Minifying hält Kernsnippet bei 4.035 Bytes. | F06 beginnen. |
+| F06 | in Arbeit | Früh-/Spätregistrierung und unterstützte APIs prüfen. | Offizielle Spezifikation/Browserstand prüfen und Instrumentierung anpassen. |
+| F07–F22 | offen | Noch nicht implementiert. | Der Reihenfolge im Umsetzungsauftrag folgen. |
 
 ## Entscheidungen
 
@@ -17,3 +20,5 @@ Stand: 2026-09-24. Arbeitsgrundlage: `IMPLEMENTATION-PROMPT.md`.
 - Browserdaten liefern Beobachtungen. Transportherkunft und Identitätsnachweise werden ausschließlich auf dem Server gesetzt.
 - Produktionsdaten werden in Tests nie geöffnet oder verändert. SQLite-Tests laufen im Speicher oder mit temporären Dateien.
 - v2-Deduplizierungsbelege bleiben für die bisherige Rohdaten-Aufbewahrungsdauer erhalten. Plain Views behalten keine neuen Rohzeilen; ihre IDs liegen nur in der Belegtabelle.
+- Browser-Toolaufrufe belasten technisch das bestehende Kontingent; Registrierungen, Simulationen, Views und unbestätigte UA-Claims tun das nicht. Die Regel wird in F13 für den Logpfad und alle Zähler nochmals zusammengeführt.
+- Der Ingest-Ratenbegrenzer ist pro Node-Prozess. Diese Installation nutzt einen Prozess; eine verteilte Installation braucht einen gemeinsamen Limiter. Origin ist keine Authentifizierung.

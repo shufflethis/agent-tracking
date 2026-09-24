@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { eventId } from "./measurement";
+import type { TechnicalOutcome } from "./measurement";
 import sources from "./ai-sources.json";
 
 /**
@@ -15,7 +16,7 @@ import sources from "./ai-sources.json";
 
 export const SOURCES_VERSION: string = sources.version;
 
-export const EVENT_KINDS = ["view", "tool_registered", "tool_call", "agent_conversion", "manifest"] as const;
+export const EVENT_KINDS = ["view", "tool_registered", "tool_call", "form_attempt", "goal_attempt", "agent_conversion", "manifest"] as const;
 export type EventKind = (typeof EVENT_KINDS)[number];
 
 /** One event as the snippet sends it. Everything optional but `k`. */
@@ -44,6 +45,7 @@ export type RawEvent = {
   /** Duration in ms. */
   ms?: unknown;
   ok?: unknown;
+  s?: unknown;
   /** Error class or first characters of the message. */
   e?: unknown;
   /** Input key names, never values. */
@@ -72,6 +74,7 @@ export type CleanEvent = {
   utm: string | null;
   ms: number | null;
   ok: boolean | null;
+  state: TechnicalOutcome | null;
   err: string | null;
   keys: string[];
   declarative: boolean;
@@ -97,7 +100,7 @@ export function sanitizeEvent(raw: unknown): CleanEvent | null {
   if (!path.startsWith("/")) path = `/${path}`;
 
   const name = str(r.n, CAP.name);
-  if ((kind === "tool_registered" || kind === "tool_call" || kind === "agent_conversion") && !name) return null;
+  if ((kind === "tool_registered" || kind === "tool_call" || kind === "form_attempt" || kind === "goal_attempt" || kind === "agent_conversion") && !name) return null;
 
   const keys = Array.isArray(r.keys)
     ? r.keys.filter((k): k is string => typeof k === "string" && k.length > 0).slice(0, CAP.keys).map((k) => k.slice(0, CAP.key))
@@ -121,6 +124,7 @@ export function sanitizeEvent(raw: unknown): CleanEvent | null {
     utm: str(r.u, CAP.utm)?.toLowerCase() ?? null,
     ms,
     ok: typeof r.ok === "boolean" ? r.ok : null,
+    state: typeof r.s === "string" && (["attempted", "completed", "failed", "cancelled", "timed_out", "unknown"] as string[]).includes(r.s) ? r.s as TechnicalOutcome : null,
     err: str(r.e, CAP.err),
     keys,
     declarative: r.d === true || r.d === 1,

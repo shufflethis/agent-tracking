@@ -49,8 +49,9 @@ export default async function Page({ params }: { params: Promise<{ domain: strin
                       {t.simulated ? <span style={{ marginLeft: 8, fontSize: 11, color: "var(--muted)" }}>{c.simulated(t.simulated)}</span> : null}
                     </td>
                     <td className="num">{t.calls || "0"}</td>
-                    <td className="num" style={{ color: t.successRate === null ? undefined : t.successRate >= 0.95 ? "var(--good)" : t.successRate >= 0.8 ? "var(--warn)" : "var(--crit)" }}>
-                      {t.successRate === null ? c.na : `${Math.round(t.successRate * 100)}%`}
+                    <td className="num">
+                      {t.completionRate === null ? c.na : `${Math.round(t.completionRate * 100)}%`}
+                      <div style={{ fontSize: 11, color: "var(--muted)", whiteSpace: "nowrap" }}>{c.outcomeBreakdown(t.failed, t.cancelled, t.timedOut, t.unknownOutcome)}</div>
                     </td>
                     <td className="num">{t.avgMs === null ? c.na : `${t.avgMs} ms`}</td>
                     <td style={{ fontSize: 13, color: "var(--muted)" }}>{t.topErrors.length ? t.topErrors.map((e) => `${e.message} (${e.count})`).join(" · ") : c.none}</td>

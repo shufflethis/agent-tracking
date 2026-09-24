@@ -155,8 +155,8 @@ describe("db", () => {
     const raw = recentEvents("example.com");
     assert.ok(!raw.some((r) => r.kind === "view" && r.source === null));
     assert.ok(raw.some((r) => r.kind === "view" && r.source === "chatgpt"));
-    // Seven, not eight: the plain view is counted for the chart but not charged.
-    assert.equal(usageThisMonth("a@x.com", NOW), 7);
+    // Only observed, nonsynthetic tool invocations spend the event quota.
+    assert.equal(usageThisMonth("a@x.com", NOW), 2);
     assert.equal(toolRows("example.com").length, 1);
     assert.deepEqual(sessionsPerDay("example.com", 30, NOW + 1), [{ day: "2026-09-08", sessions: 2 }]);
   });

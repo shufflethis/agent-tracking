@@ -9,13 +9,13 @@ import { dailyRows, recentBursts, sessionsPerDay, toolRows, type BurstRow, type 
  * exported loaders at the bottom are the only thing that touches the store.
  */
 
-export type Series = { day: string; referrals: number; fetches: number; calls: number; conversions: number; views: number };
+export type Series = { day: string; referrals: number; fetches: number; calls: number; conversions: number; goalAttempts: number; formAttempts: number; views: number };
 
 export type Overview = {
   days: Series[];
-  totals: { referrals: number; fetches: number; calls: number; conversions: number; views: number; sessions: number };
+  totals: { referrals: number; fetches: number; calls: number; conversions: number; goalAttempts: number; formAttempts: number; views: number; sessions: number };
   /** Same window one period earlier, for the trend arrows. */
-  previous: { referrals: number; fetches: number; calls: number; conversions: number };
+  previous: { referrals: number; fetches: number; calls: number; conversions: number; goalAttempts: number; formAttempts: number };
 };
 
 export type AgentRow = { id: string; label: string; kind: "referral" | "fetch"; count: number; share: number; trend: number; bursts: number; burstPages: number; unverified: number; verifiable: boolean };
@@ -25,6 +25,12 @@ export type ToolStat = {
   calls: number;
   errors: number;
   successRate: number | null;
+  completionRate: number | null;
+  completed: number;
+  failed: number;
+  cancelled: number;
+  timedOut: number;
+  unknownOutcome: number;
   avgMs: number | null;
   simulated: number;
   declarative: boolean;
@@ -46,26 +52,28 @@ export function overview(rows: DailyRow[], sessions: { day: string; sessions: nu
   const dayList = listDays(days, now);
   const cutoff = dayList[0];
   const previousStart = listDays(days * 2, now)[0];
-  const blank = () => ({ referrals: 0, fetches: 0, calls: 0, conversions: 0, views: 0 });
+  const blank = () => ({ referrals: 0, fetches: 0, calls: 0, conversions: 0, goalAttempts: 0, formAttempts: 0, views: 0 });
   const perDay = new Map(dayList.map((d) => [d, blank()]));
-  const previous = { referrals: 0, fetches: 0, calls: 0, conversions: 0 };
+  const previous = { referrals: 0, fetches: 0, calls: 0, conversions: 0, goalAttempts: 0, formAttempts: 0 };
 
   for (const r of rows) {
     const inWindow = r.day >= cutoff;
     const inPrevious = !inWindow && r.day >= previousStart;
     const current = inWindow ? perDay.get(r.day) : undefined;
-    const target: { referrals: number; fetches: number; calls: number; conversions: number } | undefined = current ?? (inPrevious ? previous : undefined);
+    const target: { referrals: number; fetches: number; calls: number; conversions: number; goalAttempts: number; formAttempts: number } | undefined = current ?? (inPrevious ? previous : undefined);
     if (!target) continue;
     if (r.kind === "ai_referral") target.referrals += r.count;
     else if (r.kind === "ai_fetch") target.fetches += r.count;
     else if (r.kind === "tool_call") target.calls += r.count;
     else if (r.kind === "conversion") target.conversions += r.count;
+    else if (r.kind === "goal_attempt") target.goalAttempts += r.count;
+    else if (r.kind === "form_attempt") target.formAttempts += r.count;
     else if (r.kind === "view" && current) current.views += r.count;
   }
   const series: Series[] = dayList.map((day) => ({ day, ...perDay.get(day)! }));
   const totals = series.reduce(
-    (acc, s) => ({ referrals: acc.referrals + s.referrals, fetches: acc.fetches + s.fetches, calls: acc.calls + s.calls, conversions: acc.conversions + s.conversions, views: acc.views + s.views, sessions: acc.sessions }),
-    { referrals: 0, fetches: 0, calls: 0, conversions: 0, views: 0, sessions: 0 },
+    (acc, s) => ({ referrals: acc.referrals + s.referrals, fetches: acc.fetches + s.fetches, calls: acc.calls + s.calls, conversions: acc.conversions + s.conversions, goalAttempts: acc.goalAttempts + s.goalAttempts, formAttempts: acc.formAttempts + s.formAttempts, views: acc.views + s.views, sessions: acc.sessions }),
+    { referrals: 0, fetches: 0, calls: 0, conversions: 0, goalAttempts: 0, formAttempts: 0, views: 0, sessions: 0 },
   );
   totals.sessions = sessions.filter((s) => s.day >= cutoff).reduce((n, s) => n + s.sessions, 0);
   return { days: series, totals, previous };
@@ -122,9 +130,9 @@ export function agents(rows: DailyRow[], days: number, now: number): AgentRow[] 
 
 export function tools(rows: DailyRow[], registry: ReturnType<typeof toolRows>, days: number, now: number): ToolStat[] {
   const cutoff = listDays(days, now)[0];
-  const stats = new Map<string, { calls: number; errors: number; ms: number; simulated: number; errs: Map<string, number> }>();
+  const stats = new Map<string, { calls: number; errors: number; ms: number; simulated: number; completed: number; failed: number; cancelled: number; timedOut: number; unknown: number; errs: Map<string, number> }>();
   const get = (name: string) => {
-    const s = stats.get(name) ?? { calls: 0, errors: 0, ms: 0, simulated: 0, errs: new Map<string, number>() };
+    const s = stats.get(name) ?? { calls: 0, errors: 0, ms: 0, simulated: 0, completed: 0, failed: 0, cancelled: 0, timedOut: 0, unknown: 0, errs: new Map<string, number>() };
     stats.set(name, s);
     return s;
   };
@@ -137,7 +145,12 @@ export function tools(rows: DailyRow[], registry: ReturnType<typeof toolRows>, d
       s.ms += r.ms_total;
     } else if (r.kind === "tool_call_sim") {
       get(r.name).simulated += r.count;
-    } else if (r.kind === "tool_error") {
+    } else if (r.kind === "tool_completed") get(r.name).completed += r.count;
+    else if (r.kind === "tool_failed") get(r.name).failed += r.count;
+    else if (r.kind === "tool_cancelled") get(r.name).cancelled += r.count;
+    else if (r.kind === "tool_timed_out") get(r.name).timedOut += r.count;
+    else if (r.kind === "tool_unknown" || r.kind === "tool_attempted") get(r.name).unknown += r.count;
+    else if (r.kind === "tool_error") {
       const at = r.name.indexOf(" ");
       const tool = at > 0 ? r.name.slice(0, at) : r.name;
       const message = at > 0 ? r.name.slice(at + 1) : "error";
@@ -151,11 +164,18 @@ export function tools(rows: DailyRow[], registry: ReturnType<typeof toolRows>, d
       const s = stats.get(name);
       const reg = registry.find((t) => t.name === name);
       const calls = s?.calls ?? 0;
+      const classified = (s?.completed ?? 0) + (s?.failed ?? 0) + (s?.cancelled ?? 0) + (s?.timedOut ?? 0) + (s?.unknown ?? 0);
       return {
         name,
         calls,
         errors: s?.errors ?? 0,
         successRate: calls ? (calls - (s?.errors ?? 0)) / calls : null,
+        completionRate: classified ? (s?.completed ?? 0) / classified : null,
+        completed: s?.completed ?? 0,
+        failed: s?.failed ?? 0,
+        cancelled: s?.cancelled ?? 0,
+        timedOut: s?.timedOut ?? 0,
+        unknownOutcome: (s?.unknown ?? 0) + Math.max(0, calls - classified),
         avgMs: calls && s ? Math.round(s.ms / calls) : null,
         simulated: s?.simulated ?? 0,
         declarative: Boolean(reg?.declarative),

@@ -1,9 +1,9 @@
 import { matchAgent, matchReferral, sameSite, sanitizeBatch, sessionHash, type CleanEvent } from "@/lib/tracking/classify";
-import { getAccount, getSite, noteManifest, recordEvents, registerTool, usageThisMonth, type StoredEvent } from "@/lib/tracking/db";
+import { getAccount, getSite, noteIngestOutcome, noteManifest, recordEvents, registerTool, UNATTRIBUTED_INGEST, type StoredEvent } from "@/lib/tracking/db";
 import { planFor } from "@/lib/tracking/plans";
 import { dailySalt } from "@/lib/tracking/salt";
 import { clientIp, take } from "@/lib/ratelimit";
-import { SITE_ORIGIN } from "@/lib/site";
+import { BodyLimitError, readLimitedBody } from "@/lib/tracking/request-body";
 // Ingest has its own budget (INGEST in lib/ratelimit.ts): one address here
 // is an office or a crawler, not one person, and a dropped batch is silent.
 
@@ -18,7 +18,8 @@ export const runtime = "nodejs";
  *
  * Built as if it were being abused, which it will be:
  *   - the claimed domain must be a registered site, and the request's Origin
- *     must be that site or its www twin; a batch from anywhere else is dropped
+ *     must match it or its www twin; this is a filter, not authentication:
+ *     direct HTTP clients can forge Origin
  *   - the body is capped before it is parsed, the batch at 50 events
  *   - the caller's address goes into the session hash and nowhere else
  *   - the account's monthly quota is enforced here, not in the dashboard
@@ -60,36 +61,34 @@ export async function POST(request: Request) {
   const headers = cors(origin);
   const done = (status: 202 | 204) => new Response(null, { status, headers });
 
-  const raw = await request.text().catch(() => "");
-  if (!raw || raw.length > MAX_BODY) return done(204);
+  let raw: string;
+  try { raw = new TextDecoder("utf-8", { fatal: true }).decode(await readLimitedBody(request, MAX_BODY)); }
+  catch (error) { noteIngestOutcome(UNATTRIBUTED_INGEST, "invalid_body"); if (!(error instanceof BodyLimitError)) console.warn("[event] body read failed"); return done(204); }
+  if (!raw) { noteIngestOutcome(UNATTRIBUTED_INGEST, "invalid_body"); return done(204); }
   let parsed: unknown;
   try {
     parsed = JSON.parse(raw);
   } catch {
+    noteIngestOutcome(UNATTRIBUTED_INGEST, "invalid_body");
     return done(204);
   }
   const batch = sanitizeBatch(parsed);
-  if (!batch || batch.events.length === 0) return done(204);
+  if (!batch || batch.events.length === 0) { noteIngestOutcome(UNATTRIBUTED_INGEST, "invalid_batch"); return done(204); }
 
   // The site must exist and the page posting must be on it. A beacon carries
   // Origin on every cross-origin POST; a hand-rolled client without one, or
   // with someone else's, writes nothing.
   const site = getSite(batch.domain);
-  if (!site) return done(204);
-  // Our own origin may post for any registered site: the demo page lives
-  // here and carries the snippet for a site registered here. In production
-  // that origin is this site itself, so it widens nothing.
+  if (!site) { noteIngestOutcome(UNATTRIBUTED_INGEST, "unknown_site"); return done(204); }
   const from = originHost(origin);
-  const ours = originHost(SITE_ORIGIN);
-  if (!from || (!sameSite(from, site.domain) && from !== ours)) return done(204);
+  if (!from || !sameSite(from, site.domain)) { noteIngestOutcome(UNATTRIBUTED_INGEST, "origin_mismatch"); return done(204); }
 
   const ip = clientIp(request.headers);
   const budget = take(ip, "ingest");
-  if (!budget.ok) return done(204);
+  if (!budget.ok) { noteIngestOutcome(site.domain, "rate_limited"); return done(204); }
 
   const account = getAccount(site.owner);
   const plan = planFor(account?.plan);
-  if (usageThisMonth(site.owner) >= plan.eventsPerMonth) return done(204);
 
   const ua = request.headers.get("user-agent");
   const agent = matchAgent(ua);
@@ -108,8 +107,11 @@ export async function POST(request: Request) {
     stored.push(toStored(e, agent?.id ?? null, referral, session));
   }
   try {
-    recordEvents(site.domain, site.owner, stored, now, { fetchesFromLog: Boolean(site.log_since) });
+    const result = recordEvents(site.domain, site.owner, stored, now, { fetchesFromLog: Boolean(site.log_since), quota: plan.eventsPerMonth });
+    if (result.quotaDropped) noteIngestOutcome(site.domain, "quota_reached", now);
+    noteIngestOutcome(site.domain, "accepted_batch", now);
   } catch (err) {
+    noteIngestOutcome(site.domain, "write_failed", now);
     console.warn("[event] batch not recorded:", err instanceof Error ? err.message : String(err));
   }
   return done(202);
@@ -135,7 +137,7 @@ function toStored(e: CleanEvent, agentId: string | null, referral: string | null
     identityStatus: agentId ? "claimed" : "unknown",
     identityEvidence: agentId ? [{ method: "user_agent", status: "claimed" }] : [],
     referralSource: referral,
-    technicalOutcome: e.kind === "tool_call" ? e.ok === true ? "completed" : e.ok === false ? "failed" : "unknown" : "unknown",
+    technicalOutcome: e.kind === "tool_call" ? e.state ?? (e.ok === true ? "completed" : e.ok === false ? "failed" : "unknown") : e.kind === "form_attempt" ? e.state ?? "unknown" : e.kind === "goal_attempt" ? "attempted" : "unknown",
     businessOutcome: "unconfirmed",
     taskId: e.taskId,
     invocationId: e.invocationId,

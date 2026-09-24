@@ -153,6 +153,17 @@ function migrate(instance: DatabaseSync): void {
     instance.exec("create index event_receipts_age on event_receipts(received_at)");
     instance.prepare("insert into schema_migrations (version, applied_at) values (2, ?)").run(Date.now());
   }
+  if ((current.version ?? 0) < 3) {
+    instance.exec(`create table ingest_health (
+      domain text not null,
+      day text not null,
+      outcome text not null,
+      count integer not null default 0,
+      last_at integer not null,
+      primary key (domain, day, outcome)
+    )`);
+    instance.prepare("insert into schema_migrations (version, applied_at) values (3, ?)").run(Date.now());
+  }
   instance.exec("commit");
   } catch (err) {
     instance.exec("rollback");
@@ -168,6 +179,21 @@ export function closeDb(): void {
 
 export const dayKey = (at: number) => new Intl.DateTimeFormat("en-CA", { timeZone: TIME_ZONE }).format(new Date(at));
 export const monthKey = (at: number) => dayKey(at).slice(0, 7);
+
+export type IngestOutcome = "accepted_batch" | "rate_limited" | "quota_reached" | "write_failed" | "invalid_body" | "invalid_batch" | "unknown_site" | "origin_mismatch";
+export const UNATTRIBUTED_INGEST = "__unattributed__";
+
+export function noteIngestOutcome(domain: string, outcome: IngestOutcome, now = Date.now()): void {
+  db().prepare(`insert into ingest_health (domain, day, outcome, count, last_at) values (?, ?, ?, 1, ?)
+    on conflict(domain, day, outcome) do update set count = count + 1, last_at = excluded.last_at`)
+    .run(domain.toLowerCase(), dayKey(now), outcome, now);
+}
+
+export function ingestHealth(domain: string, days = 30, now = Date.now()): { outcome: IngestOutcome; count: number; lastAt: number }[] {
+  const cutoff = dayKey(now - (days - 1) * 86_400_000);
+  return db().prepare("select outcome, sum(count) as count, max(last_at) as lastAt from ingest_health where domain = ? and day >= ? group by outcome")
+    .all(domain.toLowerCase(), cutoff) as { outcome: IngestOutcome; count: number; lastAt: number }[];
+}
 
 /* ---------------------------------------------------------------- accounts */
 
@@ -290,6 +316,7 @@ export function removeSite(domain: string, owner: string): boolean {
   d.prepare("delete from events where domain = ?").run(key);
   d.prepare("delete from event_receipts where domain = ?").run(key);
   d.prepare("delete from daily where domain = ?").run(key);
+  d.prepare("delete from ingest_health where domain = ?").run(key);
   d.prepare("delete from tools where domain = ?").run(key);
   d.prepare("delete from sites where domain = ?").run(key);
   return true;
@@ -376,8 +403,8 @@ let prunedFor = "";
  * and not charged to the plan: a human page view is not what this product is
  * about and would be most of the table.
  */
-export function recordEvents(domain: string, owner: string, events: StoredEvent[], now = Date.now(), options: { fetchesFromLog?: boolean } = {}): void {
-  if (events.length === 0) return;
+export function recordEvents(domain: string, owner: string, events: StoredEvent[], now = Date.now(), options: { fetchesFromLog?: boolean; quota?: number } = {}): { accepted: number; duplicates: number; quotaDropped: number } {
+  if (events.length === 0) return { accepted: 0, duplicates: 0, quotaDropped: 0 };
   const d = db();
   const day = dayKey(now);
   if (prunedFor !== day) {
@@ -393,6 +420,7 @@ export function recordEvents(domain: string, owner: string, events: StoredEvent[
   ];
   const insertEvent = d.prepare(`insert into events (${eventColumns.join(", ")}) values (${eventColumns.map(() => "?").join(", ")})`);
   const insertReceipt = d.prepare("insert or ignore into event_receipts (domain, transport, event_id, received_at) values (?, ?, ?, ?)");
+  const existingReceipt = d.prepare("select 1 from event_receipts where domain = ? and transport = ? and event_id = ?");
   const bump = d.prepare(
     "insert into daily (domain, day, kind, name, count, errors, ms_total) values (?, ?, ?, ?, 1, ?, ?) on conflict(domain, day, kind, name) do update set count = count + 1, errors = errors + excluded.errors, ms_total = ms_total + excluded.ms_total",
   );
@@ -403,9 +431,19 @@ export function recordEvents(domain: string, owner: string, events: StoredEvent[
   d.exec("begin");
   try {
     let acceptedUsage = 0;
+    let accepted = 0;
+    let duplicates = 0;
+    let quotaDropped = 0;
+    // The read and usage update share the write transaction, so concurrent
+    // batches cannot both spend the same remaining slots.
+    const used = usageThisMonth(owner, now);
     for (const e of events) {
       const transport = e.transport ?? "browser";
-      if (e.eventId && Number(insertReceipt.run(domain, transport, e.eventId, now).changes) === 0) continue;
+      if (e.eventId && existingReceipt.get(domain, transport, e.eventId)) { duplicates++; continue; }
+      const chargeable = e.kind === "tool_call" && !e.simulated;
+      if (chargeable && options.quota !== undefined && used + acceptedUsage >= options.quota) { quotaDropped++; continue; }
+      if (e.eventId && Number(insertReceipt.run(domain, transport, e.eventId, now).changes) === 0) { duplicates++; continue; }
+      accepted++;
       const keep = e.kind !== "view" || e.source !== null;
       if (keep) {
         const occurredAt = e.occurredAt && Math.abs(e.occurredAt - now) <= 86_400_000 ? e.occurredAt : now;
@@ -436,21 +474,30 @@ export function recordEvents(domain: string, owner: string, events: StoredEvent[
         }
       } else if (e.kind === "tool_call") {
         bump.run(domain, day, e.simulated ? "tool_call_sim" : "tool_call", e.name ?? "?", errors, msTotal);
+        if (!e.simulated) {
+          const state = e.technicalOutcome ?? (e.ok === true ? "completed" : e.ok === false ? "failed" : "unknown");
+          bump.run(domain, day, `tool_${state}`, e.name ?? "?", 0, 0);
+        }
         if (!e.simulated) bump.run(domain, day, "tool_page", e.path, 0, 0);
         if (e.err && !e.simulated) bump.run(domain, day, "tool_error", `${e.name ?? "?"} ${e.err}`, 0, 0);
       } else if (e.kind === "tool_registered") {
         bump.run(domain, day, "tool_registered", e.name ?? "?", 0, 0);
       } else if (e.kind === "agent_conversion") {
         bump.run(domain, day, e.simulated ? "conversion_sim" : "conversion", e.name ?? "?", 0, 0);
+      } else if (e.kind === "goal_attempt") {
+        bump.run(domain, day, e.simulated ? "goal_attempt_sim" : "goal_attempt", e.name ?? "?", 0, 0);
+      } else if (e.kind === "form_attempt") {
+        bump.run(domain, day, "form_attempt", e.name ?? "?", 0, 0);
       }
       if ((e.kind === "tool_registered" || e.kind === "tool_call") && e.name) {
         tool.run(domain, e.name, null, null, now, now, e.declarative ? 1 : 0);
       }
-      if (keep) acceptedUsage++;
+      if (chargeable) acceptedUsage++;
     }
     // Plain human views are free; only the rows that are kept count against the plan.
     addUsage(owner, acceptedUsage, now);
     d.exec("commit");
+    return { accepted, duplicates, quotaDropped };
   } catch (err) {
     d.exec("rollback");
     throw err;

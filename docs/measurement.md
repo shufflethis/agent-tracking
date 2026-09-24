@@ -42,3 +42,29 @@ The `interactions` field retains its legacy sum for API compatibility and is
 explicitly described as overlapping activity signals, including these goals.
 Compare only periods with the same definition; the future confirmed-outcome
 series starts from its own first accepted server event.
+
+Browser beacons use a bounded 32 KiB request reader and are public observations.
+The request Origin is a same-site filter, not an authentication factor: direct
+clients can set that header. The platform origin has no exception for customer
+sites. Bad or unattributable requests enter a private internal aggregate; rate,
+quota and write drops for a known site are visible to its owner in the private
+stats API and dashboard. Log uploads are bounded before and after decompression.
+The current per-IP rate limiter is local to the single Node process; deployments
+with multiple workers require a shared limiter before claiming global limits.
+
+Protocol v2 sends `goal_attempt` for a browser goal action and `form_attempt`
+for a form marked with `toolname`. Neither is a confirmed conversion or an
+authenticated agent invocation. A cancelled form submit is marked cancelled;
+otherwise it remains an attempted form action with unknown final result. Old
+snippets that send `agent_conversion` remain accepted into the separate legacy
+counter. Goal attempts and legacy signals are separate series and must not be
+combined into a confirmed-outcome rate.
+
+Tool wrappers report one terminal technical state: `completed` when a function
+returns or its Promise fulfills, `failed` on throw/rejection, `cancelled` on
+AbortSignal/AbortError, or `timed_out` after 60 seconds without an outcome.
+The original return value or error continues to the caller. Fulfilling with
+`{ok:false}` is still only technical completion; no arbitrary return object
+can confirm a booking. A valid server-side completion integration must supply
+business evidence independently. Historic tool calls have no reliable
+terminal-state breakdown and appear as unknown in the new series.

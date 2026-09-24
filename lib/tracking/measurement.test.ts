@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, it } from "node:test";
 import { sanitizeBatch } from "./classify";
-import { addSite, closeDb, dailyRows, db, ensureAccount, recordEvents, usageThisMonth, type StoredEvent } from "./db";
+import { addSite, closeDb, dailyRows, db, ensureAccount, ingestHealth, recordEvents, usageThisMonth, type StoredEvent } from "./db";
 import { POST as ingestBrowserBatch } from "../../app/api/event/route";
 
 const NOW = Date.UTC(2026, 8, 24, 12);
@@ -54,6 +54,21 @@ describe("versioned measurements", () => {
     assert.equal(row.received_at, NOW);
   });
 
+  it("enforces the quota inside the batch but still records free measurement state", () => {
+    ensureAccount("a@example.com", NOW);
+    addSite("example.com", "a@example.com", NOW);
+    const result = recordEvents("example.com", "a@example.com", [
+      call("event-0000000010"), call("event-0000000011"),
+      { ...call("event-0000000012"), kind: "tool_registered" },
+    ], NOW, { quota: 1 });
+    assert.deepEqual(result, { accepted: 2, duplicates: 0, quotaDropped: 1 });
+    assert.equal(usageThisMonth("a@example.com", NOW), 1);
+    assert.equal(dailyRows("example.com", 1, NOW).find((r) => r.kind === "tool_registered")?.count, 1);
+    const retry = recordEvents("example.com", "a@example.com", [call("event-0000000010"), call("event-0000000011")], NOW, { quota: 2 });
+    assert.deepEqual(retry, { accepted: 1, duplicates: 1, quotaDropped: 0 });
+    assert.equal(usageThisMonth("a@example.com", NOW), 2);
+  });
+
   it("keeps forged browser verification and business claims out of server evidence", async () => {
     const dir = mkdtempSync(join(tmpdir(), "agent-tracking-salt-"));
     process.env.TRACKING_SALT_FILE = join(dir, "salt.json");
@@ -78,6 +93,41 @@ describe("versioned measurements", () => {
     }
   });
 
+  it("does not let the platform origin write to a different registered site", async () => {
+    ensureAccount("a@example.com", NOW);
+    addSite("example.com", "a@example.com", NOW);
+    const response = await ingestBrowserBatch(new Request("https://agenttracking.co/api/event", {
+      method: "POST",
+      headers: { origin: "https://agenttracking.co", "content-type": "text/plain" },
+      body: JSON.stringify({ d: "example.com", v: 2, e: [{ k: "view", id: "event-0000000005" }] }),
+    }));
+    assert.equal(response.status, 204);
+    assert.equal(dailyRows("example.com", 1, Date.now()).length, 0);
+    assert.deepEqual(ingestHealth("example.com"), []);
+  });
+
+  it("records a browser goal as an attempt without a confirmed conversion", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "agent-tracking-salt-"));
+    process.env.TRACKING_SALT_FILE = join(dir, "salt.json");
+    try {
+      ensureAccount("a@example.com", NOW);
+      addSite("example.com", "a@example.com", NOW);
+      const response = await ingestBrowserBatch(new Request("https://agenttracking.co/api/event", {
+        method: "POST",
+        headers: { origin: "https://example.com", "content-type": "text/plain" },
+        body: JSON.stringify({ d: "example.com", v: 2, e: [{ k: "goal_attempt", n: "book", id: "event-0000000006" }] }),
+      }));
+      assert.equal(response.status, 202);
+      const rows = dailyRows("example.com", 1, Date.now());
+      assert.equal(rows.find((r) => r.kind === "goal_attempt")?.count, 1);
+      assert.equal(rows.find((r) => r.kind === "conversion"), undefined);
+      assert.equal(usageThisMonth("a@example.com"), 0);
+    } finally {
+      delete process.env.TRACKING_SALT_FILE;
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
   it("migrates a populated legacy database and can open it repeatedly", () => {
     const dir = mkdtempSync(join(tmpdir(), "agent-tracking-measurement-"));
     const path = join(dir, "legacy.sqlite");
@@ -95,6 +145,7 @@ describe("versioned measurements", () => {
       assert.equal((db().prepare("select measurement_version from events").get() as { measurement_version: number }).measurement_version, 1);
       closeDb();
       assert.equal((db().prepare("select count(*) as n from schema_migrations where version = 2").get() as { n: number }).n, 1);
+      assert.equal((db().prepare("select count(*) as n from schema_migrations where version = 3").get() as { n: number }).n, 1);
       assert.equal((db().prepare("select count(*) as n from events").get() as { n: number }).n, 1);
     } finally {
       closeDb();

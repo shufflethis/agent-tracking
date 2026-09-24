@@ -34,13 +34,9 @@
     for (var i = 0; i < str.length; i++) { x ^= str.charCodeAt(i); x = Math.imul(x, 16777619); }
     return (x >>> 0).toString(16);
   }
-  function keysOf(a) {
-    var out = [];
-    if (a && typeof a === "object" && !Array.isArray(a)) for (var k in a) { if (out.length < 24) out.push(String(k).slice(0, 64)); }
-    return out;
-  }
   function errOf(e) {
-    return e && e.name && e.name !== "Error" ? e.name : String((e && e.message) || e || "error").slice(0, 80);
+    var n = e && e.name;
+    return typeof n === "string" && /^[A-Za-z]{1,32}Error$/.test(n) ? n : "Error";
   }
 
   /* A. AI referrals and B. AI fetches: one view event; the server reads Referer and User-Agent. */
@@ -58,22 +54,35 @@
     var exec = t.execute;
     var wrapped = Object.assign({}, t, {
       execute: function (args, ctx) {
-        var t0 = performance.now(), keys = keysOf(args);
+        var t0 = performance.now(), done = false, timeout = null, sig = ctx && ctx.signal;
+        function finish(state, error) {
+          if (done) return;
+          done = true;
+          clearTimeout(timeout);
+          if (sig && sig.removeEventListener) sig.removeEventListener("abort", abort);
+          push({ k: "tool_call", n: name, ms: Math.round(performance.now() - t0), ok: state === "completed" ? true : state === "failed" ? false : null, s: state, e: error ? errOf(error) : undefined, sim: sim });
+        }
+        function abort() { finish("cancelled"); }
+        if (sig && sig.addEventListener) {
+          if (sig.aborted) abort();
+          else sig.addEventListener("abort", abort);
+        }
+        if (!done) timeout = setTimeout(function () { finish("timed_out"); }, 60000);
         try {
           var r = exec.apply(this, arguments);
           if (r && typeof r.then === "function") {
             return r.then(function (v) {
-              push({ k: "tool_call", n: name, ms: Math.round(performance.now() - t0), ok: true, keys: keys, sim: sim });
+              finish("completed");
               return v;
             }, function (e) {
-              push({ k: "tool_call", n: name, ms: Math.round(performance.now() - t0), ok: false, e: errOf(e), keys: keys, sim: sim });
+              finish(e && e.name === "AbortError" ? "cancelled" : "failed", e);
               throw e;
             });
           }
-          push({ k: "tool_call", n: name, ms: Math.round(performance.now() - t0), ok: true, keys: keys, sim: sim });
+          finish("completed");
           return r;
         } catch (e) {
-          push({ k: "tool_call", n: name, ms: Math.round(performance.now() - t0), ok: false, e: errOf(e), keys: keys, sim: sim });
+          finish(e && e.name === "AbortError" ? "cancelled" : "failed", e);
           throw e;
         }
       }
@@ -97,22 +106,30 @@
     if (mc) { instrument(mc); clearInterval(poll); } else if (++tries > 60) clearInterval(poll);
   }, 250);
 
-  /* Declarative tools: a form with a toolname attribute, submitted. */
+  /* Declarative forms: submit is an attempt, not a completed tool call. */
   addEventListener("submit", function (ev) {
     var f = ev.target, n = f && f.getAttribute && f.getAttribute("toolname");
     if (!n) return;
-    var keys = [];
-    try { new FormData(f).forEach(function (_, k) { if (keys.length < 24) keys.push(k); }); } catch (e) {}
-    push({ k: "tool_call", n: String(n).slice(0, 128), ok: true, d: 1, keys: keys });
-  }, true);
+    setTimeout(function () { push({ k: "form_attempt", n: String(n).slice(0, 128), s: ev.defaultPrevented ? "cancelled" : "attempted", d: 1 }); }, 0);
+  });
 
-  /* Conversions: any element with data-agent-goal, clicked or submitted. */
-  function goal(ev) {
+  /* Goal markers observe attempts; no actor or business result is inferred. */
+  var pendingForm = null;
+  addEventListener("click", function (ev) {
     var el = ev.target && ev.target.closest && ev.target.closest("[data-agent-goal]");
-    if (el) push({ k: "agent_conversion", n: String(el.getAttribute("data-agent-goal")).slice(0, 128) });
-  }
-  addEventListener("click", goal, true);
-  addEventListener("submit", goal, true);
+    if (!el || el.tagName === "FORM") return;
+    push({ k: "goal_attempt", n: String(el.getAttribute("data-agent-goal")).slice(0, 128) });
+    var button = ev.target.closest && ev.target.closest("button,input[type=submit]");
+    if (button && button.form && (!button.type || button.type === "submit" || button.type === "image")) {
+      pendingForm = button.form;
+      setTimeout(function () { pendingForm = null; }, 0);
+    }
+  });
+  addEventListener("submit", function (ev) {
+    var f = ev.target, el = f && f.closest && f.closest("[data-agent-goal]");
+    if (pendingForm === f) { pendingForm = null; return; }
+    if (el) push({ k: "goal_attempt", n: String(el.getAttribute("data-agent-goal")).slice(0, 128) });
+  });
 
   /* The manifest, hashed once per visit: on the entry page (no referrer, or one from another host). */
   /* Without storage that is the nearest thing to once per session, and a missing manifest logs one 404, not one per page. */

@@ -6,6 +6,7 @@ import { loadRanges } from "@/lib/tracking/bot-ranges";
 import { normalizeDomain } from "@/lib/tracking/classify";
 import { getSite, recordBursts, recordLogFetches, setLogSource } from "@/lib/tracking/db";
 import { importLines } from "@/lib/tracking/log-import";
+import { BodyLimitError, readLimitedBody } from "@/lib/tracking/request-body";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -44,15 +45,16 @@ export async function POST(request: Request, { params }: { params: Promise<{ dom
   if (declared > MAX_BYTES) return problem(`The body is over ${MAX_BYTES / 1024 / 1024} MB. Send fewer days at a time.`, 413);
   let bytes: Buffer;
   try {
-    bytes = Buffer.from(await request.arrayBuffer());
-  } catch {
+    bytes = Buffer.from(await readLimitedBody(request, MAX_BYTES));
+  } catch (error) {
+    if (error instanceof BodyLimitError) return problem(`The body is over ${MAX_BYTES / 1024 / 1024} MB. Send fewer days at a time.`, 413);
     return problem("The body could not be read.");
   }
   if (bytes.length > MAX_BYTES) return problem(`The body is over ${MAX_BYTES / 1024 / 1024} MB. Send fewer days at a time.`, 413);
   if (bytes.length === 0) return problem("The body is empty.");
   if (bytes[0] === GZIP_MAGIC[0] && bytes[1] === GZIP_MAGIC[1]) {
     try {
-      bytes = gunzipSync(bytes, { maxOutputLength: MAX_BYTES * 4 });
+      bytes = gunzipSync(bytes, { maxOutputLength: MAX_BYTES });
     } catch {
       return problem("The gzip body could not be decompressed.");
     }
