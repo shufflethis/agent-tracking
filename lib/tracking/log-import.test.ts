@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { after, before, describe, it } from "node:test";
-import { closeDb, dailyRows, ensureAccount, addSite, ingestLogSourceBatch, logAttemptPaths, logSourceStates, recentBursts, recordBursts, recordEvents, recordLogFetches, setLogSource, getSite, usageThisMonth, verificationAudit } from "./db";
+import { closeDb, dailyRows, ensureAccount, addSite, ingestHealth, ingestLogSourceBatch, logAttemptPaths, logSourceStates, recentBursts, recordBursts, recordEvents, recordLogFetches, setLogSource, getSite, usageThisMonth, verificationAudit } from "./db";
 import { BURST_MIN_PAGES, importLines, isPagePath, parseLine } from "./log-import";
 
 const line = (ip: string, time: string, path: string, ua: string, status = 200, method = "GET") =>
@@ -200,6 +200,19 @@ describe("log rows in the store", () => {
     assert.ok(attempts.some((a) => a.resource === "pdf" && a.result === "delivered"));
     assert.equal(dailyRows("attempt.example", 30, NOW).find((r) => r.kind === "ai_fetch_verified")?.count, 1);
     assert.equal(usageThisMonth("attempt@x.com", NOW), 1);
+  });
+  it("enforces the log quota while preserving access and verification evidence", () => {
+    closeDb();
+    ensureAccount("quota@x.com", NOW);
+    addSite("quota.example", "quota@x.com", NOW);
+    const evidence = { status: "verified", method: "ip_range", source: "openai-gptbot", sourceVersion: "2026-09-08T00:00:00.000Z", checkedAt: NOW };
+    const fetches = [{ day: "2026-09-08", agent: "gptbot", path: "/one", evidence }, { day: "2026-09-08", agent: "gptbot", path: "/two", evidence }];
+    const result = recordLogFetches("quota.example", fetches, [], "quota@x.com", NOW, [], 1);
+    assert.equal(result.quotaDropped, 1);
+    assert.equal(usageThisMonth("quota@x.com", NOW), 1);
+    assert.equal(dailyRows("quota.example", 30, NOW).find((r) => r.kind === "ai_fetch_verified")?.count, 1);
+    assert.equal(verificationAudit("quota.example", 30, NOW).find((r) => r.status === "verified")?.count, 2);
+    assert.equal(ingestHealth("quota.example", 30, NOW).find((r) => r.outcome === "quota_reached")?.count, 1);
   });
   it("uses source positions for idempotence and accepts late lines and equal-time requests", () => {
     closeDb();

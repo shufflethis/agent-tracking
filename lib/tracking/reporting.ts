@@ -11,6 +11,10 @@ export const REPORTING_DEFINITIONS = {
   goalAttemptsMeaning: "Observed browser goal actions since protocol v2; actor and business outcome remain unconfirmed.",
   formAttemptsMeaning: "Observed browser form submits with a toolname marker; this is not proof of an agent invocation or successful completion.",
   interactionsMeaning: "Legacy sum of referrals, fetches, observed tool calls and unverified goal signals; categories may overlap and are not distinct agents.",
+  eventUsageMeaning: "One technical tool invocation or one IP-verified HTML fetch counts toward monthly usage. Registrations, checks, simulations, referrals and unverified UA claims are free. A fresh log source takes priority over browser fetch observations; cross-source request identity is unavailable.",
+  quotaGapMeaning: "Quota-reached records indicate data omitted from confirmed event counters. Free setup and verification state continues to be recorded.",
+  sessionMeaning: "Estimated daily distinct salted address and browser-class hashes with tool calls; not distinct people or agents.",
+  burstMeaning: "At least three distinct relevant HTML paths within one imported batch and 30-second gaps; no query or intent can be inferred.",
 } as const;
 
 export function reportingTotals(totals: { conversions: number }) {

@@ -2,7 +2,7 @@ import { SITE_ORIGIN } from "../lib/site";
 import { emailConfigured, sendMail } from "../lib/email";
 import { mintDigestToken } from "../lib/session";
 import { loadDashboard } from "../lib/tracking/dashboard";
-import { accountsWithDigest, closeDb, sitesFor } from "../lib/tracking/db";
+import { accountsWithDigest, closeDb, ingestHealth, sitesFor } from "../lib/tracking/db";
 import { renderDigestMail, worthSending, type DigestSite } from "../lib/tracking/digest";
 
 /**
@@ -27,6 +27,7 @@ async function main() {
     const sites: DigestSite[] = sitesFor(account.email).map((s) => ({
       domain: s.domain,
       dash: loadDashboard(s.domain, 7),
+      quotaGaps: ingestHealth(s.domain, 7).find((row) => row.outcome === "quota_reached")?.count ?? 0,
       dashboardUrl: `${SITE_ORIGIN}/app/${encodeURIComponent(s.domain)}`,
     }));
     if (sites.length === 0 || !worthSending(sites)) continue;

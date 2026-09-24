@@ -70,6 +70,26 @@ describe("versioned measurements", () => {
     assert.deepEqual(retry, { accepted: 1, duplicates: 1, quotaDropped: 0 });
     assert.equal(usageThisMonth("a@example.com", NOW), 2);
   });
+  it("charges only confirmed browser fetches and tool invocations while preserving free states", () => {
+    ensureAccount("a@example.com", NOW);
+    addSite("example.com", "a@example.com", NOW);
+    const view = (id: string): StoredEvent => ({ ...call(id), kind: "view", name: null, source: "agent:gptbot", identityStatus: "verified" });
+    const result = recordEvents("example.com", "a@example.com", [
+      view("event-0000000040"), view("event-0000000041"),
+      { ...call("event-0000000042"), kind: "tool_registered" },
+      { ...call("event-0000000043"), simulated: true },
+    ], NOW, { quota: 1 });
+    assert.equal(result.quotaDropped, 1);
+    assert.equal(usageThisMonth("a@example.com", NOW), 1);
+    const rows = dailyRows("example.com", 1, NOW);
+    assert.equal(rows.find((r) => r.kind === "ai_fetch_verified")?.count, 1);
+    assert.equal(rows.find((r) => r.kind === "view")?.count, 2);
+    assert.equal(rows.find((r) => r.kind === "tool_registered")?.count, 1);
+    assert.equal(rows.find((r) => r.kind === "tool_call_sim")?.count, 1);
+    const retry = recordEvents("example.com", "a@example.com", [view("event-0000000041")], NOW, { quota: 1 });
+    assert.equal(retry.duplicates, 1);
+    assert.equal(usageThisMonth("a@example.com", NOW), 1);
+  });
 
   it("keeps discovery, schema changes and removal separate from invocations", () => {
     ensureAccount("a@example.com", NOW);

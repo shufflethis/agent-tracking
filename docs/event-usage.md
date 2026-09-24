@@ -1,0 +1,7 @@
+# Monthly technical event usage
+
+The existing monthly plan limits are unchanged. One observed technical tool invocation or one IP-verified, delivered HTML GET consumes one event. A fresh log source has priority for crawler fetches; browser and log requests have no shared ID, so this is source preference rather than exact cross-source deduplication. The allowance is checked in the same SQLite write transaction as the counters and receipts.
+
+Tool registration/discovery/removal, installation checks, simulated calls, ordinary views, referrals, goal/form attempts and UA-only bot claims do not consume technical event units. Retries with the same event or log record ID do not consume a second unit. A quota-reached tool call is omitted from event counters; registration and other free measurement state continues. A quota-reached verified fetch remains visible as an access attempt and verification audit, but does not enter the confirmed fetch counter. `quota_reached` is exposed through ingest health in the dashboard, Stats API/MCP, CSV and weekly digest. These signals indicate incomplete confirmed event data.
+
+Usage is attributed to the month in which the event reaches this installation. Historical usage already booked before this release is not rewritten. A dropped request may be resent after additional allowance becomes available only if its receipt was not accepted; an accepted free view at the quota boundary is retained as observation and cannot later be converted into a confirmed fetch without a new, explicitly identified import.

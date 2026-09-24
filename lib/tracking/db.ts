@@ -6,6 +6,8 @@ import type { CleanEvent } from "./classify";
 import { MEASUREMENT_VERSION, type BusinessOutcome, type IdentityEvidence, type IdentityStatus, type TechnicalOutcome, type Transport } from "./measurement";
 import { redactPath, safeErrorClass, safeEventName } from "./privacy";
 import { RAW_RETENTION_DAYS, type PlanId } from "./plans";
+import { planFor } from "./plans";
+import { browserUsage, logUsage } from "./usage-rules";
 import { importLines, type ImportResult, type LogAttempt } from "./log-import";
 import type { Ranges } from "./bot-ranges";
 
@@ -265,6 +267,12 @@ export function ingestHealth(domain: string, days = 30, now = Date.now()): { out
   const cutoff = dayKey(now - (days - 1) * 86_400_000);
   return db().prepare("select outcome, sum(count) as count, max(last_at) as lastAt from ingest_health where domain = ? and day >= ? group by outcome")
     .all(domain.toLowerCase(), cutoff) as { outcome: IngestOutcome; count: number; lastAt: number }[];
+}
+
+export function ingestHealthDaily(domain: string, days = 30, now = Date.now()): { day: string; outcome: IngestOutcome; count: number }[] {
+  const cutoff = dayKey(now - (days - 1) * 86_400_000);
+  return db().prepare("select day, outcome, count from ingest_health where domain = ? and day >= ? order by day, outcome")
+    .all(domain.toLowerCase(), cutoff) as { day: string; outcome: IngestOutcome; count: number }[];
 }
 
 type VerificationRecord = { status: string; method?: string; sourceKey?: string | null; sourceVersion?: string | null; checkedAt?: number | null };
@@ -544,15 +552,22 @@ export function recordEvents(domain: string, owner: string, events: StoredEvent[
       const errorClass = safeErrorClass(e.err);
       const transport = e.transport ?? "browser";
       if (e.eventId && existingReceipt.get(domain, transport, e.eventId)) { duplicates++; continue; }
-      const chargeable = e.kind === "tool_call" && !e.simulated;
-      if (chargeable && options.quota !== undefined && used + acceptedUsage >= options.quota) { quotaDropped++; continue; }
+      const chargeable = browserUsage(e.kind, e.simulated, e.source, e.identityStatus, Boolean(options.fetchesFromLog));
+      const overQuota = chargeable && options.quota !== undefined && used + acceptedUsage >= options.quota;
+      if (overQuota) {
+        quotaDropped++;
+        // Keep the free view and its verification audit, even when its
+        // confirmed fetch counter is outside the paid event allowance.
+        if (e.kind !== "view") continue;
+      }
       if (e.eventId && Number(insertReceipt.run(domain, transport, e.eventId, now).changes) === 0) { duplicates++; continue; }
       accepted++;
       const keep = e.kind !== "view" || e.source !== null || e.actorClaim != null;
+      const recordedSource = overQuota && e.kind === "view" ? null : e.source;
       if (keep) {
         const occurredAt = e.occurredAt && Math.abs(e.occurredAt - now) <= 86_400_000 ? e.occurredAt : now;
         insertEvent.run(
-          domain, now, e.kind, name, path, e.source, e.session, e.ms, e.ok === null ? null : e.ok ? 1 : 0,
+          domain, now, e.kind, name, path, recordedSource, e.session, e.ms, e.ok === null ? null : e.ok ? 1 : 0,
           errorClass, null, e.declarative ? 1 : 0, e.simulated ? 1 : 0,
           e.eventId ?? null, MEASUREMENT_VERSION, transport, occurredAt, now, e.actorClaim ?? null,
           e.identityStatus ?? "unknown", JSON.stringify(e.identityEvidence ?? []), e.referralSource ?? null,
@@ -583,7 +598,7 @@ export function recordEvents(domain: string, owner: string, events: StoredEvent[
           // fetch, including the ones that ran the snippet; counting those
           // here too would double them. Referrals are people, not in the log's
           // agent lines, and still count.
-          if (!(isFetch && (options.fetchesFromLog || e.identityStatus !== "verified"))) {
+          if (!(isFetch && (options.fetchesFromLog || e.identityStatus !== "verified" || overQuota))) {
             bump.run(domain, day, isFetch ? "ai_fetch_verified" : "ai_referral", e.source, 0, 0);
             bump.run(domain, day, "page", path, 0, 0);
           }
@@ -617,7 +632,7 @@ export function recordEvents(domain: string, owner: string, events: StoredEvent[
       if (e.kind === "tool_registered" && name) {
         tool.run(domain, name, e.descriptionHash ?? null, e.schemaHash ?? null, now, now, e.declarative ? 1 : 0);
       }
-      if (chargeable) acceptedUsage++;
+      if (chargeable && !overQuota) acceptedUsage++;
     }
     // Plain human views are free; only the rows that are kept count against the plan.
     addUsage(owner, acceptedUsage, now);
@@ -651,8 +666,8 @@ export function pruneRaw(now = Date.now()): number {
 /* -------------------------------------------------------------- log import */
 
 /** Daily fetch counters from the server log: the same rows the snippet would write for an agent that ran it. */
-export function recordLogFetches(domain: string, fetches: { day: string; agent: string; path: string; evidence?: { status: string; method: string; source: string | null; sourceVersion: string | null; checkedAt: number } }[], unverified: { day: string; agent: string; evidence?: { status: string; method: string; source: string | null; sourceVersion: string | null; checkedAt: number } }[] = [], owner: string | null = null, now = Date.now(), attempts: LogAttempt[] = []): void {
-  if (fetches.length === 0 && unverified.length === 0 && attempts.length === 0) return;
+export function recordLogFetches(domain: string, fetches: { day: string; agent: string; path: string; evidence?: { status: string; method: string; source: string | null; sourceVersion: string | null; checkedAt: number } }[], unverified: { day: string; agent: string; evidence?: { status: string; method: string; source: string | null; sourceVersion: string | null; checkedAt: number } }[] = [], owner: string | null = null, now = Date.now(), attempts: LogAttempt[] = [], quota?: number): { quotaDropped: number } {
+  if (fetches.length === 0 && unverified.length === 0 && attempts.length === 0) return { quotaDropped: 0 };
   const d = db();
   const bump = d.prepare(
     "insert into daily (domain, day, kind, name, count, errors, ms_total) values (?, ?, ?, ?, 1, 0, 0) on conflict(domain, day, kind, name) do update set count = count + 1",
@@ -668,15 +683,23 @@ export function recordLogFetches(domain: string, fetches: { day: string; agent: 
       logAttempt.run(domain.toLowerCase(), a.day, a.agent, redactPath(a.path), a.evidence.status, a.method, a.status, a.result, a.resource, a.resourceBasis, a.contentType, a.durationMs);
     }
     let acceptedFetches = 0;
+    let quotaDropped = 0;
+    const used = owner ? usageThisMonth(owner, now) : 0;
     for (const f of fetches) {
-      if (f.evidence?.status !== "verified") {
-        bump.run(domain.toLowerCase(), f.day, `claim_${f.evidence?.status ?? "missing"}`, `agent:${f.agent}`);
+      const evidence = f.evidence;
+      if (!evidence || !logUsage(evidence.status)) {
+        bump.run(domain.toLowerCase(), f.day, `claim_${evidence?.status ?? "missing"}`, `agent:${f.agent}`);
+        continue;
+      }
+      if (owner && quota !== undefined && used + acceptedFetches >= quota) {
+        quotaDropped++;
+        bumpVerification(d, domain, f.day, "log", f.agent, { status: "verified", method: evidence.method, sourceKey: evidence.source, sourceVersion: evidence.sourceVersion, checkedAt: evidence.checkedAt }, now);
         continue;
       }
       bump.run(domain.toLowerCase(), f.day, "ai_fetch_verified", `agent:${f.agent}`);
       bump.run(domain.toLowerCase(), f.day, "page", redactPath(f.path));
       acceptedFetches++;
-      bumpVerification(d, domain, f.day, "log", f.agent, { status: "verified", method: f.evidence.method, sourceKey: f.evidence.source, sourceVersion: f.evidence.sourceVersion, checkedAt: f.evidence.checkedAt }, now);
+      bumpVerification(d, domain, f.day, "log", f.agent, { status: "verified", method: evidence.method, sourceKey: evidence.source, sourceVersion: evidence.sourceVersion, checkedAt: evidence.checkedAt }, now);
     }
     // Preserve the old mismatch counter's meaning; other non-evidence states
     // have their own dimensions and never enter confirmed fetch counts.
@@ -687,7 +710,9 @@ export function recordLogFetches(domain: string, fetches: { day: string; agent: 
     }
     // A fetch from the log is an agent event like any other for the quota.
     if (owner && acceptedFetches) addUsage(owner, acceptedFetches, now);
+    if (quotaDropped) noteIngestOutcome(domain, "quota_reached", now);
     d.exec("release log_fetches_write");
+    return { quotaDropped };
   } catch (err) {
     d.exec("rollback to log_fetches_write");
     d.exec("release log_fetches_write");
@@ -741,7 +766,8 @@ export function ingestLogSourceBatch(domain: string, owner: string, sourceId: st
       accepted.push(r.line);
     }
     const result = importLines(accepted, { ranges, since: cutover });
-    recordLogFetches(domain, result.fetches, result.unverified, owner, now, result.attempts);
+    const account = getAccount(owner);
+    recordLogFetches(domain, result.fetches, result.unverified, owner, now, result.attempts, planFor(account?.plan).eventsPerMonth);
     recordBursts(domain, result.bursts);
     d.prepare(`insert into log_sources (domain, source_id, generation, records, last_import_at, last_log_at, next_offset, status)
       values (?, ?, ?, ?, ?, ?, ?, 'active') on conflict(domain, source_id, generation)
@@ -774,6 +800,14 @@ export function logAttemptPaths(domain: string, days = 30, now = Date.now(), lim
   return db().prepare(`select path, result, resource, method, identity_status as identityStatus, status, sum(count) as count
     from log_attempts where domain = ? and day >= ? group by path, result, resource, method, identity_status, status
     order by count desc limit ?`).all(domain.toLowerCase(), cutoff, limit) as LogAttemptPath[];
+}
+
+export type LogAttemptExportRow = LogAttemptPath & { day: string; agent: string };
+export function logAttemptExportRows(domain: string, days = 30, now = Date.now()): LogAttemptExportRow[] {
+  const cutoff = dayKey(now - (days - 1) * 86_400_000);
+  return db().prepare(`select day, agent, path, result, resource, method, identity_status as identityStatus, status, count
+    from log_attempts where domain = ? and day >= ? order by day, agent, path`)
+    .all(domain.toLowerCase(), cutoff) as LogAttemptExportRow[];
 }
 
 /**

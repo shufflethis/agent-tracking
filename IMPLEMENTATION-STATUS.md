@@ -18,7 +18,8 @@ Stand: 2026-09-25. Arbeitsgrundlage: `IMPLEMENTATION-PROMPT.md`.
 | F10 | erledigt | Log-Versuche nach Methode, HTTP-Ergebnis, Status, Ressourcenvermutung und Identitätsstand in Migration v6 aggregiert; UI zeigt sie separat. Nur 2xx-HTML-GET bleibt bestätigter Fetch. PDF/API/Discovery, 301/403/429/500, null Content-Type/Timing getestet; 92 Tests und Typecheck bestanden. | F11 beginnen. |
 | F11 | erledigt | Migration v7: Site-/Quellen-/Generations-/Positionsbelege, atomarer Import mit Zählern/Bursts/SQLite-Cursor; lokaler Collector mit Rotation und altem JSON-Cursor; Upload als Append-only-Vollsnapshot oder mit Quellheadern. Browser-Fallback bei >36h ohne neue Datensätze; Lücken und fehlende Quellendopplung dokumentiert. Tests für gleiche Zeile/Zeit, späte Zeilen, zwei Quellen, Rotation, Retry, Rollback, Legacy-Cutover; 96 Tests und Typecheck. | F12 beginnen. |
 | F12 | erledigt | Burst erst ab drei verschiedenen relevanten HTML-Pfaden; Batchgrenze und fehlender Absichtsnachweis dokumentiert. Migration v8 backfillt tägliche Tool-Session-Näherungen aus noch vorhandenen Rohdaten; Tagesaggregate überstehen 90-Tage-Löschung. Hash-Kollisionsgrenzen in UI/Doku. 98 Tests und Typecheck. | F13 beginnen. |
-| F13–F22 | offen | Noch nicht implementiert. | Der Reihenfolge im Umsetzungsauftrag folgen. |
+| F13 | erledigt | Zentrale technische Regel: Toolaufruf oder IP-bestätigter HTML-Fetch; Quotenprüfung atomar in Browser- und Logpfad. Kostenfreie Zustände, Zugriffsversuche und Nachweise bleiben bei Grenze; Quotenlücken in Health/Dashboard, API/MCP, CSV und Digest. Retrys und Grenzfälle getestet; Preise/Planlimits unverändert; 100 Tests und Typecheck. | F14 beginnen. |
+| F14–F22 | offen | Noch nicht implementiert. | Der Reihenfolge im Umsetzungsauftrag folgen. |
 
 ## Entscheidungen
 

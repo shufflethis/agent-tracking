@@ -11,10 +11,10 @@ import { activitySignals } from "./dashboard";
  * back to the dashboard, not to replace it.
  */
 
-export type DigestSite = { domain: string; dash: Dashboard; dashboardUrl: string };
+export type DigestSite = { domain: string; dash: Dashboard; dashboardUrl: string; quotaGaps?: number };
 
 export function worthSending(sites: DigestSite[]): boolean {
-  return sites.some((s) => activitySignals(s.dash.overview) > 0 || s.dash.agents.some((a) => a.unverified > 0));
+  return sites.some((s) => activitySignals(s.dash.overview) > 0 || s.dash.agents.some((a) => a.unverified > 0) || (s.quotaGaps ?? 0) > 0);
 }
 
 export function renderDigestMail(sites: DigestSite[], unsubscribeUrl: string): { subject: string; text: string; html: string } {
@@ -32,6 +32,7 @@ export function renderDigestMail(sites: DigestSite[], unsubscribeUrl: string): {
     const lines = [
       `${o.referrals} referral${o.referrals === 1 ? "" : "s"}, ${o.verifiedFetches} IP-confirmed fetch${o.verifiedFetches === 1 ? "" : "es"}, ${o.fetches} legacy fetch claim${o.fetches === 1 ? "" : "s"}, ${o.calls} observed tool call${o.calls === 1 ? "" : "s"}, ${o.conversions} unverified goal signal${o.conversions === 1 ? "" : "s"}${bursts ? `, ${bursts} fetch burst${bursts === 1 ? "" : "s"}` : ""}.`,
       "Goal signals use the legacy browser definition; they are not confirmed agent outcomes. Periods with different measurement definitions should not be compared directly.",
+      s.quotaGaps ? `${s.quotaGaps} quota-reached import/batch signal${s.quotaGaps === 1 ? "" : "s"}; confirmed event data may be incomplete. Free setup and verification state continues.` : "",
       topAgents.length ? `Agents: ${topAgents.join(", ")}.` : "No agent seen this week.",
       topPages.length ? `Pages: ${topPages.join(", ")}.` : "",
       failing.length ? `Tools with errors: ${failing.join(", ")}.` : "",
