@@ -1,0 +1,7 @@
+# Site-Zugriff und Befundbericht
+
+Der Eigentümer erzeugt unter den Site-Einstellungen einen auf eine E-Mail-Adresse gebundenen Leselink. Der Link gilt sieben Tage und wird nur einmal angezeigt; das Produkt verschickt dabei keine E-Mail. Nach Anmeldung mit genau dieser Adresse kann der Empfänger die freigegebene Site, ihre Kennzahlen, Testläufe und den internen Bericht lesen. Schreibzugänge, Site-Einstellungen, Token-Rotation, Befundänderungen und Eigentumswechsel werden dadurch nicht vergeben. Eigentümer können offene Links und aktive Leserechte jederzeit widerrufen.
+
+Jeder Befund gehört zu einer Site und referenziert mindestens einen dort vorhandenen Run oder Serverabschluss. Er enthält Aufgabe/Run, Fehlerkategorie, Beschreibung, Verantwortlichen, Bearbeitungsstatus, optionale Korrektur und optionalen Nachtest. `retest_confirmed` verlangt einen tatsächlich bestandenen Run, eine dokumentierte Korrektur und eine passende Vorher/Nachher-Verknüpfung. Nur der Eigentümer kann Befunde schreiben.
+
+`/app/{site}/report` ist eine druckbare HTML-Ansicht: Messabdeckung → Befunde → Korrektur/Nachtest → offene Punkte. `GET /api/report/{site}` liefert denselben Site-Kontext als strukturiertes JSON für berechtigte Sitzungen oder Stats-Lesetokens. Öffentliche Statistikseiten erhalten keine internen Befunde oder Beleg-IDs. Die Browser-Tests sind synthetisch und sagen nichts über produktive Umsätze aus.

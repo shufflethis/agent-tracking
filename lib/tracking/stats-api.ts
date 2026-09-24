@@ -4,6 +4,7 @@ import { activitySignals, interactions, loadDashboard } from "./dashboard";
 import { planFor } from "./plans";
 import { REPORTING_DEFINITIONS, reportingTotals } from "./reporting";
 import { dataState } from "./data-state";
+import { canReadSite } from "./site-access";
 import { outcomeSummary, serverToolSummary, writeTokenConfigured } from "./server-ingest";
 
 /**
@@ -23,7 +24,7 @@ export function clampDays(raw: unknown, account: Account): number {
 
 export function statsFor(domain: string, account: Account, days: number, now = Date.now()) {
   const site = getSite(domain);
-  if (!site || site.owner !== account.email) return null;
+  if (!site || !canReadSite(site.domain, account.email)) return null;
   const dash = loadDashboard(site.domain, days, now);
   const health = ingestHealth(site.domain, days, now);
   const logFresh = hasFreshLogSource(site.domain, now);

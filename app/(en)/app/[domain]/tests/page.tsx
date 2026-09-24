@@ -23,14 +23,14 @@ export default async function Page({ params }: { params: Promise<{ domain: strin
       <h2>{lang === "de" ? "Kontrollierte Anfrageprüfung" : "Controlled inquiry check"}</h2>
       <p>{lang === "de" ? "Deterministische Chrome-Prüfung auf test. oder staging. der Site. Das Formular muss #agenttracking-test-form mit data-agenttracking-test=true haben und einen Erfolgsmarker data-agenttracking-success=true setzen. Verwende nur isolierte Testdaten und eine Strecke ohne echte Buchung oder Nachricht." : "Deterministic Chrome check on test. or staging. for this site. The form must have #agenttracking-test-form with data-agenttracking-test=true and set data-agenttracking-success=true on success. Use an isolated flow without real bookings or messages."}</p>
       <p>{lang === "de" ? "Modellgesteuerter Agententest: nicht eingerichtet. Ergebnisse hier sind keine fremden Agentenläufe und zählen nicht in Produktivkennzahlen." : "Model-driven agent test: not configured. These results are not third-party agent runs and do not enter production metrics."}</p>
-      <TaskRunForm domain={site.domain} lang={lang} />
+      {site.owner === account.email && <TaskRunForm domain={site.domain} lang={lang} />}
     </div>
     <div className="card" style={{ padding: 28 }}><h2>{lang === "de" ? "Laufverlauf" : "Run history"}</h2>
       {runs.length === 0 ? <p>{lang === "de" ? "Noch kein Lauf." : "No runs yet."}</p> : <div className="tablewrap"><table><thead><tr><th>Run ID</th><th>{lang === "de" ? "Ergebnis" : "Result"}</th><th>Release</th><th>{lang === "de" ? "Schritte" : "Steps"}</th></tr></thead><tbody>{runs.map((run) => <tr key={run.runId}><td><code>{run.runId}</code></td><td>{run.result ?? run.status}{run.errorClass ? ` (${run.errorClass})` : ""}</td><td>{run.releaseId ?? "–"}</td><td>{run.steps.join(" → ") || "–"}</td></tr>)}</tbody></table></div>}
     </div>
     <div className="card" style={{ padding: 28 }}><h2>{lang === "de" ? "Korrektur und Nachtest" : "Fix and retest"}</h2>
       <p>{lang === "de" ? "Verknüpfe einen Fehlerlauf mit einer dokumentierten Korrektur und einem neuen Lauf derselben Aufgabe. Ein Vergleich zeigt nur die Testbeobachtung, keinen kausalen Umsatzgewinn." : "Link a failed run to a documented fix and a new run of the same task. Comparisons show test observations, not causal revenue gain."}</p>
-      <TaskFixForm domain={site.domain} lang={lang} runIds={runs.filter((r) => r.status === "finished").map((r) => r.runId)} />
+      {site.owner === account.email && <TaskFixForm domain={site.domain} lang={lang} runIds={runs.filter((r) => r.status === "finished").map((r) => r.runId)} />}
       {fixes.map((fix) => <div key={fix.fixId} style={{ borderTop: "1px solid var(--rule)", marginTop: 20, paddingTop: 16 }}>
         <strong>{fix.description}</strong>
         <p>{fix.comparison === "controlled_browser_retest" ? (lang === "de" ? "Gleiche Aufgabe, URL, Modus und Modellversion" : "Same task, URL, mode and model version") : (lang === "de" ? "Testbedingungen geändert; kein kontrollierter Vergleich" : "Test conditions changed; not a controlled comparison")}</p>

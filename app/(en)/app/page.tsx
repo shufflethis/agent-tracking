@@ -7,6 +7,7 @@ import { actionStrings, dashCopy, dashLang } from "@/lib/tracking/copy";
 import { lastSiteCheck, scanJob, sitesFor } from "@/lib/tracking/db";
 import { scanStatusText } from "@/lib/tracking/scan-display";
 import { planFor } from "@/lib/tracking/plans";
+import { readableSites } from "@/lib/tracking/site-access";
 
 export const metadata: Metadata = { title: "Your sites", robots: { index: false, follow: false } };
 export const runtime = "nodejs";
@@ -16,9 +17,10 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ a
   const account = await requireAccount("/app");
   const lang = dashLang(account.lang);
   const c = dashCopy(lang).list;
-  const sites = sitesFor(account.email);
+  const ownedSites = sitesFor(account.email);
+  const sites = readableSites(account.email);
   const plan = planFor(account.plan);
-  const canAdd = sites.length < plan.domains;
+  const canAdd = ownedSites.length < plan.domains;
 
   return (
     <DashboardShell account={account}>
@@ -42,7 +44,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ a
                     </td>
                     <td>
                       {s.verified_at ? <span className="chip pass">{c.verified}</span> : <span className="chip partial">{c.notVerified}</span>}
-                      {lastSiteCheck(s.domain, "snippet")?.success === false && <Link href={`/app/${encodeURIComponent(s.domain)}/settings#measurement`} style={{ display: "block", color: "var(--warn)", fontSize: 12, marginTop: 4 }}>⚠ {c.recentCheckFailed}</Link>}
+                      {s.owner === account.email && lastSiteCheck(s.domain, "snippet")?.success === false && <Link href={`/app/${encodeURIComponent(s.domain)}/settings#measurement`} style={{ display: "block", color: "var(--warn)", fontSize: 12, marginTop: 4 }}>⚠ {c.recentCheckFailed}</Link>}
                     </td>
                     <td>{s.last_score !== null ? `${s.last_score} / 100 (${s.last_grade}) · ${scanStatusText(scanJob(s.domain), c)}` : scanStatusText(scanJob(s.domain), c)}</td>
                     <td>{s.public_share ? <Link href={`/stats/${encodeURIComponent(s.domain)}`}>{c.public}</Link> : c.private}</td>

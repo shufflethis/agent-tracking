@@ -3,6 +3,7 @@ import { getSite } from "@/lib/tracking/db";
 import { clampDays, statsFor } from "@/lib/tracking/stats-api";
 import { clientIp, take } from "@/lib/ratelimit";
 import { SITE_HOST, SITE_ORIGIN } from "@/lib/site";
+import { canReadSite } from "@/lib/tracking/site-access";
 
 export const runtime = "nodejs";
 
@@ -89,7 +90,7 @@ async function call(args: Record<string, unknown>, headers: Headers): Promise<{ 
   if (!account) return { text: "No valid API token. Create one on the site's settings page and send it as a bearer header or as the token argument.", isError: true };
   const domain = String(args.domain ?? "").trim().toLowerCase();
   const site = getSite(domain);
-  if (!site || site.owner !== account.email) return { text: `No site ${domain || "(empty)"} on this account.`, isError: true };
+  if (!site || !canReadSite(site.domain, account.email)) return { text: `No site ${domain || "(empty)"} on this account.`, isError: true };
   const days = clampDays(args.days ?? 30, account);
   return { text: JSON.stringify(statsFor(site.domain, account, days), null, 2), isError: false };
 }

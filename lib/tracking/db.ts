@@ -326,6 +326,30 @@ function migrate(instance: DatabaseSync): void {
     instance.exec("create index task_fixes_runs on task_fixes(domain, before_run_id, after_run_id)");
     instance.prepare("insert into schema_migrations (version, applied_at) values (13, ?)").run(Date.now());
   }
+  if ((current.version ?? 0) < 14) {
+    instance.exec(`create table site_access (
+      domain text not null, email text not null, role text not null,
+      granted_at integer not null, revoked_at integer,
+      primary key (domain, email)
+    )`);
+    instance.exec(`create table site_invites (
+      domain text not null, invite_id text not null, email text not null,
+      token_hash text not null, created_at integer not null, expires_at integer not null,
+      accepted_at integer, revoked_at integer,
+      primary key (domain, invite_id)
+    )`);
+    instance.exec("create unique index site_invites_hash on site_invites(token_hash)");
+    instance.exec(`create table findings (
+      domain text not null, finding_id text not null, task_run_id text,
+      fix_id text, evidence_json text not null, category text not null,
+      description text not null, assignee text, status text not null,
+      correction text, retest_run_id text,
+      created_at integer not null, updated_at integer not null,
+      primary key (domain, finding_id)
+    )`);
+    instance.exec("create index findings_domain_status on findings(domain, status)");
+    instance.prepare("insert into schema_migrations (version, applied_at) values (14, ?)").run(Date.now());
+  }
   instance.exec("commit");
   } catch (err) {
     instance.exec("rollback");
@@ -518,6 +542,9 @@ export function removeSite(domain: string, owner: string): boolean {
   d.prepare("delete from task_runs where domain = ?").run(key);
   d.prepare("delete from site_versions where domain = ?").run(key);
   d.prepare("delete from task_fixes where domain = ?").run(key);
+  d.prepare("delete from findings where domain = ?").run(key);
+  d.prepare("delete from site_access where domain = ?").run(key);
+  d.prepare("delete from site_invites where domain = ?").run(key);
   d.prepare("delete from log_attempts where domain = ?").run(key);
   d.prepare("delete from log_records where domain = ?").run(key);
   d.prepare("delete from log_sources where domain = ?").run(key);

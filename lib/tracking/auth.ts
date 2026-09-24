@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { readSessionToken, SESSION_COOKIE } from "../session";
 import { ensureAccount, getSite, type Account, type Site } from "./db";
+import { canReadSite, siteRole } from "./site-access";
 
 /** The signed-in account, or null. Reading the cookie makes the caller dynamic, which the dashboard is anyway. */
 export async function currentAccount(): Promise<Account | null> {
@@ -20,6 +21,12 @@ export async function requireAccount(next: string): Promise<Account> {
 export async function requireSite(domain: string): Promise<{ account: Account; site: Site }> {
   const account = await requireAccount(`/app/${encodeURIComponent(domain)}`);
   const site = getSite(domain);
-  if (!site || site.owner !== account.email) redirect("/app");
+  if (!site || !canReadSite(site.domain, account.email)) redirect("/app");
   return { account, site };
+}
+
+export async function requireOwnedSite(domain: string): Promise<{ account: Account; site: Site }> {
+  const result = await requireSite(domain);
+  if (siteRole(result.site.domain, result.account.email) !== "owner") redirect("/app");
+  return result;
 }

@@ -4,6 +4,7 @@ import { normalizeDomain } from "@/lib/tracking/classify";
 import { dailyRows, getSite, ingestHealthDaily, logAttemptExportRows } from "@/lib/tracking/db";
 import { planFor } from "@/lib/tracking/plans";
 import { safeCounterName } from "@/lib/tracking/privacy";
+import { canReadSite } from "@/lib/tracking/site-access";
 
 export const runtime = "nodejs";
 
@@ -20,7 +21,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ doma
   const domain = normalizeDomain(decodeURIComponent((await params).domain));
   if (!domain) return new Response("Not a hostname.", { status: 400 });
   const site = getSite(domain);
-  if (!site || site.owner !== account.email) return new Response("No site with that domain on this account.", { status: 404 });
+  if (!site || !canReadSite(site.domain, account.email)) return new Response("No site with that domain on this account.", { status: 404 });
   const days = planFor(account.plan).windowDays;
   const rows = dailyRows(site.domain, days);
   const lines = [

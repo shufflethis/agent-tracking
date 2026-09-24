@@ -4,7 +4,7 @@ import CopyButton from "@/components/CopyButton";
 import DashboardShell from "@/components/DashboardShell";
 import { CheckoutButton, DigestToggle, LogUpload, RemoveButton, ShareToggle, TokenPanel, VerifyButton, WriteTokenPanel } from "@/components/SiteActions";
 import { billingConfigured } from "@/lib/billing";
-import { requireSite } from "@/lib/tracking/auth";
+import { requireOwnedSite } from "@/lib/tracking/auth";
 import { actionStrings, dashCopy, dashLang, numberLocale } from "@/lib/tracking/copy";
 import { PLANS, planFor, priceIdFor } from "@/lib/tracking/plans";
 import { snippetFor } from "@/lib/tracking/snippet";
@@ -12,6 +12,8 @@ import { SITE_ORIGIN } from "@/lib/site";
 import { hasFreshLogSource, lastSiteCheck, logSourceStates, recentScanAttempts, scanJob } from "@/lib/tracking/db";
 import { scanStatusText } from "@/lib/tracking/scan-display";
 import { writeTokenConfigured } from "@/lib/tracking/server-ingest";
+import SiteAccessPanel from "@/components/SiteAccessPanel";
+import { siteAccessList } from "@/lib/tracking/site-access";
 
 // Rendered per request, not at build: the host, the entity on the legal pages and the
 // snippet line come from the environment, and a self-hosted copy must print its own.
@@ -26,7 +28,7 @@ const logCurl = (domain: string, comment: string) =>
 export default async function Page({ params, searchParams }: { params: Promise<{ domain: string }>; searchParams: Promise<{ billing?: string }> }) {
   const { domain } = await params;
   const { billing } = await searchParams;
-  const { account, site } = await requireSite(decodeURIComponent(domain));
+  const { account, site } = await requireOwnedSite(decodeURIComponent(domain));
   const lang = dashLang(account.lang);
   const c = dashCopy(lang).settings;
   const listCopy = dashCopy(lang).list;
@@ -99,6 +101,12 @@ export default async function Page({ params, searchParams }: { params: Promise<{
             ) : null}
           </p>
           <ShareToggle domain={site.domain} on={Boolean(site.public_share)} c={a} />
+        </div>
+
+        <div className="card" style={{ padding: 28 }}>
+          <h2 style={{ fontSize: 22, marginBottom: 6 }}>{lang === "de" ? "Kunden-Lesezugriff" : "Client read access"}</h2>
+          <p style={{ color: "var(--ink-2)" }}>{lang === "de" ? "Begrenzte Einladungslinks für eine einzelne Site. Leseberechtigte können Statistik und interne Berichte sehen, aber keine Einstellungen oder Befunde ändern. Es werden keine Einladungsmails versendet." : "Limited invitation links for one site. Readers can view statistics and internal reports but cannot change settings or findings. No invitation emails are sent."}</p>
+          <SiteAccessPanel domain={site.domain} lang={lang} initial={siteAccessList(site.domain)} />
         </div>
 
         <div className="card" style={{ padding: 28 }}>

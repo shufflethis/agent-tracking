@@ -1,7 +1,7 @@
 import { SITE_ORIGIN } from "@/lib/site";
 import { clientIp, take } from "@/lib/ratelimit";
 import { accountForToken, bearerFrom } from "@/lib/tracking/api-token";
-import { sitesFor } from "@/lib/tracking/db";
+import { readableSites } from "@/lib/tracking/site-access";
 import { planFor } from "@/lib/tracking/plans";
 
 export const runtime = "nodejs";
@@ -16,6 +16,6 @@ export async function GET(request: Request) {
   return Response.json({
     plan: plan.id,
     maxDays: plan.windowDays,
-    sites: sitesFor(account.email).map((s) => ({ domain: s.domain, verified: Boolean(s.verified_at), stats: `${SITE_ORIGIN}/api/stats/${encodeURIComponent(s.domain)}` })),
+    sites: readableSites(account.email).map((s) => ({ domain: s.domain, verified: Boolean(s.verified_at), stats: `${SITE_ORIGIN}/api/stats/${encodeURIComponent(s.domain)}` })),
   });
 }
