@@ -312,6 +312,20 @@ function migrate(instance: DatabaseSync): void {
     instance.exec("create index task_runs_domain_time on task_runs(domain, started_at)");
     instance.prepare("insert into schema_migrations (version, applied_at) values (12, ?)").run(Date.now());
   }
+  if ((current.version ?? 0) < 13) {
+    instance.exec(`create table site_versions (
+      domain text not null, kind text not null, version_id text not null,
+      first_seen_at integer not null, last_seen_at integer not null,
+      primary key (domain, kind, version_id)
+    )`);
+    instance.exec(`create table task_fixes (
+      domain text not null, fix_id text not null, before_run_id text not null,
+      after_run_id text not null, description text not null, created_at integer not null,
+      primary key (domain, fix_id)
+    )`);
+    instance.exec("create index task_fixes_runs on task_fixes(domain, before_run_id, after_run_id)");
+    instance.prepare("insert into schema_migrations (version, applied_at) values (13, ?)").run(Date.now());
+  }
   instance.exec("commit");
   } catch (err) {
     instance.exec("rollback");
@@ -501,6 +515,9 @@ export function removeSite(domain: string, owner: string): boolean {
   d.prepare("delete from site_write_tokens where domain = ?").run(key);
   d.prepare("delete from server_outcomes where domain = ?").run(key);
   d.prepare("delete from server_tool_calls where domain = ?").run(key);
+  d.prepare("delete from task_runs where domain = ?").run(key);
+  d.prepare("delete from site_versions where domain = ?").run(key);
+  d.prepare("delete from task_fixes where domain = ?").run(key);
   d.prepare("delete from log_attempts where domain = ?").run(key);
   d.prepare("delete from log_records where domain = ?").run(key);
   d.prepare("delete from log_sources where domain = ?").run(key);

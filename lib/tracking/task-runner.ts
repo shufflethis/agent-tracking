@@ -9,6 +9,7 @@ import { assertPublicHost, isPrivateAddress } from "../public-host";
 export type RunnerResult = { result: "passed" | "failed" | "timed_out"; steps: string[]; errorClass: string | null };
 export const RUNNER_TIMEOUT_MS = 12_000;
 const localMode = () => process.env.NODE_ENV === "test" && process.env.TRACKING_RUNNER_LOCAL === "1";
+export const runnerTimeoutMs = () => localMode() ? Math.min(RUNNER_TIMEOUT_MS, Math.max(1000, Number(process.env.TRACKING_RUNNER_TEST_TIMEOUT_MS) || RUNNER_TIMEOUT_MS)) : RUNNER_TIMEOUT_MS;
 
 /** Test/staging host for the owned site, or loopback only in isolated test mode. */
 export async function validateRunnerTarget(domain: string, raw: string): Promise<{ url: URL; address: string }> {
@@ -32,7 +33,8 @@ export async function runInquiryBrowserCheck(domain: string, rawTarget: string):
     `--host-resolver-rules=MAP ${url.hostname} ${address}, EXCLUDE localhost, EXCLUDE 127.0.0.1`, "about:blank",
   ], { stdio: "ignore" });
   let socket: WebSocket | null = null;
-  const deadline = Date.now() + RUNNER_TIMEOUT_MS;
+  const timeout = runnerTimeoutMs();
+  const deadline = Date.now() + timeout;
   let expire: ReturnType<typeof setTimeout> | null = null;
   try {
     let port = 0;
@@ -52,7 +54,7 @@ export async function runInquiryBrowserCheck(domain: string, rawTarget: string):
     expire = setTimeout(() => {
       for (const p of pending.values()) p.reject(new Error("browser_timeout"));
       pending.clear(); chrome.kill("SIGKILL");
-    }, RUNNER_TIMEOUT_MS);
+    }, timeout);
     const command = (method: string, params: Record<string, unknown> = {}) => new Promise<any>((resolve, reject) => {
       const key = ++id; pending.set(key, { resolve, reject }); socket!.send(JSON.stringify({ id: key, method, params }));
     });
@@ -99,6 +101,13 @@ export async function runInquiryBrowserCheck(domain: string, rawTarget: string):
     return { result: Date.now() >= deadline ? "timed_out" : "failed", steps, errorClass: error instanceof Error && /^[a-z_]+$/.test(error.message) ? error.message : "browser_failure" };
   } finally {
     if (expire) clearTimeout(expire);
-    socket?.close(); chrome.kill("SIGKILL"); await rm(dir, { recursive: true, force: true });
+    socket?.close(); chrome.kill("SIGKILL");
+    if (chrome.exitCode === null && chrome.signalCode === null) {
+      await Promise.race([new Promise<void>((resolve) => chrome.once("exit", () => resolve())), pause(1000)]);
+    }
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try { await rm(dir, { recursive: true, force: true }); break; }
+      catch (error) { if (attempt === 2) throw error; await pause(100); }
+    }
   }
 }

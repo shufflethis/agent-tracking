@@ -1,6 +1,6 @@
 import { db, getSite } from "./db";
 import { eventId } from "./measurement";
-import { runInquiryBrowserCheck, RUNNER_TIMEOUT_MS, validateRunnerTarget, type RunnerResult } from "./task-runner";
+import { runInquiryBrowserCheck, runnerTimeoutMs, validateRunnerTarget, type RunnerResult } from "./task-runner";
 
 export type TaskRun = { domain: string; runId: string; taskKind: string; targetUrl: string; mode: string; status: string; startedAt: number; finishedAt: number | null; deadlineAt: number; result: string | null; steps: string[]; errorClass: string | null; releaseId: string | null; toolVersion: string | null; schemaVersion: string | null; modelVersion: string | null; synthetic: true };
 type Row = { domain: string; run_id: string; task_kind: string; target_url: string; mode: string; status: string; started_at: number; finished_at: number | null; deadline_at: number; result: string | null; steps_json: string; error_class: string | null; release_id: string | null; tool_version: string | null; schema_version: string | null; model_version: string | null };
@@ -31,7 +31,12 @@ export async function runInquiryTask(input: { domain: string; owner: string; run
     if (active.n >= 1) throw new Error("runner_busy");
     d.prepare(`insert into task_runs (domain, run_id, task_kind, target_url, mode, status, started_at, deadline_at,
       release_id, tool_version, schema_version, synthetic) values (?, ?, 'inquiry_form', ?, 'deterministic_browser', 'running', ?, ?, ?, ?, ?, 1)`)
-      .run(domain.toLowerCase(), runId, target.url.href, now, now + RUNNER_TIMEOUT_MS + 3000, input.releaseId ?? null, input.toolVersion ?? null, input.schemaVersion ?? null);
+      .run(domain.toLowerCase(), runId, target.url.href, now, now + runnerTimeoutMs() + 3000, input.releaseId ?? null, input.toolVersion ?? null, input.schemaVersion ?? null);
+    const version = d.prepare(`insert into site_versions (domain, kind, version_id, first_seen_at, last_seen_at)
+      values (?, ?, ?, ?, ?) on conflict(domain, kind, version_id) do update set last_seen_at=excluded.last_seen_at`);
+    for (const [kind, value] of [["release", input.releaseId], ["tool", input.toolVersion], ["schema", input.schemaVersion]] as const) {
+      if (value) version.run(domain.toLowerCase(), kind, value, now, now);
+    }
     d.exec("commit");
   } catch (error) { d.exec("rollback"); throw error; }
   let result: RunnerResult;
