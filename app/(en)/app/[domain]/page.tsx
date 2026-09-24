@@ -123,7 +123,10 @@ export default async function Page({ params }: Params) {
               </>
             ) : (
               <p style={{ color: "var(--ink-2)", margin: 0 }}>
-                {c.notScanned} {checkUrl(site.domain) ? <a href={checkUrl(site.domain)!} rel="noopener">{c.runCheck}</a> : null}; {c.scoreAfterVerify}
+                {site.verified_at
+                  ? Date.now() - site.verified_at < 86_400_000 ? c.scanScheduled : c.scanPending
+                  : c.scoreAfterVerify}{" "}
+                {checkUrl(site.domain) ? <a href={checkUrl(site.domain)!} rel="noopener">{c.openCheck}</a> : null}
               </p>
             )}
           </div>

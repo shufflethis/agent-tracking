@@ -40,7 +40,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ a
                       <Link href={`/app/${encodeURIComponent(s.domain)}`}>{s.domain}</Link>
                     </td>
                     <td>{s.verified_at ? <span className="chip pass">{c.verified}</span> : <span className="chip partial">{c.notVerified}</span>}</td>
-                    <td>{s.last_score !== null ? `${s.last_score} / 100 (${s.last_grade})` : c.notScanned}</td>
+                    <td>{s.last_score !== null ? `${s.last_score} / 100 (${s.last_grade})` : s.verified_at && Date.now() - s.verified_at < 86_400_000 ? c.scanScheduled : c.notScanned}</td>
                     <td>{s.public_share ? <Link href={`/stats/${encodeURIComponent(s.domain)}`}>{c.public}</Link> : c.private}</td>
                   </tr>
                 ))}

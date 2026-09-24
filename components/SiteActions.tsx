@@ -12,7 +12,7 @@ import type { ActionCopy } from "@/lib/tracking/copy";
  * component cannot take functions as props.
  */
 
-async function call(body: Record<string, unknown>): Promise<{ ok: boolean; detail?: string; verified?: boolean; share?: boolean }> {
+async function call(body: Record<string, unknown>): Promise<{ ok: boolean; detail?: string; verified?: boolean; share?: boolean; site?: { domain: string } }> {
   const res = await fetch("/api/sites", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) }).catch(() => null);
   if (!res) return { ok: false, detail: "No connection." };
   return (await res.json().catch(() => ({ ok: false, detail: "Unexpected answer." }))) as { ok: boolean; detail?: string };
@@ -31,7 +31,8 @@ export function AddSiteForm({ initial = "", c }: { initial?: string; c: ActionCo
     const r = await call({ action: "add", domain: value });
     setBusy(false);
     if (!r.ok) return setFailure(r.detail ?? c.failed);
-    router.push(`/app/${encodeURIComponent(value.trim().toLowerCase().replace(/^https?:\/\//, "").split("/")[0])}`);
+    const domain = r.site?.domain ?? value.trim().toLowerCase().replace(/^https?:\/\//, "").split("/")[0];
+    router.push(`/app/${encodeURIComponent(domain)}/settings#install`);
     router.refresh();
   }
 
@@ -56,7 +57,7 @@ export function AddSiteForm({ initial = "", c }: { initial?: string; c: ActionCo
   );
 }
 
-export function VerifyButton({ domain, c }: { domain: string; c: ActionCopy }) {
+export function VerifyButton({ domain, verified, c }: { domain: string; verified?: boolean; c: ActionCopy }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState<string | null>(null);
@@ -75,7 +76,7 @@ export function VerifyButton({ domain, c }: { domain: string; c: ActionCopy }) {
           if (r.verified) router.refresh();
         }}
       >
-        {busy ? c.checking : c.checkSnippet}
+        {busy ? c.checking : verified ? c.checkAgain : c.checkSnippet}
       </button>
       {note ? <span style={{ fontSize: 13, color: "var(--muted)" }}>{note}</span> : null}
     </span>

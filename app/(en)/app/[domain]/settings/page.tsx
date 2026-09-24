@@ -26,6 +26,7 @@ export default async function Page({ params, searchParams }: { params: Promise<{
   const { account, site } = await requireSite(decodeURIComponent(domain));
   const lang = dashLang(account.lang);
   const c = dashCopy(lang).settings;
+  const listCopy = dashCopy(lang).list;
   const a = actionStrings(lang);
   const nl = numberLocale(lang);
   const plan = planFor(account.plan);
@@ -43,19 +44,21 @@ export default async function Page({ params, searchParams }: { params: Promise<{
           </div>
         ) : null}
 
-        <div className="card" style={{ padding: 28 }}>
-          <h2 style={{ fontSize: 22, marginBottom: 6 }}>{c.installTitle}</h2>
+        <div className="card" id="install" style={{ padding: 28, scrollMarginTop: 20 }}>
+          <h2 style={{ fontSize: 22, marginBottom: 6, display: "flex", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
+            {c.installTitle}
+            <span className={`chip ${site.verified_at ? "pass" : "partial"}`} style={{ fontSize: 13, fontWeight: 500 }}>
+              <span aria-hidden="true">{site.verified_at ? "✓ " : "○ "}</span>{site.verified_at ? listCopy.verified : listCopy.notVerified}
+            </span>
+          </h2>
           <p style={{ color: "var(--ink-2)", maxWidth: "62ch", marginBottom: 14 }}>
             {c.installText} <Link href={docsHref}>{c.docsLink}</Link>.
           </p>
           <pre className="code" style={{ whiteSpace: "pre-wrap", wordBreak: "break-all", marginBottom: 10 }}>{snippet}</pre>
           <CopyButton text={snippet} label={c.copySnippet} copiedLabel={c.copied} />
-        </div>
-
-        <div className="card" style={{ padding: 28 }}>
-          <h2 style={{ fontSize: 22, marginBottom: 6 }}>{c.verifyTitle}</h2>
+          <h3 style={{ fontSize: 18, margin: "24px 0 6px" }}>{c.verifyTitle}</h3>
           <p style={{ color: "var(--ink-2)", maxWidth: "62ch", marginBottom: 14 }}>{site.verified_at ? c.verifiedOn(new Date(site.verified_at).toISOString().slice(0, 10)) : c.verifyText}</p>
-          <VerifyButton domain={site.domain} c={a} />
+          <VerifyButton domain={site.domain} verified={Boolean(site.verified_at)} c={a} />
         </div>
 
         <div className="card" style={{ padding: 28 }}>
