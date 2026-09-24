@@ -27,7 +27,7 @@ Stand: 2026-09-25. Arbeitsgrundlage: `IMPLEMENTATION-PROMPT.md`.
 | F19 | erledigt | Migration v14 mit Site-Leserechten, siebentägigen widerrufbaren E-Mail-gebundenen Einladungslinks ohne Versand, Befunden mit Evidenz/Korrektur/Nachtest, geschützter druckbarer HTML-Bericht und JSON-Export. Mandanten-/Rollen-/Reporttests, 115 Gesamttests, Typecheck und Produktionsbuild bestanden. | F20 beginnen. |
 | F20 | erledigt | Migration v15 verknüpft Befunde mit einem versionierten allgemeinen Rezeptkatalog; Vorschläge und konkrete nachgetestete Kundenfälle bleiben getrennt. Keine Kundenspuren oder globalen Erfolgsclaims im Katalog. Gezielte Site-/Rezepttests und Typecheck bestanden. | F21 beginnen. |
 | F21 | erledigt | Website, README, Docs, Guides, llms.txt, API-/MCP-Beschreibungen, Metadaten, Statistik- und Rechtstexte auf Messgrenzen abgestimmt. Browser-Zielversuche, Serverbelege, unterstützte IP-Prüfung, fehlende Agentenidentität und Datenschutzprüfung präzise benannt; keine Preis-/Stripe-/Tarifänderung. 115 Tests, Typecheck, Produktionsbuild und Diff-Check bestanden. | F22 Release-Gates ausführen. |
-| F22 | offen | Release-Gates, isolierter Browser-/API-Check, Migrationskopie, Sicherung, Push und Deploy stehen aus. | Gesamtprüfung und Veröffentlichung. |
+| F22 | in Arbeit | 115 Tests, Typecheck, Build und Diff-Check bestanden. Isolierter HTTP-/Chrome-Check, API-401/403-Rechte, Migration v14→v15 und Retention auf konsistenter Testkopie bestanden. Mode-600-VACUUM-Snapshot vor Deploy vorhanden; Wiederherstellung in `docs/release-2026-09-25.md` dokumentiert. | Abschlusscommit, Push, `deploy.sh` und Liveprüfung. |
 
 ## Entscheidungen
 
