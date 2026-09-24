@@ -68,3 +68,6 @@ The original return value or error continues to the caller. Fulfilling with
 can confirm a booking. A valid server-side completion integration must supply
 business evidence independently. Historic tool calls have no reliable
 terminal-state breakdown and appear as unknown in the new series.
+
+Browser API support and the early-registration helper are documented in
+[`webmcp-compatibility.md`](./webmcp-compatibility.md).

@@ -35,6 +35,7 @@ export type ToolStat = {
   simulated: number;
   declarative: boolean;
   registered: boolean;
+  captureMode: string;
   neverCalled: boolean;
   lastSeen: number | null;
   topErrors: { message: string; count: number }[];
@@ -180,7 +181,8 @@ export function tools(rows: DailyRow[], registry: ReturnType<typeof toolRows>, d
         simulated: s?.simulated ?? 0,
         declarative: Boolean(reg?.declarative),
         registered: Boolean(reg),
-        neverCalled: Boolean(reg) && calls === 0,
+        captureMode: reg?.capture_mode ?? "unknown",
+        neverCalled: Boolean(reg) && reg?.capture_mode === "wrapped" && calls === 0,
         lastSeen: reg?.last_seen ?? null,
         topErrors: [...(s?.errs.entries() ?? [])].map(([message, count]) => ({ message, count })).sort((a, b) => b.count - a.count).slice(0, 3),
       };

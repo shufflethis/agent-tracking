@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, it } from "node:test";
 import { sanitizeBatch } from "./classify";
-import { addSite, closeDb, dailyRows, db, ensureAccount, ingestHealth, recordEvents, usageThisMonth, type StoredEvent } from "./db";
+import { addSite, closeDb, dailyRows, db, ensureAccount, ingestHealth, recordEvents, toolRows, usageThisMonth, type StoredEvent } from "./db";
 import { POST as ingestBrowserBatch } from "../../app/api/event/route";
 
 const NOW = Date.UTC(2026, 8, 24, 12);
@@ -67,6 +67,22 @@ describe("versioned measurements", () => {
     const retry = recordEvents("example.com", "a@example.com", [call("event-0000000010"), call("event-0000000011")], NOW, { quota: 2 });
     assert.deepEqual(retry, { accepted: 1, duplicates: 1, quotaDropped: 0 });
     assert.equal(usageThisMonth("a@example.com", NOW), 2);
+  });
+
+  it("keeps discovery, schema changes and removal separate from invocations", () => {
+    ensureAccount("a@example.com", NOW);
+    addSite("example.com", "a@example.com", NOW);
+    const discovery = (kind: string, id: string, schemaHash: string): StoredEvent => ({ ...call(id), kind, name: "book", schemaHash });
+    recordEvents("example.com", "a@example.com", [
+      discovery("tool_discovered", "event-0000000020", "schema-a"),
+      discovery("tool_discovered", "event-0000000021", "schema-b"),
+      discovery("tool_removed", "event-0000000022", "schema-b"),
+    ], NOW);
+    assert.deepEqual(toolRows("example.com").map((tool) => [tool.schema_hash, tool.active, tool.capture_mode]), [["schema-b", 0, "discovered"]]);
+    assert.equal(dailyRows("example.com", 1, NOW).some((row) => row.kind === "tool_call"), false);
+    assert.equal(usageThisMonth("a@example.com", NOW), 0);
+    recordEvents("example.com", "a@example.com", [discovery("tool_registered", "event-0000000023", "schema-c")], NOW);
+    assert.deepEqual(toolRows("example.com").map((tool) => [tool.schema_hash, tool.active, tool.capture_mode]), [["schema-c", 1, "wrapped"]]);
   });
 
   it("keeps forged browser verification and business claims out of server evidence", async () => {
@@ -146,6 +162,7 @@ describe("versioned measurements", () => {
       closeDb();
       assert.equal((db().prepare("select count(*) as n from schema_migrations where version = 2").get() as { n: number }).n, 1);
       assert.equal((db().prepare("select count(*) as n from schema_migrations where version = 3").get() as { n: number }).n, 1);
+      assert.equal((db().prepare("select count(*) as n from schema_migrations where version = 4").get() as { n: number }).n, 1);
       assert.equal((db().prepare("select count(*) as n from events").get() as { n: number }).n, 1);
     } finally {
       closeDb();

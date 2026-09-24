@@ -11,8 +11,9 @@ Stand: 2026-09-24. Arbeitsgrundlage: `IMPLEMENTATION-PROMPT.md`.
 | F03 | erledigt | Stream-Limits vor dem Puffern, 64-MB-Grenze auch nach gzip, Plattform-Origin-Ausnahme entfernt, interne Drop-Zähler und private Health-Ausgabe. Atomare Browser-Batch-Quote und freie Registrierungen; 76 Tests/Typecheck bestanden. | F04 beginnen. |
 | F04 | erledigt | Snippet sendet `goal_attempt` und `form_attempt`; Klick/Submit derselben Aktion einmal, Wiederholung mit neuer ID. Kein pauschaler Toolerfolg/Abschluss. VM-Browsertest, Route-Test, 78 Gesamttests und Typecheck bestanden; Kernsnippet 5.119 Bytes. | F05 beginnen. |
 | F05 | erledigt | Einmalige technische Endzustände inkl. Cancel/Timeout, unveränderte Rückgabe/Fehler/`this`; fachlicher Abschluss bleibt unbestätigt. Technische Outcome-Serie und UI-Label; VM-Verhaltenstest, Typecheck; echtes Minifying hält Kernsnippet bei 4.035 Bytes. | F06 beginnen. |
-| F06 | in Arbeit | Früh-/Spätregistrierung und unterstützte APIs prüfen. | Offizielle Spezifikation/Browserstand prüfen und Instrumentierung anpassen. |
-| F07–F22 | offen | Noch nicht implementiert. | Der Reihenfolge im Umsetzungsauftrag folgen. |
+| F06 | erledigt | Sofortige Instrumentierung und 15-Sekunden-Nachbeobachtung; getTools-Discovery, toolchange/Abort-Removal, getrennte Aktivierungs-/Cancel-Signale, Schemaversionen, parallele Aufrufe und optionales Early-SDK. Browsermatrix/Spec-Grenzen dokumentiert; VM-Tests, Typecheck, Kernsnippet 4.926 Bytes. | F07 beginnen. |
+| F07 | in Arbeit | Fehler- und Pfaddatenschutz prüfen. | Pfadvorlagen, Fehlerklassen und Tests ergänzen. |
+| F08–F22 | offen | Noch nicht implementiert. | Der Reihenfolge im Umsetzungsauftrag folgen. |
 
 ## Entscheidungen
 

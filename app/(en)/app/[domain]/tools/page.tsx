@@ -46,6 +46,7 @@ export default async function Page({ params }: { params: Promise<{ domain: strin
                     <td>
                       {t.name}
                       {t.declarative ? <span className="chip" style={{ marginLeft: 8 }}>{c.form}</span> : null}
+                      {t.captureMode === "discovered" ? <span className="chip" style={{ marginLeft: 8 }} title={c.discoveredOnly}>{c.discoveredOnly}</span> : null}
                       {t.simulated ? <span style={{ marginLeft: 8, fontSize: 11, color: "var(--muted)" }}>{c.simulated(t.simulated)}</span> : null}
                     </td>
                     <td className="num">{t.calls || "0"}</td>

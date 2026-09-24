@@ -164,6 +164,11 @@ function migrate(instance: DatabaseSync): void {
     )`);
     instance.prepare("insert into schema_migrations (version, applied_at) values (3, ?)").run(Date.now());
   }
+  if ((current.version ?? 0) < 4) {
+    instance.exec("alter table tools add column active integer not null default 1");
+    instance.exec("alter table tools add column capture_mode text not null default 'legacy_unknown'");
+    instance.prepare("insert into schema_migrations (version, applied_at) values (4, ?)").run(Date.now());
+  }
   instance.exec("commit");
   } catch (err) {
     instance.exec("rollback");
@@ -393,6 +398,8 @@ export type StoredEvent = {
   releaseId?: string | null;
   toolVersion?: string | null;
   schemaVersion?: string | null;
+  descriptionHash?: string | null;
+  schemaHash?: string | null;
 };
 
 let prunedFor = "";
@@ -425,8 +432,10 @@ export function recordEvents(domain: string, owner: string, events: StoredEvent[
     "insert into daily (domain, day, kind, name, count, errors, ms_total) values (?, ?, ?, ?, 1, ?, ?) on conflict(domain, day, kind, name) do update set count = count + 1, errors = errors + excluded.errors, ms_total = ms_total + excluded.ms_total",
   );
   const tool = d.prepare(
-    "insert into tools (domain, name, description_hash, schema_hash, first_seen, last_seen, declarative) values (?, ?, ?, ?, ?, ?, ?) on conflict(domain, name) do update set description_hash = coalesce(excluded.description_hash, description_hash), schema_hash = coalesce(excluded.schema_hash, schema_hash), last_seen = excluded.last_seen, declarative = max(declarative, excluded.declarative)",
+    "insert into tools (domain, name, description_hash, schema_hash, first_seen, last_seen, declarative, active, capture_mode) values (?, ?, ?, ?, ?, ?, ?, 1, 'wrapped') on conflict(domain, name) do update set description_hash = coalesce(excluded.description_hash, description_hash), schema_hash = coalesce(excluded.schema_hash, schema_hash), last_seen = excluded.last_seen, declarative = max(declarative, excluded.declarative), active = 1, capture_mode = 'wrapped'",
   );
+  const discoveredTool = d.prepare("insert into tools (domain, name, schema_hash, first_seen, last_seen, active, capture_mode) values (?, ?, ?, ?, ?, 1, 'discovered') on conflict(domain, name) do update set schema_hash = coalesce(excluded.schema_hash, schema_hash), last_seen = excluded.last_seen, active = 1, capture_mode = case when tools.capture_mode = 'wrapped' then 'wrapped' else 'discovered' end");
+  const removedTool = d.prepare("update tools set active = 0, last_seen = ? where domain = ? and name = ?");
 
   d.exec("begin");
   try {
@@ -482,6 +491,14 @@ export function recordEvents(domain: string, owner: string, events: StoredEvent[
         if (e.err && !e.simulated) bump.run(domain, day, "tool_error", `${e.name ?? "?"} ${e.err}`, 0, 0);
       } else if (e.kind === "tool_registered") {
         bump.run(domain, day, "tool_registered", e.name ?? "?", 0, 0);
+      } else if (e.kind === "tool_discovered") {
+        bump.run(domain, day, "tool_discovered", e.name ?? "?", 0, 0);
+        discoveredTool.run(domain, e.name ?? "?", e.schemaHash ?? null, now, now);
+      } else if (e.kind === "tool_removed") {
+        bump.run(domain, day, "tool_removed", e.name ?? "?", 0, 0);
+        removedTool.run(now, domain, e.name ?? "?");
+      } else if (e.kind === "tool_activation_signal" || e.kind === "tool_cancel_signal") {
+        bump.run(domain, day, e.kind, e.name ?? "?", 0, 0);
       } else if (e.kind === "agent_conversion") {
         bump.run(domain, day, e.simulated ? "conversion_sim" : "conversion", e.name ?? "?", 0, 0);
       } else if (e.kind === "goal_attempt") {
@@ -489,8 +506,8 @@ export function recordEvents(domain: string, owner: string, events: StoredEvent[
       } else if (e.kind === "form_attempt") {
         bump.run(domain, day, "form_attempt", e.name ?? "?", 0, 0);
       }
-      if ((e.kind === "tool_registered" || e.kind === "tool_call") && e.name) {
-        tool.run(domain, e.name, null, null, now, now, e.declarative ? 1 : 0);
+      if (e.kind === "tool_registered" && e.name) {
+        tool.run(domain, e.name, e.descriptionHash ?? null, e.schemaHash ?? null, now, now, e.declarative ? 1 : 0);
       }
       if (chargeable) acceptedUsage++;
     }
@@ -507,7 +524,7 @@ export function recordEvents(domain: string, owner: string, events: StoredEvent[
 export function registerTool(domain: string, name: string, descriptionHash: string | null, schemaHash: string | null, now = Date.now()): void {
   db()
     .prepare(
-      "insert into tools (domain, name, description_hash, schema_hash, first_seen, last_seen, declarative) values (?, ?, ?, ?, ?, ?, 0) on conflict(domain, name) do update set description_hash = coalesce(excluded.description_hash, description_hash), schema_hash = coalesce(excluded.schema_hash, schema_hash), last_seen = excluded.last_seen",
+      "insert into tools (domain, name, description_hash, schema_hash, first_seen, last_seen, declarative, active, capture_mode) values (?, ?, ?, ?, ?, ?, 0, 1, 'wrapped') on conflict(domain, name) do update set description_hash = coalesce(excluded.description_hash, description_hash), schema_hash = coalesce(excluded.schema_hash, schema_hash), last_seen = excluded.last_seen, active = 1, capture_mode = 'wrapped'",
     )
     .run(domain, name, descriptionHash, schemaHash, now, now);
 }
@@ -588,10 +605,10 @@ export function dailyRows(domain: string, days: number, now = Date.now()): Daily
   return db().prepare("select day, kind, name, count, errors, ms_total from daily where domain = ? and day >= ? order by day").all(domain.toLowerCase(), from) as DailyRow[];
 }
 
-export type ToolRow = { name: string; description_hash: string | null; schema_hash: string | null; first_seen: number; last_seen: number; declarative: number };
+export type ToolRow = { name: string; description_hash: string | null; schema_hash: string | null; first_seen: number; last_seen: number; declarative: number; active: number; capture_mode: string };
 
 export function toolRows(domain: string): ToolRow[] {
-  return db().prepare("select name, description_hash, schema_hash, first_seen, last_seen, declarative from tools where domain = ? order by name").all(domain.toLowerCase()) as ToolRow[];
+  return db().prepare("select name, description_hash, schema_hash, first_seen, last_seen, declarative, active, capture_mode from tools where domain = ? order by name").all(domain.toLowerCase()) as ToolRow[];
 }
 
 export type RecentRow = { t: number; kind: string; name: string | null; path: string; source: string | null; ms: number | null; ok: number | null; err: string | null; keys: string | null; declarative: number; simulated: number };

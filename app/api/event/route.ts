@@ -1,5 +1,5 @@
 import { matchAgent, matchReferral, sameSite, sanitizeBatch, sessionHash, type CleanEvent } from "@/lib/tracking/classify";
-import { getAccount, getSite, noteIngestOutcome, noteManifest, recordEvents, registerTool, UNATTRIBUTED_INGEST, type StoredEvent } from "@/lib/tracking/db";
+import { getAccount, getSite, noteIngestOutcome, noteManifest, recordEvents, UNATTRIBUTED_INGEST, type StoredEvent } from "@/lib/tracking/db";
 import { planFor } from "@/lib/tracking/plans";
 import { dailySalt } from "@/lib/tracking/salt";
 import { clientIp, take } from "@/lib/ratelimit";
@@ -102,7 +102,6 @@ export async function POST(request: Request) {
       if (e.hash) noteManifest(site.domain, e.hash, now);
       continue;
     }
-    if (e.kind === "tool_registered" && e.name) registerTool(site.domain, e.name, e.descriptionHash, e.schemaHash, now);
     const referral = matchReferral(e.referrer, e.utm)?.id ?? null;
     stored.push(toStored(e, agent?.id ?? null, referral, session));
   }
@@ -137,13 +136,15 @@ function toStored(e: CleanEvent, agentId: string | null, referral: string | null
     identityStatus: agentId ? "claimed" : "unknown",
     identityEvidence: agentId ? [{ method: "user_agent", status: "claimed" }] : [],
     referralSource: referral,
-    technicalOutcome: e.kind === "tool_call" ? e.state ?? (e.ok === true ? "completed" : e.ok === false ? "failed" : "unknown") : e.kind === "form_attempt" ? e.state ?? "unknown" : e.kind === "goal_attempt" ? "attempted" : "unknown",
+    technicalOutcome: e.kind === "tool_call" ? e.state ?? (e.ok === true ? "completed" : e.ok === false ? "failed" : "unknown") : e.kind === "tool_activation_signal" ? "attempted" : e.kind === "tool_cancel_signal" ? "cancelled" : e.kind === "form_attempt" ? e.state ?? "unknown" : e.kind === "goal_attempt" ? "attempted" : "unknown",
     businessOutcome: "unconfirmed",
     taskId: e.taskId,
     invocationId: e.invocationId,
     parentId: e.parentId,
     releaseId: e.releaseId,
     toolVersion: e.toolVersion,
-    schemaVersion: e.schemaVersion,
+    schemaVersion: e.schemaVersion ?? e.schemaHash,
+    descriptionHash: e.descriptionHash,
+    schemaHash: e.schemaHash,
   };
 }

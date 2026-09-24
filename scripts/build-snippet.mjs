@@ -8,3 +8,8 @@ const body = transformSync(src.split("\n").slice(2).join("\n"), {
 }).code.trim();
 writeFileSync(new URL("../public/agent.js", import.meta.url), `${header}\n${body}\n`);
 console.log(`public/agent.js: ${Buffer.byteLength(body) + Buffer.byteLength(header) + 2} bytes`);
+
+const sdk = readFileSync(new URL("../snippet/webmcp-sdk.src.js", import.meta.url), "utf8");
+const sdkBody = transformSync(sdk, { loader: "js", minify: true, target: "es2020", legalComments: "none", charset: "utf8" }).code;
+writeFileSync(new URL("../public/agent-webmcp-sdk.js", import.meta.url), sdkBody);
+console.log(`public/agent-webmcp-sdk.js: ${Buffer.byteLength(sdkBody)} bytes`);

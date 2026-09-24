@@ -50,7 +50,6 @@
   function wrapTool(t, sim) {
     if (!t || typeof t.execute !== "function" || t.__wmt) return t;
     var name = String(t.name || "tool").slice(0, 128);
-    if (!sim) push({ k: "tool_registered", n: name, dh: h(String(t.description || "")), sh: h(JSON.stringify(t.inputSchema || null)) });
     var exec = t.execute;
     var wrapped = Object.assign({}, t, {
       execute: function (args, ctx) {
@@ -93,18 +92,49 @@
   function instrument(mc) {
     if (!mc || mc.__wmt) return;
     mc.__wmt = 1;
-    var reg = mc.registerTool, prov = mc.provideContext;
-    if (typeof reg === "function") mc.registerTool = function (t, o) { return reg.call(mc, wrapTool(t), o); };
-    if (typeof prov === "function") mc.provideContext = function (c) {
-      if (c && Array.isArray(c.tools)) c = Object.assign({}, c, { tools: c.tools.map(function (t) { return wrapTool(t); }) });
-      return prov.call(mc, c);
+    var reg = mc.registerTool;
+    if (typeof reg === "function") mc.registerTool = function (t, o) {
+      if (t && t.__wmt) return reg.call(this, t, o);
+      var result = reg.call(this, wrapTool(t), o);
+      function accepted() {
+        push({ k: "tool_registered", n: String(t.name).slice(0, 128), dh: h(String(t.description || "")), sh: h(JSON.stringify(t.inputSchema || null)) });
+        if (o && o.signal && o.signal.addEventListener) o.signal.addEventListener("abort", function () { push({ k: "tool_removed", n: String(t.name).slice(0, 128) }); }, { once: true });
+      }
+      if (result && typeof result.then === "function") result.then(accepted, function () {});
+      else accepted();
+      return result;
     };
+    if (typeof mc.getTools === "function" && mc.addEventListener) {
+      var known = Object.create(null);
+      function snapshot() {
+        mc.getTools({ fromOrigins: [location.origin] }).then(function (list) {
+          var next = Object.create(null);
+          list.forEach(function (t) {
+            if (t.origin !== location.origin) return;
+            var name = String(t.name || "").slice(0, 128), schema = h(JSON.stringify(t.inputSchema || null));
+            if (!name) return;
+            next[name] = schema;
+            if (known[name] !== schema) push({ k: "tool_discovered", n: name, sh: schema });
+          });
+          for (var name in known) if (!next[name]) push({ k: "tool_removed", n: name });
+          known = next;
+        }).catch(function () {});
+      }
+      mc.addEventListener("toolchange", snapshot);
+      snapshot();
+    }
+    if (mc.addEventListener) {
+      mc.addEventListener("toolactivated", function (ev) { if (ev.toolName) push({ k: "tool_activation_signal", n: String(ev.toolName).slice(0, 128) }); });
+      mc.addEventListener("toolcancel", function (ev) { if (ev.toolName) push({ k: "tool_cancel_signal", n: String(ev.toolName).slice(0, 128) }); });
+    }
   }
-  /* A client can inject modelContext after first paint; poll, never trap the property. */
+  /* Capture an existing API now, and newly available APIs during startup. */
   var tries = 0, poll = setInterval(function () {
     var mc = document.modelContext || navigator.modelContext;
-    if (mc) { instrument(mc); clearInterval(poll); } else if (++tries > 60) clearInterval(poll);
+    if (mc) instrument(mc);
+    if (++tries > 60) clearInterval(poll);
   }, 250);
+  instrument(document.modelContext || navigator.modelContext);
 
   /* Declarative forms: submit is an attempt, not a completed tool call. */
   addEventListener("submit", function (ev) {

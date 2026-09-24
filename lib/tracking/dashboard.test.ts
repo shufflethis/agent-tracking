@@ -62,8 +62,8 @@ describe("agents", () => {
 describe("tools", () => {
   it("computes success rate, average time, top errors, and flags never-called tools", () => {
     const registry = [
-      { name: "search", description_hash: "a", schema_hash: "b", first_seen: NOW, last_seen: NOW, declarative: 0 },
-      { name: "lonely", description_hash: null, schema_hash: null, first_seen: NOW, last_seen: NOW, declarative: 1 },
+      { name: "search", description_hash: "a", schema_hash: "b", first_seen: NOW, last_seen: NOW, declarative: 0, active: 1, capture_mode: "wrapped" },
+      { name: "lonely", description_hash: null, schema_hash: null, first_seen: NOW, last_seen: NOW, declarative: 1, active: 1, capture_mode: "wrapped" },
     ];
     const t = tools(ROWS, registry, 30, NOW);
     const search = t.find((x) => x.name === "search")!;
