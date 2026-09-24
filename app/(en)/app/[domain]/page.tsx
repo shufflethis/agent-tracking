@@ -74,6 +74,7 @@ export default async function Page({ params }: Params) {
           <Stat label={c.calls} value={String(o.totals.calls)} note={trendNote(o.totals.calls, o.previous.calls, lang)} />
           <Stat label={c.conversions} value={String(o.totals.conversions)} note={trendNote(o.totals.conversions, o.previous.conversions, lang)} />
           <Stat label={c.sessions} value={String(o.totals.sessions)} note={c.sessionsNote} />
+          <p style={{ gridColumn: "1 / -1", color: "var(--muted)", margin: 0, fontSize: 13 }}>{c.legacyGoalNote}</p>
         </div>
       </section>
 

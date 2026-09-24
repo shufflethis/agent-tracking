@@ -24,7 +24,7 @@ const TOOL = {
   description:
     "Daily agent statistics for a site tracked on " +
     SITE_HOST +
-    ": AI referrals, AI fetches, WebMCP tool calls and conversions per day, per agent, per tool and per page, for the last N days. Needs the account's API token (bearer header or the token argument).",
+    ": AI referrals, AI fetches, observed WebMCP tool calls and unverified legacy goal signals per day, per source, per tool and per page, for the last N days. The JSON includes reporting definitions. Needs the account's API token (bearer header or the token argument).",
   inputSchema: {
     type: "object",
     properties: {

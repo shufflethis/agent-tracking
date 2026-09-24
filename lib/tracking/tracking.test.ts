@@ -279,7 +279,7 @@ describe("one-time tokens and the digest flag", () => {
     const sites = [{ domain: "digest.example", dash: loadDashboard("digest.example", 7, NOW), dashboardUrl: "https://agenttracking.co/app/digest.example" }];
     assert.equal(worthSending(sites), true);
     const mail = renderDigestMail(sites, "https://agenttracking.co/api/digest?off=t");
-    assert.equal(mail.subject, "digest.example: 1 agent interaction this week");
+    assert.equal(mail.subject, "digest.example: 1 activity signal this week");
     assert.match(mail.text, /ChatGPT 1/);
     assert.match(mail.html, /Stop the digest/);
     assert.doesNotMatch(mail.text, /\u2014/);

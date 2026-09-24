@@ -2,6 +2,7 @@ import { SOURCES_VERSION } from "./classify";
 import { getSite, type Account } from "./db";
 import { interactions, loadDashboard } from "./dashboard";
 import { planFor } from "./plans";
+import { REPORTING_DEFINITIONS, reportingTotals } from "./reporting";
 
 /**
  * The stats payload: exactly what the dashboard shows, as JSON, for the
@@ -28,8 +29,9 @@ export function statsFor(domain: string, account: Account, days: number, now = D
     generatedAt: new Date(now).toISOString(),
     sourcesVersion: SOURCES_VERSION,
     verified: Boolean(site.verified_at),
+    reportingDefinitions: REPORTING_DEFINITIONS,
     check: site.last_score === null ? null : { score: site.last_score, grade: site.last_grade, scannedAt: site.last_scanned_at ? new Date(site.last_scanned_at).toISOString() : null },
-    totals: { ...dash.overview.totals, interactions: interactions(dash.overview) },
+    totals: { ...dash.overview.totals, ...reportingTotals(dash.overview.totals), interactions: interactions(dash.overview) },
     previous: dash.overview.previous,
     days_series: dash.overview.days,
     agents: dash.agents,

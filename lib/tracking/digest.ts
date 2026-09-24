@@ -19,7 +19,7 @@ export function worthSending(sites: DigestSite[]): boolean {
 
 export function renderDigestMail(sites: DigestSite[], unsubscribeUrl: string): { subject: string; text: string; html: string } {
   const total = sites.reduce((n, s) => n + interactions(s.dash.overview), 0);
-  const subject = sites.length === 1 ? `${sites[0].domain}: ${total} agent interaction${total === 1 ? "" : "s"} this week` : `${total} agent interaction${total === 1 ? "" : "s"} across ${sites.length} sites this week`;
+  const subject = sites.length === 1 ? `${sites[0].domain}: ${total} activity signal${total === 1 ? "" : "s"} this week` : `${total} activity signal${total === 1 ? "" : "s"} across ${sites.length} sites this week`;
 
   const textBlocks: string[] = [];
   const htmlBlocks: string[] = [];
@@ -30,7 +30,8 @@ export function renderDigestMail(sites: DigestSite[], unsubscribeUrl: string): {
     const failing = s.dash.tools.filter((t) => t.errors > 0).map((t) => `${t.name} ${t.errors} error${t.errors === 1 ? "" : "s"}`);
     const bursts = s.dash.agents.reduce((n, a) => n + a.bursts, 0);
     const lines = [
-      `${o.referrals} referral${o.referrals === 1 ? "" : "s"}, ${o.fetches} fetch${o.fetches === 1 ? "" : "es"}, ${o.calls} tool call${o.calls === 1 ? "" : "s"}, ${o.conversions} conversion${o.conversions === 1 ? "" : "s"}${bursts ? `, ${bursts} fetch burst${bursts === 1 ? "" : "s"}` : ""}.`,
+      `${o.referrals} referral${o.referrals === 1 ? "" : "s"}, ${o.fetches} fetch${o.fetches === 1 ? "" : "es"}, ${o.calls} observed tool call${o.calls === 1 ? "" : "s"}, ${o.conversions} unverified goal signal${o.conversions === 1 ? "" : "s"}${bursts ? `, ${bursts} fetch burst${bursts === 1 ? "" : "s"}` : ""}.`,
+      "Goal signals use the legacy browser definition; they are not confirmed agent outcomes. Periods with different measurement definitions should not be compared directly.",
       topAgents.length ? `Agents: ${topAgents.join(", ")}.` : "No agent seen this week.",
       topPages.length ? `Pages: ${topPages.join(", ")}.` : "",
       failing.length ? `Tools with errors: ${failing.join(", ")}.` : "",

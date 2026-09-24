@@ -5,10 +5,11 @@
   if (!d) return;
   var ep = (s.src.replace(/\/agent\.js.*$/, "") || "") + "/api/event";
   var q = [], timer = null;
+  var ids = typeof crypto !== "undefined" && typeof crypto.randomUUID === "function";
 
   function send() {
     if (!q.length) return;
-    var body = JSON.stringify({ d: d, e: q.splice(0, 50), v: 1 });
+    var body = JSON.stringify({ d: d, e: q.splice(0, 50), v: ids ? 2 : 1 });
     try {
       // text/plain keeps the beacon a simple request: no preflight on someone else's origin.
       if (!(navigator.sendBeacon && navigator.sendBeacon(ep, new Blob([body], { type: "text/plain" })))) {
@@ -19,6 +20,7 @@
   }
   function push(ev) {
     ev.p = location.pathname;
+    if (ids) { ev.id = crypto.randomUUID(); ev.at = Date.now(); }
     q.push(ev);
     if (q.length >= 20) return send();
     if (!timer) timer = setTimeout(function () { timer = null; send(); }, 3000);

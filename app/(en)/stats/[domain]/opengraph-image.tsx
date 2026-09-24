@@ -6,7 +6,7 @@ import { getSite } from "@/lib/tracking/db";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-export const alt = "AI agent interactions in 30 days";
+export const alt = "Activity signals in 30 days";
 export const size = OG_SIZE;
 export const contentType = "image/png";
 
@@ -26,9 +26,9 @@ export default async function Image({ params }: { params: Promise<{ domain: stri
           <div style={{ display: "flex", alignItems: "baseline", marginTop: 26 }}>
             <span style={{ fontSize: 150, fontWeight: 700, lineHeight: 1, letterSpacing: -6, color: "#3fd8ca" }}>{n.toLocaleString("en-GB")}</span>
           </div>
-          <span style={{ fontSize: 34, color: "#c4c4c8", marginTop: 12 }}>AI agent interactions in 30 days</span>
+          <span style={{ fontSize: 34, color: "#c4c4c8", marginTop: 12 }}>Activity signals in 30 days</span>
           <span style={{ fontSize: 24, color: "#8a8a94", marginTop: 14 }}>
-            {o.totals.referrals} referrals · {o.totals.fetches} fetches · {o.totals.calls} tool calls · {o.totals.conversions} conversions
+            {o.totals.referrals} referrals · {o.totals.fetches} fetches · {o.totals.calls} tool calls · {o.totals.conversions} unverified goal signals
           </span>
         </div>
         <Footer tagline="Cookieless, no personal data" />

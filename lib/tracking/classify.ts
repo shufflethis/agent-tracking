@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { eventId } from "./measurement";
 import sources from "./ai-sources.json";
 
 /**
@@ -20,6 +21,15 @@ export type EventKind = (typeof EVENT_KINDS)[number];
 /** One event as the snippet sends it. Everything optional but `k`. */
 export type RawEvent = {
   k?: unknown;
+  /** Stable idempotency key and client-observed time in protocol v2. */
+  id?: unknown;
+  at?: unknown;
+  tid?: unknown;
+  iid?: unknown;
+  pid?: unknown;
+  rid?: unknown;
+  tv?: unknown;
+  sv?: unknown;
   /** Page path, no query string. */
   p?: unknown;
   /** Referrer host. */
@@ -48,6 +58,14 @@ export type RawEvent = {
 
 export type CleanEvent = {
   kind: EventKind;
+  id: string | null;
+  occurredAt: number | null;
+  taskId: string | null;
+  invocationId: string | null;
+  parentId: string | null;
+  releaseId: string | null;
+  toolVersion: string | null;
+  schemaVersion: string | null;
   path: string;
   name: string | null;
   referrer: string | null;
@@ -89,6 +107,14 @@ export function sanitizeEvent(raw: unknown): CleanEvent | null {
 
   return {
     kind,
+    id: eventId(r.id),
+    occurredAt: typeof r.at === "number" && Number.isSafeInteger(r.at) ? r.at : null,
+    taskId: eventId(r.tid),
+    invocationId: eventId(r.iid),
+    parentId: eventId(r.pid),
+    releaseId: eventId(r.rid),
+    toolVersion: str(r.tv, 64),
+    schemaVersion: str(r.sv, 64),
     path,
     name,
     referrer: str(r.r, CAP.referrer)?.toLowerCase() ?? null,
@@ -108,14 +134,17 @@ export function sanitizeEvent(raw: unknown): CleanEvent | null {
 export const MAX_BATCH = 50;
 
 /** A batch as posted: `{ d: domain, e: [events] }`. Returns the clean events and the claimed domain. */
-export function sanitizeBatch(body: unknown): { domain: string; events: CleanEvent[] } | null {
+export function sanitizeBatch(body: unknown): { domain: string; version: 1 | 2; events: CleanEvent[] } | null {
   if (!body || typeof body !== "object") return null;
-  const b = body as { d?: unknown; e?: unknown };
+  const b = body as { d?: unknown; e?: unknown; v?: unknown };
   const domain = normalizeDomain(typeof b.d === "string" ? b.d : "");
   if (!domain) return null;
+  const version = b.v === 2 ? 2 : b.v === undefined || b.v === 1 ? 1 : null;
+  if (!version) return null;
   const list = Array.isArray(b.e) ? b.e.slice(0, MAX_BATCH) : [];
   const events = list.map(sanitizeEvent).filter((e): e is CleanEvent => e !== null);
-  return { domain, events };
+  if (version === 2 && events.some((e) => !e.id)) return null;
+  return { domain, version, events };
 }
 
 const DOMAIN_RE = /^(?=.{1,253}$)[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/;

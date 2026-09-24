@@ -2,6 +2,7 @@ import { mkdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import type { CleanEvent } from "./classify";
+import { MEASUREMENT_VERSION, type BusinessOutcome, type IdentityEvidence, type IdentityStatus, type TechnicalOutcome, type Transport } from "./measurement";
 import { RAW_RETENTION_DAYS, type PlanId } from "./plans";
 
 /**
@@ -95,6 +96,10 @@ create table if not exists usage (
   count integer not null default 0,
   primary key (owner, month)
 );
+create table if not exists schema_migrations (
+  version integer primary key,
+  applied_at integer not null
+);
 `;
 
 export function db(): DatabaseSync {
@@ -118,6 +123,8 @@ export function db(): DatabaseSync {
  * exists", so each one is checked against the table before it is added.
  */
 function migrate(instance: DatabaseSync): void {
+  instance.exec("begin");
+  try {
   const columns = new Set((instance.prepare("pragma table_info(accounts)").all() as { name: string }[]).map((c) => c.name));
   if (!columns.has("api_token_hash")) instance.exec("alter table accounts add column api_token_hash text");
   if (!columns.has("api_token_created_at")) instance.exec("alter table accounts add column api_token_created_at integer");
@@ -126,6 +133,31 @@ function migrate(instance: DatabaseSync): void {
   const siteColumns = new Set((instance.prepare("pragma table_info(sites)").all() as { name: string }[]).map((c) => c.name));
   if (!siteColumns.has("log_since")) instance.exec("alter table sites add column log_since integer");
   if (!siteColumns.has("log_last_t")) instance.exec("alter table sites add column log_last_t integer");
+  const current = instance.prepare("select max(version) as version from schema_migrations").get() as { version: number | null };
+  if ((current.version ?? 0) < 2) {
+    const eventColumns = [
+      "event_id text", "measurement_version integer not null default 1", "transport text",
+      "occurred_at integer", "received_at integer", "actor_claim text", "identity_status text",
+      "identity_evidence text", "referral_source text", "technical_outcome text",
+      "business_outcome text", "task_id text", "invocation_id text", "parent_id text",
+      "release_id text", "tool_version text", "schema_version text",
+    ];
+    for (const column of eventColumns) instance.exec(`alter table events add column ${column}`);
+    instance.exec(`create table event_receipts (
+      domain text not null,
+      transport text not null,
+      event_id text not null,
+      received_at integer not null,
+      primary key (domain, transport, event_id)
+    )`);
+    instance.exec("create index event_receipts_age on event_receipts(received_at)");
+    instance.prepare("insert into schema_migrations (version, applied_at) values (2, ?)").run(Date.now());
+  }
+  instance.exec("commit");
+  } catch (err) {
+    instance.exec("rollback");
+    throw err;
+  }
 }
 
 /** Test seam: close and forget the handle so the next call opens fresh. */
@@ -256,6 +288,7 @@ export function removeSite(domain: string, owner: string): boolean {
   if (!site || site.owner !== owner.toLowerCase()) return false;
   const d = db();
   d.prepare("delete from events where domain = ?").run(key);
+  d.prepare("delete from event_receipts where domain = ?").run(key);
   d.prepare("delete from daily where domain = ?").run(key);
   d.prepare("delete from tools where domain = ?").run(key);
   d.prepare("delete from sites where domain = ?").run(key);
@@ -317,6 +350,22 @@ export type StoredEvent = {
   keys: string[];
   declarative: boolean;
   simulated: boolean;
+  /** Legacy senders omit these fields; only the server may assign evidence. */
+  eventId?: string | null;
+  occurredAt?: number | null;
+  transport?: Transport;
+  actorClaim?: string | null;
+  identityStatus?: IdentityStatus;
+  identityEvidence?: IdentityEvidence[];
+  referralSource?: string | null;
+  technicalOutcome?: TechnicalOutcome;
+  businessOutcome?: BusinessOutcome;
+  taskId?: string | null;
+  invocationId?: string | null;
+  parentId?: string | null;
+  releaseId?: string | null;
+  toolVersion?: string | null;
+  schemaVersion?: string | null;
 };
 
 let prunedFor = "";
@@ -336,9 +385,14 @@ export function recordEvents(domain: string, owner: string, events: StoredEvent[
     pruneRaw(now);
   }
 
-  const insertEvent = d.prepare(
-    "insert into events (domain, t, kind, name, path, source, session, ms, ok, err, keys, declarative, simulated) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-  );
+  const eventColumns = [
+    "domain", "t", "kind", "name", "path", "source", "session", "ms", "ok", "err", "keys", "declarative", "simulated",
+    "event_id", "measurement_version", "transport", "occurred_at", "received_at", "actor_claim", "identity_status",
+    "identity_evidence", "referral_source", "technical_outcome", "business_outcome", "task_id", "invocation_id",
+    "parent_id", "release_id", "tool_version", "schema_version",
+  ];
+  const insertEvent = d.prepare(`insert into events (${eventColumns.join(", ")}) values (${eventColumns.map(() => "?").join(", ")})`);
+  const insertReceipt = d.prepare("insert or ignore into event_receipts (domain, transport, event_id, received_at) values (?, ?, ?, ?)");
   const bump = d.prepare(
     "insert into daily (domain, day, kind, name, count, errors, ms_total) values (?, ?, ?, ?, 1, ?, ?) on conflict(domain, day, kind, name) do update set count = count + 1, errors = errors + excluded.errors, ms_total = ms_total + excluded.ms_total",
   );
@@ -348,10 +402,22 @@ export function recordEvents(domain: string, owner: string, events: StoredEvent[
 
   d.exec("begin");
   try {
+    let acceptedUsage = 0;
     for (const e of events) {
+      const transport = e.transport ?? "browser";
+      if (e.eventId && Number(insertReceipt.run(domain, transport, e.eventId, now).changes) === 0) continue;
       const keep = e.kind !== "view" || e.source !== null;
       if (keep) {
-        insertEvent.run(domain, now, e.kind, e.name, e.path, e.source, e.session, e.ms, e.ok === null ? null : e.ok ? 1 : 0, e.err, e.keys.length ? JSON.stringify(e.keys) : null, e.declarative ? 1 : 0, e.simulated ? 1 : 0);
+        const occurredAt = e.occurredAt && Math.abs(e.occurredAt - now) <= 86_400_000 ? e.occurredAt : now;
+        insertEvent.run(
+          domain, now, e.kind, e.name, e.path, e.source, e.session, e.ms, e.ok === null ? null : e.ok ? 1 : 0,
+          e.err, e.keys.length ? JSON.stringify(e.keys) : null, e.declarative ? 1 : 0, e.simulated ? 1 : 0,
+          e.eventId ?? null, MEASUREMENT_VERSION, transport, occurredAt, now, e.actorClaim ?? null,
+          e.identityStatus ?? "unknown", JSON.stringify(e.identityEvidence ?? []), e.referralSource ?? null,
+          e.technicalOutcome ?? (e.ok === true ? "completed" : e.ok === false ? "failed" : "unknown"),
+          e.businessOutcome ?? "unconfirmed", e.taskId ?? null, e.invocationId ?? null, e.parentId ?? null,
+          e.releaseId ?? null, e.toolVersion ?? null, e.schemaVersion ?? null,
+        );
       }
       const errors = e.ok === false ? 1 : 0;
       const msTotal = e.ms ?? 0;
@@ -380,9 +446,10 @@ export function recordEvents(domain: string, owner: string, events: StoredEvent[
       if ((e.kind === "tool_registered" || e.kind === "tool_call") && e.name) {
         tool.run(domain, e.name, null, null, now, now, e.declarative ? 1 : 0);
       }
+      if (keep) acceptedUsage++;
     }
     // Plain human views are free; only the rows that are kept count against the plan.
-    addUsage(owner, events.filter((e) => e.kind !== "view" || e.source !== null).length, now);
+    addUsage(owner, acceptedUsage, now);
     d.exec("commit");
   } catch (err) {
     d.exec("rollback");
@@ -400,7 +467,9 @@ export function registerTool(domain: string, name: string, descriptionHash: stri
 
 export function pruneRaw(now = Date.now()): number {
   const cutoff = now - RAW_RETENTION_DAYS * 86_400_000;
-  const result = db().prepare("delete from events where t < ?").run(cutoff);
+  const d = db();
+  d.prepare("delete from event_receipts where received_at < ?").run(cutoff);
+  const result = d.prepare("delete from events where t < ?").run(cutoff);
   return Number(result.changes);
 }
 

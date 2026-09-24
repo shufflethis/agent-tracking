@@ -31,8 +31,8 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const site = host ? getSite(host) : null;
   if (!site || !site.public_share) return { title: "Stats", robots: { index: false } };
   const n = interactions(loadDashboard(site.domain, 30).overview);
-  const title = `${site.domain}: ${n.toLocaleString("en-GB")} AI agent interactions in 30 days`;
-  const description = `AI referrals, AI fetches, WebMCP tool calls and agent conversions on ${site.domain}, measured by ${SITE_HOST}. Cookieless, no personal data.`;
+  const title = `${site.domain}: ${n.toLocaleString("en-GB")} activity signals in 30 days`;
+  const description = `AI referral, fetch and observed tool-call signals on ${site.domain}, measured by ${SITE_HOST}. Historical browser goal signals are unverified.`;
   return {
     title,
     description,
@@ -59,8 +59,8 @@ export default async function Page({ params }: Params) {
           <p className="eyebrow" style={{ marginBottom: 10 }}>Agent Tracking</p>
           <h1 style={{ fontSize: "clamp(26px,4vw,40px)", marginBottom: 8, wordBreak: "break-word" }}>{site.domain}</h1>
           <p className="dek" style={{ margin: 0, maxWidth: "56ch" }}>
-            <b style={{ color: "var(--ink)" }}>{n.toLocaleString("en-GB")}</b> AI agent interactions in the last 30 days: visitors sent by assistants, pages fetched by assistants,
-            WebMCP tools called, goals reached.
+            <b style={{ color: "var(--ink)" }}>{n.toLocaleString("en-GB")}</b> activity signals in the last 30 days: visitors referred by assistants, claimed or verified fetches,
+            WebMCP tools called, and unverified browser goal signals.
           </p>
         </div>
         <div className="card" style={{ padding: 28, display: "grid", gap: 28, gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))" }}>
@@ -68,7 +68,7 @@ export default async function Page({ params }: Params) {
             ["AI referrals", o.totals.referrals],
             ["AI fetches", o.totals.fetches],
             ["Tool calls", o.totals.calls],
-            ["Conversions", o.totals.conversions],
+            ["Unverified goal signals", o.totals.conversions],
           ].map(([label, value]) => (
             <div key={String(label)}>
               <p className="smallcaps" style={{ margin: "0 0 6px" }}>{label}</p>
@@ -85,7 +85,7 @@ export default async function Page({ params }: Params) {
               { key: "referrals", label: "AI referrals", color: "var(--cyan)", values: o.days.map((d) => d.referrals) },
               { key: "fetches", label: "AI fetches", color: "var(--soft-violet)", values: o.days.map((d) => d.fetches) },
               { key: "calls", label: "Tool calls", color: "var(--good)", values: o.days.map((d) => d.calls) },
-              { key: "conversions", label: "Conversions", color: "var(--warn)", values: o.days.map((d) => d.conversions) },
+              { key: "conversions", label: "Unverified goal signals", color: "var(--warn)", values: o.days.map((d) => d.conversions) },
             ]}
           />
         </div>
@@ -132,7 +132,7 @@ export default async function Page({ params }: Params) {
           <h2 style={{ fontSize: 22, marginBottom: 14 }}>Share</h2>
           <ShareBar
             url={url}
-            text={`${site.domain} had ${n.toLocaleString("en-GB")} AI agent interactions in 30 days, measured with ${SITE_HOST}:`}
+            text={`${site.domain} had ${n.toLocaleString("en-GB")} activity signals in 30 days, measured with ${SITE_HOST}:`}
             labels={{ x: "Share on X", linkedin: "Share on LinkedIn", copy: "Copy link", copied: "Link copied" }}
           />
           <p style={{ color: "var(--muted)", fontSize: 14, margin: "18px 0 0" }}>

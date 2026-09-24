@@ -104,7 +104,8 @@ export async function POST(request: Request) {
       continue;
     }
     if (e.kind === "tool_registered" && e.name) registerTool(site.domain, e.name, e.descriptionHash, e.schemaHash, now);
-    stored.push(toStored(e, agent ? `agent:${agent.id}` : matchReferral(e.referrer, e.utm)?.id ?? null, session));
+    const referral = matchReferral(e.referrer, e.utm)?.id ?? null;
+    stored.push(toStored(e, agent?.id ?? null, referral, session));
   }
   try {
     recordEvents(site.domain, site.owner, stored, now, { fetchesFromLog: Boolean(site.log_since) });
@@ -114,12 +115,12 @@ export async function POST(request: Request) {
   return done(202);
 }
 
-function toStored(e: CleanEvent, source: string | null, session: string): StoredEvent {
+function toStored(e: CleanEvent, agentId: string | null, referral: string | null, session: string): StoredEvent {
   return {
     kind: e.kind,
     name: e.name,
     path: e.path,
-    source: e.kind === "view" ? source : null,
+    source: e.kind === "view" ? agentId ? `agent:${agentId}` : referral : null,
     session,
     ms: e.ms,
     ok: e.ok,
@@ -127,5 +128,20 @@ function toStored(e: CleanEvent, source: string | null, session: string): Stored
     keys: e.keys,
     declarative: e.declarative,
     simulated: e.simulated,
+    eventId: e.id,
+    occurredAt: e.occurredAt,
+    transport: "browser",
+    actorClaim: agentId,
+    identityStatus: agentId ? "claimed" : "unknown",
+    identityEvidence: agentId ? [{ method: "user_agent", status: "claimed" }] : [],
+    referralSource: referral,
+    technicalOutcome: e.kind === "tool_call" ? e.ok === true ? "completed" : e.ok === false ? "failed" : "unknown" : "unknown",
+    businessOutcome: "unconfirmed",
+    taskId: e.taskId,
+    invocationId: e.invocationId,
+    parentId: e.parentId,
+    releaseId: e.releaseId,
+    toolVersion: e.toolVersion,
+    schemaVersion: e.schemaVersion,
   };
 }
