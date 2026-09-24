@@ -5,6 +5,7 @@ import type { CleanEvent } from "./classify";
 import { MEASUREMENT_VERSION, type BusinessOutcome, type IdentityEvidence, type IdentityStatus, type TechnicalOutcome, type Transport } from "./measurement";
 import { redactPath, safeErrorClass, safeEventName } from "./privacy";
 import { RAW_RETENTION_DAYS, type PlanId } from "./plans";
+import type { LogAttempt } from "./log-import";
 
 /**
  * The tracking store.
@@ -185,6 +186,17 @@ function migrate(instance: DatabaseSync): void {
       primary key (domain, day, transport, agent, status, method, source_key, source_version)
     )`);
     instance.prepare("insert into schema_migrations (version, applied_at) values (5, ?)").run(Date.now());
+  }
+  if ((current.version ?? 0) < 6) {
+    instance.exec(`create table log_attempts (
+      domain text not null, day text not null, agent text not null, path text not null,
+      identity_status text not null, method text not null, status integer not null,
+      result text not null, resource text not null, resource_basis text not null,
+      content_type text, duration_ms integer, count integer not null default 0,
+      primary key (domain, day, agent, path, identity_status, method, status, result, resource, resource_basis)
+    )`);
+    instance.exec("create index log_attempts_domain_day on log_attempts(domain, day)");
+    instance.prepare("insert into schema_migrations (version, applied_at) values (6, ?)").run(Date.now());
   }
   instance.exec("commit");
   } catch (err) {
@@ -594,14 +606,22 @@ export function pruneRaw(now = Date.now()): number {
 /* -------------------------------------------------------------- log import */
 
 /** Daily fetch counters from the server log: the same rows the snippet would write for an agent that ran it. */
-export function recordLogFetches(domain: string, fetches: { day: string; agent: string; path: string; evidence?: { status: string; method: string; source: string | null; sourceVersion: string | null; checkedAt: number } }[], unverified: { day: string; agent: string; evidence?: { status: string; method: string; source: string | null; sourceVersion: string | null; checkedAt: number } }[] = [], owner: string | null = null, now = Date.now()): void {
-  if (fetches.length === 0 && unverified.length === 0) return;
+export function recordLogFetches(domain: string, fetches: { day: string; agent: string; path: string; evidence?: { status: string; method: string; source: string | null; sourceVersion: string | null; checkedAt: number } }[], unverified: { day: string; agent: string; evidence?: { status: string; method: string; source: string | null; sourceVersion: string | null; checkedAt: number } }[] = [], owner: string | null = null, now = Date.now(), attempts: LogAttempt[] = []): void {
+  if (fetches.length === 0 && unverified.length === 0 && attempts.length === 0) return;
   const d = db();
   const bump = d.prepare(
     "insert into daily (domain, day, kind, name, count, errors, ms_total) values (?, ?, ?, ?, 1, 0, 0) on conflict(domain, day, kind, name) do update set count = count + 1",
   );
+  const logAttempt = d.prepare(`insert into log_attempts
+    (domain, day, agent, path, identity_status, method, status, result, resource, resource_basis, content_type, duration_ms, count)
+    values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
+    on conflict(domain, day, agent, path, identity_status, method, status, result, resource, resource_basis)
+    do update set count = count + 1`);
   d.exec("begin");
   try {
+    for (const a of attempts) {
+      logAttempt.run(domain.toLowerCase(), a.day, a.agent, redactPath(a.path), a.evidence.status, a.method, a.status, a.result, a.resource, a.resourceBasis, a.contentType, a.durationMs);
+    }
     let acceptedFetches = 0;
     for (const f of fetches) {
       if (f.evidence?.status !== "verified") {
@@ -627,6 +647,23 @@ export function recordLogFetches(domain: string, fetches: { day: string; agent: 
     d.exec("rollback");
     throw err;
   }
+}
+
+export type LogAttemptSummary = { result: string; resource: string; method: string; identityStatus: string; status: number; count: number };
+export type LogAttemptPath = LogAttemptSummary & { path: string };
+
+export function logAttemptSummary(domain: string, days = 30, now = Date.now()): LogAttemptSummary[] {
+  const cutoff = dayKey(now - (days - 1) * 86_400_000);
+  return db().prepare(`select result, resource, method, identity_status as identityStatus, status, sum(count) as count
+    from log_attempts where domain = ? and day >= ? group by result, resource, method, identity_status, status
+    order by count desc`).all(domain.toLowerCase(), cutoff) as LogAttemptSummary[];
+}
+
+export function logAttemptPaths(domain: string, days = 30, now = Date.now(), limit = 100): LogAttemptPath[] {
+  const cutoff = dayKey(now - (days - 1) * 86_400_000);
+  return db().prepare(`select path, result, resource, method, identity_status as identityStatus, status, sum(count) as count
+    from log_attempts where domain = ? and day >= ? group by path, result, resource, method, identity_status, status
+    order by count desc limit ?`).all(domain.toLowerCase(), cutoff, limit) as LogAttemptPath[];
 }
 
 /**

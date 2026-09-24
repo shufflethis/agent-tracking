@@ -22,6 +22,21 @@ export type LogLine = { ip: string; t: number; method: string; path: string; sta
 
 export type LogFetch = { day: string; agent: string; path: string; evidence?: RangeEvidence };
 
+export type LogAttempt = {
+  day: string;
+  agent: string;
+  path: string;
+  evidence: RangeEvidence;
+  method: "GET" | "HEAD" | "OTHER";
+  status: number;
+  result: "delivered" | "redirect" | "blocked" | "rate_limited" | "client_error" | "server_error" | "other";
+  resource: "html" | "pdf" | "json" | "api" | "discovery" | "asset";
+  /** Combined logs do not contain these fields. Never infer them from status or extension. */
+  contentType: string | null;
+  durationMs: number | null;
+  resourceBasis: "path_guess";
+};
+
 export type Burst = { agent: string; start: number; ms: number; paths: string[] };
 
 const MONTHS: Record<string, number> = { Jan: 0, Feb: 1, Mar: 2, Apr: 3, May: 4, Jun: 5, Jul: 6, Aug: 7, Sep: 8, Oct: 9, Nov: 10, Dec: 11 };
@@ -54,6 +69,26 @@ export function isPagePath(path: string): boolean {
 
 export const cleanPath = (path: string) => path.split("?")[0].split("#")[0].slice(0, 200) || "/";
 
+export function resourceFor(path: string): LogAttempt["resource"] {
+  const clean = cleanPath(path).toLowerCase();
+  if (clean.startsWith("/.well-known/") || /\/(?:robots\.txt|sitemap(?:-[^/]*)?\.xml|llms(?:-full)?\.txt|(?:ai-plugin|webmcp)\.json)$/.test(clean)) return "discovery";
+  if (clean.startsWith("/api/")) return "api";
+  if (/\.pdf$/.test(clean)) return "pdf";
+  if (/\.json$/.test(clean)) return "json";
+  if (clean.startsWith("/_next/") || /\.(?:js|css|map|png|jpe?g|gif|webp|svg|ico|woff2?|ttf|avif|mp4|webm)$/.test(clean)) return "asset";
+  return "html";
+}
+
+export function resultFor(status: number): LogAttempt["result"] {
+  if (status >= 200 && status < 300) return "delivered";
+  if (status >= 300 && status < 400) return "redirect";
+  if (status === 401 || status === 403) return "blocked";
+  if (status === 429) return "rate_limited";
+  if (status >= 400 && status < 500) return "client_error";
+  if (status >= 500 && status < 600) return "server_error";
+  return "other";
+}
+
 /** Gaps longer than this end a burst; fewer pages than this is not one. */
 export const BURST_GAP_MS = 30_000;
 export const BURST_MIN_PAGES = 3;
@@ -82,6 +117,7 @@ export type UnknownAgent = { ua: string; hits: number };
 export type ImportResult = {
   fetches: LogFetch[];
   unverified: LogFetch[];
+  attempts: LogAttempt[];
   bursts: Burst[];
   scanned: number;
   skipped: number;
@@ -99,6 +135,7 @@ export type ImportResult = {
 export function importLines(lines: Iterable<string>, options: ImportOptions = {}): ImportResult {
   const fetches: LogFetch[] = [];
   const unverified: LogFetch[] = [];
+  const attempts: LogAttempt[] = [];
   const perKey = new Map<string, { agent: string; hits: { t: number; path: string }[] }>();
   const unknown = new Map<string, { ua: string; hits: number }>();
   let scanned = 0;
@@ -113,12 +150,11 @@ export function importLines(lines: Iterable<string>, options: ImportOptions = {}
       continue;
     }
     if (lastT === null || line.t > lastT) lastT = line.t;
-    if (line.method !== "GET" || line.status >= 400 || !isPagePath(line.path)) continue;
     const agent = matchAgent(line.ua);
     if (!agent) {
       // Same bar as a counted fetch: a successful GET of a page. Anything that
       // would not have been a fetch is not an unanswered question either.
-      if (botShaped(line.ua)) {
+      if (line.method === "GET" && line.status >= 200 && line.status < 300 && isPagePath(line.path) && botShaped(line.ua)) {
         const key = line.ua.toLowerCase();
         const entry = unknown.get(key) ?? { ua: line.ua.trim().slice(0, 512), hits: 0 };
         entry.hits += 1;
@@ -128,6 +164,13 @@ export function importLines(lines: Iterable<string>, options: ImportOptions = {}
     }
     const path = cleanPath(line.path);
     const evidence = rangeEvidence(agent.id, line.ip, options.ranges ?? null);
+    const method = line.method === "GET" || line.method === "HEAD" ? line.method : "OTHER";
+    const result = resultFor(line.status);
+    const resource = resourceFor(line.path);
+    attempts.push({ day: dayKey(line.t), agent: agent.id, path, evidence, method, status: line.status, result, resource, contentType: null, durationMs: null, resourceBasis: "path_guess" });
+    // The original fetch metric has a narrow definition: verified 2xx GET
+    // of a likely HTML page. Every other outcome remains in attempts.
+    if (method !== "GET" || result !== "delivered" || resource !== "html" || !isPagePath(line.path)) continue;
     if (evidence.status !== "verified") {
       unverified.push({ day: dayKey(line.t), agent: agent.id, path, evidence });
       continue;
@@ -155,5 +198,5 @@ export function importLines(lines: Iterable<string>, options: ImportOptions = {}
     }
     flush();
   }
-  return { fetches, unverified, bursts, scanned, skipped, lastT, unknown: [...unknown.values()].sort((a, b) => b.hits - a.hits) };
+  return { fetches, unverified, attempts, bursts, scanned, skipped, lastT, unknown: [...unknown.values()].sort((a, b) => b.hits - a.hits) };
 }

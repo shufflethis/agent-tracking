@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { after, before, describe, it } from "node:test";
-import { closeDb, dailyRows, ensureAccount, addSite, recentBursts, recordBursts, recordEvents, recordLogFetches, setLogSource, getSite, usageThisMonth, verificationAudit } from "./db";
+import { closeDb, dailyRows, ensureAccount, addSite, logAttemptPaths, recentBursts, recordBursts, recordEvents, recordLogFetches, setLogSource, getSite, usageThisMonth, verificationAudit } from "./db";
 import { BURST_MIN_PAGES, importLines, isPagePath, parseLine } from "./log-import";
 
 const line = (ip: string, time: string, path: string, ua: string, status = 200, method = "GET") =>
@@ -33,6 +33,31 @@ describe("parseLine", () => {
 });
 
 describe("importLines", () => {
+  it("keeps delivery, redirects, failures and resource guesses as distinct attempts", () => {
+    const at = "08/Sep/2026:06:00:00 +0200";
+    const lines = [
+      line("1.1.1.1", at, "/docs", GPT),
+      line("1.1.1.1", at, "/moved", GPT, 301),
+      line("1.1.1.1", at, "/private", GPT, 403),
+      line("1.1.1.1", at, "/busy", GPT, 429),
+      line("1.1.1.1", at, "/broken", GPT, 500),
+      line("1.1.1.1", at, "/file.pdf?token=secret", GPT),
+      line("1.1.1.1", at, "/api/search", GPT, 200, "POST"),
+      line("1.1.1.1", at, "/.well-known/ai-plugin.json", GPT, 200, "HEAD"),
+      line("1.1.1.1", at, "/data.json", GPT),
+    ];
+    const now = new Date().toISOString();
+    const result = importLines(lines, { ranges: { fetchedAt: now, updatedAt: { "openai-chatgpt-user": now }, lists: { "openai-chatgpt-user": ["1.1.1.0/24"] } } });
+    assert.deepEqual(result.fetches.map((f) => f.path), ["/docs"]);
+    assert.equal(result.attempts.length, lines.length);
+    assert.deepEqual(result.attempts.map((a) => a.result), ["delivered", "redirect", "blocked", "rate_limited", "server_error", "delivered", "delivered", "delivered", "delivered"]);
+    assert.deepEqual(result.attempts.slice(5).map((a) => a.resource), ["pdf", "api", "discovery", "json"]);
+    assert.deepEqual(result.attempts.slice(6, 8).map((a) => a.method), ["OTHER", "HEAD"]);
+    assert.equal(result.attempts[5].path, "/file.pdf");
+    assert.equal(result.attempts[5].contentType, null);
+    assert.equal(result.attempts[5].durationMs, null);
+    assert.equal(result.attempts[5].resourceBasis, "path_guess");
+  });
   /**
    * The counted numbers must not move when an unknown agent shows up, or every
    * addition to ai-sources.json would rewrite history. The string is kept
@@ -149,5 +174,21 @@ describe("log rows in the store", () => {
     assert.equal(dailyRows("logged.example", 30, NOW).find((r) => r.kind === "ai_fetch_verified" && r.name === "agent:chatgpt-user"), undefined);
     recordEvents("logged.example", "l@x.com", [{ ...view, source: "chatgpt" }], NOW, { fetchesFromLog: true });
     assert.equal(dailyRows("logged.example", 30, NOW).find((r) => r.kind === "ai_referral" && r.name === "chatgpt")?.count, 1);
+  });
+  it("persists access attempts separately from confirmed HTML fetches", () => {
+    closeDb();
+    ensureAccount("attempt@x.com", NOW);
+    addSite("attempt.example", "attempt@x.com", NOW);
+    const timestamp = "08/Sep/2026:06:00:00 +0200";
+    const lines = [line("1.1.1.1", timestamp, "/docs", GPT), line("1.1.1.1", timestamp, "/docs", GPT, 403), line("1.1.1.1", timestamp, "/file.pdf", GPT)];
+    const now = new Date().toISOString();
+    const result = importLines(lines, { ranges: { fetchedAt: now, updatedAt: { "openai-chatgpt-user": now }, lists: { "openai-chatgpt-user": ["1.1.1.0/24"] } } });
+    recordLogFetches("attempt.example", result.fetches, result.unverified, "attempt@x.com", NOW, result.attempts);
+    const attempts = logAttemptPaths("attempt.example", 30, NOW);
+    assert.equal(attempts.reduce((n, a) => n + a.count, 0), 3);
+    assert.ok(attempts.some((a) => a.status === 403 && a.result === "blocked"));
+    assert.ok(attempts.some((a) => a.resource === "pdf" && a.result === "delivered"));
+    assert.equal(dailyRows("attempt.example", 30, NOW).find((r) => r.kind === "ai_fetch_verified")?.count, 1);
+    assert.equal(usageThisMonth("attempt@x.com", NOW), 1);
   });
 });

@@ -63,7 +63,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ dom
   const lines = text.split("\n");
 
   const result = importLines(lines, { ranges: loadRanges(), since: site.log_last_t });
-  recordLogFetches(site.domain, result.fetches, result.unverified, site.owner);
+  recordLogFetches(site.domain, result.fetches, result.unverified, site.owner, Date.now(), result.attempts);
   recordBursts(site.domain, result.bursts);
   setLogSource(site.domain, Date.now(), result.lastT);
 
@@ -73,6 +73,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ dom
     skipped: result.skipped,
     fetches: result.fetches.length,
     unverified: result.unverified.length,
+    attempts: result.attempts.length,
     bursts: result.bursts.length,
     newestLine: result.lastT ? new Date(result.lastT).toISOString() : null,
   });

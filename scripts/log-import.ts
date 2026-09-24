@@ -106,8 +106,8 @@ function importOne(FILE: string, DOMAIN: string, state: State) {
   }
 
   const ranges = loadRanges();
-  const { fetches, unverified, bursts, scanned, lastT, unknown } = importLines(lines, { ranges });
-  recordLogFetches(DOMAIN, fetches, unverified, site.owner);
+  const { fetches, unverified, attempts, bursts, scanned, lastT, unknown } = importLines(lines, { ranges });
+  recordLogFetches(DOMAIN, fetches, unverified, site.owner, Date.now(), attempts);
   recordBursts(DOMAIN, bursts);
   setLogSource(DOMAIN, Date.now(), lastT);
   state[FILE] = next;

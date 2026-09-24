@@ -111,8 +111,12 @@ const en = {
   },
   pages: {
     title: "Pages",
-    intro: "Which paths AI agents fetch most, and on which paths tools get called. Paths only; query strings are dropped before anything is stored.",
-    cols: { path: "Path", fetches: "AI fetches and referrals", calls: "Tool calls" },
+    intro: "Historical path activity combines fetch and referral signals. The request table below separates server-log access attempts by result, method and resource. Paths have no query strings.",
+    cols: { path: "Path", fetches: "Legacy path activity (fetches + referrals)", calls: "Tool calls" },
+    attemptsTitle: "Agent access attempts from server logs",
+    attemptsNote: "A delivered response does not prove that an agent understood or cited it. Resource types are path guesses; combined logs provide no Content-Type or duration. An IP-confirmed identity is separate from delivery status.",
+    attemptsCols: { path: "Path", result: "Result", resource: "Resource (path guess)", method: "Method", status: "HTTP", identity: "Identity", count: "Requests" },
+    attemptsEmpty: "No server-log attempts recorded in this period.",
     empty: "Nothing yet.",
   },
   list: {
@@ -319,8 +323,12 @@ const de: DashCopy = {
   },
   pages: {
     title: "Seiten",
-    intro: "Welche Pfade KI-Agenten am häufigsten abrufen und auf welchen Pfaden Tools aufgerufen werden. Nur Pfade; Query-Strings werden verworfen, bevor etwas gespeichert wird.",
-    cols: { path: "Pfad", fetches: "KI-Abrufe und Referrals", calls: "Tool-Aufrufe" },
+    intro: "Die historische Pfadaktivität enthält Abrufe und Referrals zusammen. Die Tabelle darunter trennt Server-Log-Zugriffsversuche nach Ergebnis, Methode und Ressource. Pfade enthalten keine Query-Strings.",
+    cols: { path: "Pfad", fetches: "Historische Pfadaktivität (Abrufe + Referrals)", calls: "Tool-Aufrufe" },
+    attemptsTitle: "Agenten-Zugriffsversuche aus Server-Logs",
+    attemptsNote: "Eine ausgelieferte Antwort beweist weder Verständnis noch Zitat. Ressourcentypen sind Pfadvermutungen; combined Logs enthalten weder Content-Type noch Dauer. IP-bestätigte Identität und Auslieferung sind getrennt.",
+    attemptsCols: { path: "Pfad", result: "Ergebnis", resource: "Ressource (Pfadvermutung)", method: "Methode", status: "HTTP", identity: "Identität", count: "Requests" },
+    attemptsEmpty: "In diesem Zeitraum keine Server-Log-Zugriffsversuche erfasst.",
     empty: "Noch nichts.",
   },
   list: {
