@@ -4,22 +4,23 @@ import { requireSite } from "@/lib/tracking/auth";
 import { dashCopy, dashLang } from "@/lib/tracking/copy";
 import { loadDashboard } from "@/lib/tracking/dashboard";
 import { logAttemptPaths } from "@/lib/tracking/db";
-import { planFor } from "@/lib/tracking/plans";
+import { clampDays } from "@/lib/tracking/stats-api";
 
 export const metadata: Metadata = { title: "Pages", robots: { index: false, follow: false } };
 export const runtime = "nodejs";
 
-export default async function Page({ params }: { params: Promise<{ domain: string }> }) {
+export default async function Page({ params, searchParams }: { params: Promise<{ domain: string }>; searchParams: Promise<{ days?: string }> }) {
   const { domain } = await params;
   const { account, site } = await requireSite(decodeURIComponent(domain));
+  const days = clampDays((await searchParams).days, account);
   const c = dashCopy(dashLang(account.lang)).pages;
-  const dash = loadDashboard(site.domain, planFor(account.plan).windowDays);
-  const attempts = logAttemptPaths(site.domain, planFor(account.plan).windowDays);
+  const dash = loadDashboard(site.domain, days);
+  const attempts = logAttemptPaths(site.domain, days);
 
   return (
     <DashboardShell account={account} site={site} view="pages">
       <section className="shell section" style={{ paddingTop: 32 }}>
-        <p className="dek" style={{ marginBottom: 20, maxWidth: "62ch" }}>{c.intro}</p>
+        <p className="dek" style={{ marginBottom: 20, maxWidth: "62ch" }}>{c.intro} · {days} {account.lang === "de" ? "Tage" : "days"}</p>
         <div className="tablewrap">
           <table>
             <thead>
@@ -50,7 +51,7 @@ export default async function Page({ params }: { params: Promise<{ domain: strin
         </div>
       </section>
       <section className="shell section" style={{ paddingTop: 0 }}>
-        <h2>{c.attemptsTitle}</h2>
+        <h2 id="access-attempts">{c.attemptsTitle}</h2>
         <p className="dek" style={{ maxWidth: "78ch" }}>{c.attemptsNote}</p>
         <div className="tablewrap">
           <table>

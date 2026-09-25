@@ -1,6 +1,8 @@
 import { checkUrl } from "@/lib/site";
 import type { Metadata } from "next";
 import Link from "next/link";
+import InsightsPanel from "@/components/InsightsPanel";
+import { loadInsights } from "@/lib/tracking/insights-loader";
 import BarChart from "@/components/BarChart";
 import DashboardShell, { Stat, trendNote } from "@/components/DashboardShell";
 import { requireSite } from "@/lib/tracking/auth";
@@ -60,6 +62,7 @@ export default async function Page({ params }: Params) {
   const nl = numberLocale(lang);
   const plan = planFor(account.plan);
   const dash = loadDashboard(site.domain, Math.min(plan.windowDays, 30));
+  const insights = loadInsights(site, lang, dash.days, site.owner === account.email, Date.now(), dash);
   const o = dash.overview;
   const health = ingestHealth(site.domain, dash.days);
   const ingestIssues = health.filter((row) => row.outcome !== "accepted_batch").reduce((n, row) => n + row.count, 0);
@@ -79,6 +82,7 @@ export default async function Page({ params }: Params) {
 
   return (
     <DashboardShell account={account} site={site} view="">
+      <div className="shell section" style={{ paddingBottom: 0 }}><InsightsPanel items={insights} lang={lang} domain={site.domain} days={dash.days} compact /></div>
       <section className="shell section" style={{ paddingTop: 32 }}>
         <div className="card" style={{ padding: 28, display: "grid", gap: 28, gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))" }}>
           <Stat label={c.referrals} {...measured(o.totals.referrals, trendNote(o.totals.referrals, o.previous.referrals, lang))} />

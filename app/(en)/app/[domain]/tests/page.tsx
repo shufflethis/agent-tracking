@@ -26,12 +26,12 @@ export default async function Page({ params }: { params: Promise<{ domain: strin
       {site.owner === account.email && <TaskRunForm domain={site.domain} lang={lang} />}
     </div>
     <div className="card" style={{ padding: 28 }}><h2>{lang === "de" ? "Laufverlauf" : "Run history"}</h2>
-      {runs.length === 0 ? <p>{lang === "de" ? "Noch kein Lauf." : "No runs yet."}</p> : <div className="tablewrap"><table><thead><tr><th>Run ID</th><th>{lang === "de" ? "Ergebnis" : "Result"}</th><th>Release</th><th>{lang === "de" ? "Schritte" : "Steps"}</th></tr></thead><tbody>{runs.map((run) => <tr key={run.runId}><td><code>{run.runId}</code></td><td>{run.result ?? run.status}{run.errorClass ? ` (${run.errorClass})` : ""}</td><td>{run.releaseId ?? "–"}</td><td>{run.steps.join(" → ") || "–"}</td></tr>)}</tbody></table></div>}
+      {runs.length === 0 ? <p>{lang === "de" ? "Noch kein Lauf." : "No runs yet."}</p> : <div className="tablewrap"><table><thead><tr><th>Run ID</th><th>{lang === "de" ? "Ergebnis" : "Result"}</th><th>Release</th><th>{lang === "de" ? "Schritte" : "Steps"}</th></tr></thead><tbody>{runs.map((run) => <tr key={run.runId} id={`run-${run.runId}`}><td><code>{run.runId}</code></td><td>{run.result ?? run.status}{run.errorClass ? ` (${run.errorClass})` : ""}</td><td>{run.releaseId ?? "–"}</td><td>{run.steps.join(" → ") || "–"}</td></tr>)}</tbody></table></div>}
     </div>
     <div className="card" style={{ padding: 28 }}><h2>{lang === "de" ? "Korrektur und Nachtest" : "Fix and retest"}</h2>
       <p>{lang === "de" ? "Verknüpfe einen Fehlerlauf mit einer dokumentierten Korrektur und einem neuen Lauf derselben Aufgabe. Ein Vergleich zeigt nur die Testbeobachtung, keinen kausalen Umsatzgewinn." : "Link a failed run to a documented fix and a new run of the same task. Comparisons show test observations, not causal revenue gain."}</p>
       {site.owner === account.email && <TaskFixForm domain={site.domain} lang={lang} runIds={runs.filter((r) => r.status === "finished").map((r) => r.runId)} />}
-      {fixes.map((fix) => <div key={fix.fixId} style={{ borderTop: "1px solid var(--rule)", marginTop: 20, paddingTop: 16 }}>
+      {fixes.map((fix) => <div id={`fix-${fix.fixId}`} key={fix.fixId} style={{ borderTop: "1px solid var(--rule)", marginTop: 20, paddingTop: 16 }}>
         <strong>{fix.description}</strong>
         <p>{fix.comparison === "controlled_browser_retest" ? (lang === "de" ? "Gleiche Aufgabe, URL, Modus und Modellversion" : "Same task, URL, mode and model version") : (lang === "de" ? "Testbedingungen geändert; kein kontrollierter Vergleich" : "Test conditions changed; not a controlled comparison")}</p>
         <p><code>{fix.before.runId}</code> {fix.before.result} ({fix.before.releaseId ?? "–"}) → <code>{fix.after.runId}</code> {fix.after.result} ({fix.after.releaseId ?? "–"})</p>

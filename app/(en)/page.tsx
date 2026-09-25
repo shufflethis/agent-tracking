@@ -2,12 +2,11 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import HeroArt from "@/components/HeroArt";
 import Positioning from "@/components/Positioning";
-import ProductWorkflow from "@/components/ProductWorkflow";
 import { heroFor } from "@/lib/hero";
 import { alternatesFor } from "@/lib/i18n";
 import { PLANS, RAW_RETENTION_DAYS } from "@/lib/tracking/plans";
 import { snippetFor } from "@/lib/tracking/snippet";
-import { CHECK_ORIGIN, CONTACT_EMAIL, GITHUB_URL, LEGAL, SITE_ORIGIN } from "@/lib/site";
+import { CHECK_ORIGIN, CONTACT_EMAIL, GITHUB_URL, SITE_ORIGIN } from "@/lib/site";
 
 // Cached for an hour and re-rendered from the running server's environment after that, so
 // the host and the legal entity follow the installation while the page still caches.
@@ -16,7 +15,7 @@ export const revalidate = 3600;
 export const metadata: Metadata = {
   title: { absolute: "Agent Tracking: AI agent analytics for websites" },
   description:
-    "Recognized AI referrals, supported browser tool activity, optional verified crawler logs and server-confirmed outcomes. Source limits stay visible. Open source.",
+    "Track AI referrals, investigate tool failures, and document fixes with browser retests. Open-source website analytics with optional server-confirmed outcomes.",
   alternates: alternatesFor("/"),
   robots: { index: true, follow: true, "max-image-preview": "large", "max-snippet": -1 },
   openGraph: { title: "Agent Tracking: AI agent analytics for websites", description: "Recognized AI referrals, supported WebMCP observations, optional crawler-log verification and server outcome receipts. Open source.", url: "/", type: "website" },
@@ -31,7 +30,7 @@ const PAGE_LD = {
   name: "Agent Tracking: AI agent analytics for websites",
   description: "Recognized assistant referrals, browser tool observations, optional crawler logs and server outcome receipts with explicit evidence limits.",
   inLanguage: "en",
-  dateModified: LEGAL.revised,
+  dateModified: "2026-09-25",
   isPartOf: { "@id": `${SITE_ORIGIN}/#site` },
   about: { "@id": `${SITE_ORIGIN}/#app` },
 };
@@ -57,33 +56,31 @@ export default function Page() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(PAGE_LD) }} />
       <section className="shell pagehead withart" style={{ paddingTop: 64, paddingBottom: 20 }}>
         <HeroArt name={heroFor("home")!} />
-        <p className="eyebrow">Open source · free pilot</p>
+        <p className="eyebrow">AI analytics for your website · Free pilot</p>
         <h1 style={{ fontSize: "clamp(30px,5.2vw,58px)", lineHeight: 1.05, maxWidth: "18ch", marginBottom: 20 }}>
-          Measure agents on your site.
+          What happens after the AI click?
         </h1>
         <p style={{ fontSize: "clamp(17px,2.1vw,22px)", lineHeight: 1.55, color: "var(--ink)", maxWidth: "52ch", marginTop: 0, marginBottom: 14 }}>
-          See recognized assistant referrals and browser-visible tool activity. Add origin logs for crawler requests and server receipts for confirmed inquiries or bookings.
+          See which AI assistants send visitors, which tool calls fail, and which inquiries your server confirms. Record the problem, document the fix, and test the path again.
         </p>
         <p style={{ fontSize: "clamp(15px,1.6vw,18px)", lineHeight: 1.55, color: "var(--ink-2)", maxWidth: "52ch", marginTop: 0, marginBottom: 28 }}>
-          The snippet observes supported browser actions. Logs and server integrations add separate evidence; a browser goal marker alone does not confirm a result or an agent actor.
+          Insights brings observed issues and next steps together. Your site history keeps the changes and their actual test results.
         </p>
         <form className="scanform" action="/login" method="get" style={{ maxWidth: 560 }} {...{ toolname: "start_free_pilot", tooldescription: "Start the free Agent Tracking pilot for a domain: opens the sign-in page with the domain prefilled." }}>
           <label htmlFor="domain" className="sr-only">Your domain</label>
           <input id="domain" type="text" name="domain" inputMode="url" autoComplete="url" placeholder="example.com" aria-describedby="pilot-note" required />
           <button className="btn" type="submit">
-            Start the free pilot
+            Connect your website
           </button>
         </form>
         <p id="pilot-note" className="formnote" style={{ marginTop: 10 }}>
-          Sign in by email and install the snippet. No card. It sets no cookies; review the documented data flow for your deployment.{" "}
+          Open source. Hosted in Germany. No credit card.{" "}
           <Link href="/demo">See the demo page</Link> first if you like.
         </p>
         <p className="formnote"><Link href="/guides/ai-agent-traffic-website-measurement-guide">Read the complete AI traffic measurement guide</Link>.</p>
       </section>
 
       <Positioning lang="en" />
-      <Positioning lang="en" part="faq" />
-      <ProductWorkflow lang="en" />
 
       <section className="shell section centered">
         <h2>A sample of the measurement views</h2>
@@ -99,7 +96,7 @@ export default function Page() {
               loading="lazy"
               style={{ width: "100%", aspectRatio: "16 / 11", objectFit: "cover", objectPosition: "top", borderRadius: 12, border: "1px solid var(--line, #e6e3dc)" }}
             />
-            <figcaption style={{ fontSize: 13, color: "var(--muted)", marginTop: 8 }}>Overview: interactions per day, with the check score beside them.</figcaption>
+            <figcaption style={{ fontSize: 13, color: "var(--muted)", marginTop: 8 }}>Earlier overview with demo data. Insights adds evidence and next steps.</figcaption>
           </figure>
           <figure style={{ margin: 0 }}>
             <img
@@ -114,7 +111,7 @@ export default function Page() {
       </section>
 
       <section className="shell section centered">
-        <h2>One line, then wait for the first agent</h2>
+        <h2>Connect your first data source</h2>
         <p className="dek" style={{ maxWidth: "62ch" }}>
           Add your site in the dashboard, put this on every page, and press verify. Tools you register through{" "}
           <code>navigator.modelContext</code> are picked up without any change to your code; declarative tools are forms
@@ -185,8 +182,10 @@ export default function Page() {
         <pre className="code" style={{ marginTop: 22 }}>{SELF_HOST}</pre>
       </section>
 
+      <Positioning lang="en" part="faq" />
+
       <section className="shell section centered" id="pilot">
-        <h2>Free during the pilot</h2>
+        <h2>Building with our first users.</h2>
         <p className="dek" style={{ maxWidth: "62ch" }}>
           Agent Tracking is new, and the honest way to price something new is to run it first. During the pilot every
           account is on the Free plan: {free.domains} site, {free.eventsPerMonth.toLocaleString("en-GB")} agent events a
@@ -205,7 +204,7 @@ export default function Page() {
           <label htmlFor="domain-2" className="sr-only">Your domain</label>
           <input id="domain-2" type="text" name="domain" inputMode="url" autoComplete="url" placeholder="example.com" aria-describedby="pilot-terms" required />
           <button className="btn" type="submit">
-            Start the free pilot
+            Connect your website
           </button>
         </form>
       </section>

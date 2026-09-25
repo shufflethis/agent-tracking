@@ -5,8 +5,8 @@ import type { DashLang } from "@/lib/tracking/copy";
 export default function GuideIndex({ lang }: { lang: DashLang }) {
   const base = lang === "de" ? "/de/guides" : "/guides";
   const all = guides(lang);
-  const featured = all.slice(-3);
-  const rest = all.slice(0, -3);
+  const featured = all.filter(g => /playbook|test-ai-inquiry|ki-anfrageablauf|website-measurement-guide|website-messen-leitfaden/.test(g.slug));
+  const rest = all.filter(g => !featured.includes(g));
   return (
     <section className="shell section" style={{ paddingTop: 56 }}>
       <div className="pagehead" style={{ marginBottom: 30 }}>
@@ -14,8 +14,8 @@ export default function GuideIndex({ lang }: { lang: DashLang }) {
         <h1 style={{ fontSize: "clamp(27px,4.4vw,44px)", marginBottom: 16 }}>{lang === "de" ? "Fragen, die Agenten-Analytics beantwortet" : "Questions agent analytics answers"}</h1>
         <p className="dek" style={{ maxWidth: "62ch", margin: 0 }}>
           {lang === "de"
-            ? "Jeder Guide beantwortet eine Frage, so wie man sie in ein Suchfeld tippt oder einem Assistenten stellt: erst die Antwort in einem Absatz, dann die Schritte."
-            : "Each guide answers one question the way people type it into a search box or ask an assistant: the answer in one paragraph first, then the steps."}
+            ? "Wähle deine Frage: KI-Traffic zuordnen, Crawler-Zugriffe prüfen oder einen Anfrageablauf nachtesten. Die Guides führen von der passenden Messung zur konkreten Änderung."
+            : "Choose your question: attribute AI traffic, check crawler access, or retest an inquiry flow. These guides connect the right measurement to a concrete change."}
         </p>
       </div>
       <div className="grid2" style={{ gap: 18, marginBottom: 42 }}>

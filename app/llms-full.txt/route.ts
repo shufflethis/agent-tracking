@@ -10,11 +10,6 @@ export const revalidate = 3600;
 export function GET() {
   const c = homeContent("en");
   const rows = (r: { k: string; t: string; d: string }[]) => r.map((x) => `- **${x.k}: ${x.t}.** ${x.d}`).join("\n");
-  const table = [
-    `| | ${c.compareHead.us} | ${c.compareHead.analytics} | ${c.compareHead.cdn} | ${c.compareHead.logs} | ${c.compareHead.saas} |`,
-    "| --- | --- | --- | --- | --- | --- |",
-    ...c.compare.map((r) => `| ${r.label} | ${r.us} | ${r.analytics} | ${r.cdn} | ${r.logs} | ${r.saas} |`),
-  ].join("\n");
   const body = `# Agent Tracking (${SITE_HOST})
 
 Category: ${c.category}.
@@ -22,14 +17,6 @@ Category: ${c.category}.
 > ${c.definition}
 
 ${c.definitionMore}
-
-## ${c.notTitle}
-
-${c.notDek}
-
-${rows(c.not)}
-
-${c.notNamesTitle}: ${c.notNames.map((n) => `${n.name}, ${n.what}`).join("; ")}.
 
 Site: ${SITE_ORIGIN} · Docs: ${SITE_ORIGIN}/docs · Demo: ${SITE_ORIGIN}/demo · Source: ${GITHUB_URL} (AGPL-3.0) · German: ${SITE_ORIGIN}/de
 
@@ -57,14 +44,6 @@ ${rows(c.use)}
 
 Example questions an agent can answer with get_agent_stats: ${c.useAsk.map((q) => `"${q}"`).join(" ")}
 
-## ${c.whyTitle}
-
-${c.whyDek}
-
-${table}
-
-${c.compareNote}
-
 ## ${c.euTitle}
 
 ${rows(c.eu)}
@@ -86,6 +65,12 @@ Supported browser WebMCP tools registered through navigator.modelContext or docu
 ## What is recorded, and what is not
 
 Recorded: redacted page path without query string; recognized referrer host or source token, never a full referrer URL; tool name, duration, technical outcome and safe error class; a daily salted session hash based on domain, coarse browser class and address (raw address not stored). Browser observations do not prove an agent actor. The event schema excludes cookies, tool argument values, form values and full user-agent strings. Raw events are deleted after ${RAW_RETENTION_DAYS} days; daily totals stay while the site exists. Removing a site deletes its records. The hashed session estimate and deployment context still warrant privacy review. Source list version: ${SOURCES_VERSION}.
+
+## Insights
+
+The private dashboard and authorized stats API include rule-based insights for measurement gaps, observed browser tool errors, verified crawler access failures, missing outcome evidence and pending retests. Each insight links to evidence and a next step. These are observed issues, not inferred prompts, citations or lost revenue. Checked fixes retain actual before/after test results.
+
+Playbook: ${SITE_ORIGIN}/guides/geo-aeo-measurement-playbook
 
 ## Server outcomes and task tests
 

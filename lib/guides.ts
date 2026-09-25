@@ -1,4 +1,5 @@
 import type { DashLang } from "@/lib/tracking/copy";
+import { WORKFLOW_GUIDES_DE, WORKFLOW_GUIDES_EN } from "./workflow-guides";
 import { SEO_GUIDES_DE, SEO_GUIDES_EN } from "@/lib/seo-guides";
 
 /**
@@ -53,10 +54,11 @@ const EN: Guide[] = [
     ],
     faq: [
       { q: "Can I measure agents without a script on the page?", a: "Partly. The server log gives you crawler fetches and bursts. Referrals and tool calls happen in the browser and need the snippet." },
-      { q: "Does it slow the site down?", a: "The snippet is 4.5 KB, loads deferred and sends small batches with sendBeacon. Nothing blocks rendering." },
+      { q: "Does it slow the site down?", a: "The snippet loads with defer and sends small batches with sendBeacon. Its current minified size is reported by the build; measure performance on your own pages." },
     ],
     related: ["ai-agent-traffic-website-measurement-guide", "which-ai-assistants-send-visitors", "which-ai-crawlers-read-my-pages"],
-    updated: "2026-09-08",
+    published: "2026-09-08",
+    updated: "2026-09-25",
   },
   {
     slug: "see-whether-ai-agents-buy-on-your-site",
@@ -105,7 +107,7 @@ const EN: Guide[] = [
       "Some crawler user agents can be checked against fresh published IP ranges in origin logs. Google-Extended is a robots policy token, not a crawler identity. Missing or unsupported verification remains explicit.",
     sections: [
       { h: "Why the snippet is not enough", p: ["Many crawlers fetch HTML without executing browser scripts. An origin access log can record their requests with the claimed user agent and address when that information is available."] },
-      { h: "Step 1: send the log", p: ["Upload on the settings page or post it daily with the API token. nginx and Apache combined format, plain or gzipped, whole files; lines older than the newest already imported are skipped."], code: LOG, codeLang: "sh" },
+      { h: "Step 1: send the log", p: ["Upload an append-only log snapshot in Settings or use the collector with stable source, generation and record positions. nginx and Apache combined format are supported, plain or gzipped. Repeated positions are skipped; rotated or reordered logs need source metadata."], code: LOG, codeLang: "sh" },
       { h: "Step 2: verification against published ranges", p: ["For supported operators and crawler identities, the importer compares origin addresses with current published ranges. Some identities cannot be verified this way; they remain unknown instead of becoming verified by user-agent text alone.", "Unverified does not necessarily mean malicious. Check log provenance, list freshness and the operator's documentation before drawing a conclusion."] },
       { h: "Step 3: bursts", p: ["A burst is at least three distinct relevant paths with short gaps inside one imported batch. It is a request pattern, not evidence of a user question or assistant intent."] },
     ],
@@ -114,7 +116,8 @@ const EN: Guide[] = [
       { q: "Is the address stored?", a: "No. It is used while the upload is processed, to group one agent's fetches and to check the range, and discarded when the request ends. The log file is not kept." },
     ],
     related: ["measure-ai-agent-behaviour-on-your-website", "which-ai-assistants-send-visitors"],
-    updated: "2026-09-08",
+    published: "2026-09-08",
+    updated: "2026-09-25",
   },
   {
     slug: "track-mcp-and-webmcp-tool-calls",
@@ -182,7 +185,7 @@ const EN: Guide[] = [
     sections: [
       { h: "Why use additional data sources", p: ["Web analytics can segment identifiable assistant referrals and can receive custom tool events. Crawlers usually require server or edge logs. Agent Tracking brings these sources into one view while keeping their counts and evidence levels distinct."] },
       { h: "What the product records", p: ["Recognized assistant referrers, log requests claiming supported crawler identities with explicit verification status, and instrumented tool calls. Google-Extended and Applebot-Extended are robots policy tokens, not crawler identities. Goal markers are unverified attempts. Plain page views provide context."] },
-      { h: "What it deliberately leaves out", p: ["No people analytics: no bounce rate, no funnels for humans, no heatmaps. No prompts, spans or token costs of agents you build yourself; that is LLM observability, a different product. No blocking: it measures and never interferes. The result is a small dashboard with four views that answers agent questions and nothing else."] },
+      { h: "What it deliberately leaves out", p: ["No people analytics: no bounce rate, no funnels for humans, no heatmaps. No prompts, spans or token costs of agents you build yourself; that is LLM observability, a different product. No blocking: it measures and never interferes. The workspace combines measurement views, evidence-based insights, prepared browser tests and protected reports."] },
       { h: "Open source, or hosted", p: ["The software is AGPL-3.0 and runs on your own server with one compose file, or as a hosted service in Germany with a free pilot. Either way the data is one SQLite file and the code is public."] },
     ],
     faq: [
@@ -190,7 +193,8 @@ const EN: Guide[] = [
       { q: "Can I get the numbers out?", a: "Yes: JSON through the stats API, CSV export, a weekly mail, and an MCP tool your own assistant can call." },
     ],
     related: ["how-to-track-ai-agents-visiting-your-website", "can-google-analytics-track-ai-agents", "measure-ai-agent-behaviour-on-your-website"],
-    updated: "2026-09-08",
+    published: "2026-09-08",
+    updated: "2026-09-25",
   },
   {
     slug: "see-chatgpt-referral-traffic",
@@ -199,7 +203,7 @@ const EN: Guide[] = [
     summary:
       "A click on a link inside ChatGPT arrives with the referrer chatgpt.com, sometimes with utm_source=chatgpt.com, and most analytics tools file it under Referral or Direct. Agent Tracking matches the referrer and the utm parameter against a maintained list and shows ChatGPT, Perplexity, Claude, Copilot and Gemini as their own rows, with landing pages and a week-over-week trend.",
     sections: [
-      { h: "Where the signal is", p: ["ChatGPT sends chatgpt.com as the referrer for links a person clicks in an answer. Perplexity sends perplexity.ai, Claude sends claude.ai, Copilot copilot.microsoft.com, Gemini gemini.google.com. OpenAI additionally appends utm_source=chatgpt.com on many links. Both are visible to a script on your page and to nothing else."] },
+      { h: "Where the signal is", p: ["ChatGPT sends chatgpt.com as the referrer for links a person clicks in an answer. Perplexity sends perplexity.ai, Claude sends claude.ai, Copilot copilot.microsoft.com, Gemini gemini.google.com. OpenAI additionally appends utm_source=chatgpt.com on many links. Referrer and campaign signals can be captured by suitable browser or server analytics. Availability depends on the client and its referral policy."] },
       { h: "Why Google Analytics undercounts it", p: ["GA4 groups these hosts under Referral without naming the assistant, and links opened in apps or in ways that strip the referrer land in Direct. You can build a segment by host name if you know the list, and you have to maintain it as assistants change domains. Agent Tracking keeps that list in one versioned file, applies it on the server, and shows the result per assistant."] },
       { h: "Set it up", p: ["Add the site, paste the snippet, verify. From the first visit onward the Agents view lists each assistant as a referral row with count, share of agent traffic and trend; the Pages view shows where those visitors land, which is usually not the homepage."], code: SNIPPET, codeLang: "html" },
       { h: "What to do with the number", p: ["Referral rows show where identifiable assistant traffic landed, not which pages were cited or ignored. Compare periods after a content change, then inspect actual answers separately if citation evidence matters. Authorized readers can use the stats API or MCP endpoint."], code: MCP, codeLang: "json" },
@@ -209,7 +213,8 @@ const EN: Guide[] = [
       { q: "Is the person identified?", a: "No name is recorded. The snippet sets no cookie and retains no raw visitor address, but a daily-salted session hash can still be pseudonymous personal data." },
     ],
     related: ["ai-agent-traffic-website-measurement-guide", "which-ai-assistants-send-visitors", "how-to-track-ai-agents-visiting-your-website"],
-    updated: "2026-09-08",
+    published: "2026-09-08",
+    updated: "2026-09-25",
   },
   {
     slug: "can-google-analytics-track-ai-agents",
@@ -444,10 +449,11 @@ const DE: Guide[] = [
     ],
     faq: [
       { q: "Kann ich Agenten ohne Script auf der Seite messen?", a: "Teilweise. Das Server-Log liefert Crawler-Abrufe und Bursts. Referrals und Tool-Aufrufe passieren im Browser und brauchen das Snippet." },
-      { q: "Bremst es die Site?", a: "Das Snippet hat 4,5 KB, lädt mit defer und schickt kleine Batches per sendBeacon. Nichts blockiert das Rendern." },
+      { q: "Bremst es die Site?", a: "Das Snippet lädt mit defer und schickt kleine Batches per sendBeacon. Der Build weist die aktuelle minimierte Größe aus; prüfe die Leistung auf deinen eigenen Seiten." },
     ],
     related: ["ki-agenten-traffic-website-messen-leitfaden", "welche-ki-assistenten-schicken-besucher", "welche-ki-crawler-lesen-meine-seiten"],
-    updated: "2026-09-08",
+    published: "2026-09-08",
+    updated: "2026-09-25",
   },
   {
     slug: "sehen-ob-ki-agenten-auf-der-site-kaufen",
@@ -496,7 +502,7 @@ const DE: Guide[] = [
       "Einige Crawler-User-Agents lassen sich im Origin-Log gegen frische veröffentlichte IP-Bereiche prüfen. Google-Extended ist ein robots-Richtlinientoken, keine Crawler-Identität. Fehlende oder nicht unterstützte Verifikation bleibt sichtbar.",
     sections: [
       { h: "Warum das Snippet nicht reicht", p: ["Viele Crawler holen HTML ohne Browser-Script. Ein Origin-Access-Log kann ihre Anfragen mit behauptetem User-Agent und Adresse enthalten, soweit diese Informationen vorliegen."] },
-      { h: "Schritt 1: das Log schicken", p: ["Auf der Einstellungsseite hochladen oder täglich mit dem API-Token posten. nginx- und Apache-Format combined, roh oder gezippt, ganze Dateien; Zeilen, die älter sind als die neueste bereits importierte, werden übersprungen."], code: LOG, codeLang: "sh" },
+      { h: "Schritt 1: das Log schicken", p: ["Lade in den Einstellungen einen nur angehängten Log-Snapshot hoch oder nutze den Collector mit stabiler Quelle, Generation und Datensatzposition. nginx- und Apache-Format combined werden roh oder gezippt unterstützt. Wiederholte Positionen werden übersprungen; rotierte oder umsortierte Logs brauchen Quellenmetadaten."], code: LOG, codeLang: "sh" },
       { h: "Schritt 2: Verifikation gegen veröffentlichte Bereiche", p: ["Bei unterstützten Betreibern und Crawler-Identitäten vergleicht der Importer Origin-Adressen mit aktuellen veröffentlichten Bereichen. Manche Identitäten lassen sich so nicht prüfen und bleiben unbekannt.", "Unverifiziert heißt nicht zwingend bösartig. Prüfe Log-Herkunft, Aktualität der Liste und Anbieter-Dokumentation vor einer Schlussfolgerung."] },
       { h: "Schritt 3: Bursts", p: ["Ein Burst umfasst mindestens drei verschiedene relevante Pfade mit kurzen Abständen innerhalb eines Import-Batches. Das ist ein Anfragemuster, kein Beleg für eine Nutzerfrage oder Assistentenabsicht."] },
     ],
@@ -505,7 +511,8 @@ const DE: Guide[] = [
       { q: "Wird die Adresse gespeichert?", a: "Nein. Sie wird während der Verarbeitung genutzt, um Abrufe eines Agenten zu gruppieren und den Bereich zu prüfen, und mit dem Ende der Anfrage verworfen. Die Logdatei wird nicht behalten." },
     ],
     related: ["verhalten-von-ki-agenten-auf-der-website-messen", "welche-ki-assistenten-schicken-besucher"],
-    updated: "2026-09-08",
+    published: "2026-09-08",
+    updated: "2026-09-25",
   },
   {
     slug: "mcp-und-webmcp-tool-aufrufe-erfassen",
@@ -590,7 +597,7 @@ const DE: Guide[] = [
     summary:
       "Ein Klick auf einen Link in ChatGPT kommt mit dem Referrer chatgpt.com, manchmal mit utm_source=chatgpt.com, und die meisten Analytics-Werkzeuge legen ihn unter Referral oder Direct ab. Agent Tracking gleicht Referrer und utm-Parameter mit einer gepflegten Liste ab und zeigt ChatGPT, Perplexity, Claude, Copilot und Gemini als eigene Zeilen, mit Landingpages und Trend Woche für Woche.",
     sections: [
-      { h: "Wo das Signal steckt", p: ["ChatGPT sendet chatgpt.com als Referrer für Links, die jemand in einer Antwort anklickt. Perplexity sendet perplexity.ai, Claude claude.ai, Copilot copilot.microsoft.com, Gemini gemini.google.com. OpenAI hängt an viele Links zusätzlich utm_source=chatgpt.com. Beides sieht ein Script auf deiner Seite, und sonst nichts."] },
+      { h: "Wo das Signal steckt", p: ["ChatGPT sendet chatgpt.com als Referrer für Links, die jemand in einer Antwort anklickt. Perplexity sendet perplexity.ai, Claude claude.ai, Copilot copilot.microsoft.com, Gemini gemini.google.com. OpenAI hängt an viele Links zusätzlich utm_source=chatgpt.com. Referrer und Kampagnensignale lassen sich durch geeignete Browser- oder Server-Analytics erfassen. Ihre Verfügbarkeit hängt vom Client und dessen Referrer-Regeln ab."] },
       { h: "Warum Google Analytics zu wenig zählt", p: ["GA4 fasst diese Hosts unter Referral zusammen, ohne den Assistenten zu nennen, und Links, die in Apps oder ohne Referrer geöffnet werden, landen unter Direct. Du kannst ein Segment nach Hostname bauen, wenn du die Liste kennst, und musst es pflegen, wenn Assistenten ihre Domains ändern. Agent Tracking hält diese Liste in einer versionierten Datei, wendet sie auf dem Server an und zeigt das Ergebnis je Assistent."] },
       { h: "Einrichten", p: ["Site hinzufügen, Snippet einbauen, prüfen. Ab dem ersten Besuch listet die Agenten-Ansicht jeden Assistenten als Referral-Zeile mit Anzahl, Anteil am Agententraffic und Trend; die Seiten-Ansicht zeigt, wo diese Besucher landen, und das ist meist nicht die Startseite."], code: SNIPPET, codeLang: "html" },
       { h: "Was du mit der Zahl machst", p: ["Referral-Zeilen zeigen, wo erkennbarer Assistenten-Traffic landet, nicht welche Seiten zitiert oder ignoriert wurden. Vergleiche Zeiträume nach einer Inhaltsänderung und prüfe sichtbare Antworten getrennt, falls du Zitatbelege brauchst. Berechtigte Leser können API und MCP nutzen."], code: MCP, codeLang: "json" },
@@ -600,7 +607,8 @@ const DE: Guide[] = [
       { q: "Wird die Person identifiziert?", a: "Ein Klarname wird nicht erfasst. Das Snippet setzt keine Cookies und speichert keine rohe Besucheradresse; täglich gesalzene Sitzungskennungen können trotzdem pseudonyme personenbezogene Daten sein." },
     ],
     related: ["ki-agenten-traffic-website-messen-leitfaden", "welche-ki-assistenten-schicken-besucher", "ki-agenten-auf-der-website-tracken"],
-    updated: "2026-09-08",
+    published: "2026-09-08",
+    updated: "2026-09-25",
   },
   {
     slug: "kann-google-analytics-ki-agenten-messen",
@@ -824,7 +832,7 @@ const DE: Guide[] = [
 ];
 
 export function guides(lang: DashLang): Guide[] {
-  return lang === "de" ? [...DE, ...SEO_GUIDES_DE] : [...EN, ...SEO_GUIDES_EN];
+  return lang === "de" ? [...DE, ...SEO_GUIDES_DE, ...WORKFLOW_GUIDES_DE] : [...EN, ...SEO_GUIDES_EN, ...WORKFLOW_GUIDES_EN];
 }
 
 export function guideBySlug(lang: DashLang, slug: string): Guide | undefined {

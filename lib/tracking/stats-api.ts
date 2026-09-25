@@ -1,3 +1,5 @@
+import { loadInsights } from "./insights-loader";
+import { dashLang } from "./copy";
 import { SOURCES_VERSION } from "./classify";
 import { getSite, hasFreshLogSource, ingestHealth, lastSiteCheck, logAttemptSummary, logSourceStates, recentScanAttempts, scanJob, verificationAudit, type Account } from "./db";
 import { activitySignals, interactions, loadDashboard } from "./dashboard";
@@ -29,6 +31,7 @@ export function statsFor(domain: string, account: Account, days: number, now = D
   const health = ingestHealth(site.domain, days, now);
   const logFresh = hasFreshLogSource(site.domain, now);
   return {
+    insights: loadInsights(site, dashLang(account.lang), days, site.owner === account.email, now, dash),
     domain: site.domain,
     days,
     generatedAt: new Date(now).toISOString(),

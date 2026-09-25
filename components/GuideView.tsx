@@ -1,3 +1,4 @@
+import WorkflowLinks from "./WorkflowLinks";
 import Link from "next/link";
 import { counterpart, guides, type Guide } from "@/lib/guides";
 import { AUTHOR, SITE_ORIGIN } from "@/lib/site";
@@ -57,6 +58,7 @@ export default function GuideView({ lang, guide }: { lang: DashLang; guide: Guid
   return (
     <article className="shell doc" style={{ paddingTop: 56, paddingBottom: 20 }}>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ld) }} />
+      <nav aria-label={lang === "de" ? "Brotkrumennavigation" : "Breadcrumb"} style={{ fontSize: 13, marginBottom: 20 }}><Link href={lang === "de" ? "/de" : "/"}>{lang === "de" ? "Start" : "Home"}</Link> / <Link href={base}>Guides</Link></nav>
       <div className="pagehead" style={{ marginBottom: 30 }}>
         <p className="eyebrow">
           <Link href={base} style={{ color: "inherit" }}>
@@ -89,9 +91,10 @@ export default function GuideView({ lang, guide }: { lang: DashLang; guide: Guid
           </p>
         ) : null}
       </div>
+      <nav aria-label={lang === "de" ? "Inhaltsverzeichnis" : "On this page"}><ul>{guide.sections.map((section, i) => <li key={section.h}><a href={`#step-${i + 1}`}>{section.h}</a></li>)}</ul></nav>
       <div className="prose">
-        {guide.sections.map((s) => (
-          <section key={s.h}>
+        {guide.sections.map((s, i) => (
+          <section key={s.h} id={`step-${i + 1}`}>
             <h2>{s.h}</h2>
             {s.p.map((p) => (
               <p key={p.slice(0, 40)}>{linkedText(p)}</p>
@@ -113,6 +116,7 @@ export default function GuideView({ lang, guide }: { lang: DashLang; guide: Guid
           </div>
         </section>
       </div>
+      <WorkflowLinks lang={lang} current={`${base}/${guide.slug}`} />
       <div className="card mid" style={{ maxWidth: "var(--measure)", marginTop: 40, padding: "22px 24px" }}>
         <p style={{ margin: "0 0 10px", fontSize: 15, color: "var(--ink-2)" }}>{lang === "de" ? "Weiterlesen" : "Read next"}</p>
         <p style={{ margin: 0, display: "flex", flexWrap: "wrap", gap: "6px 20px" }}>
@@ -121,7 +125,7 @@ export default function GuideView({ lang, guide }: { lang: DashLang; guide: Guid
               {g.question}
             </Link>
           ))}
-          <Link href="/login" style={{ fontFamily: "var(--display)", fontWeight: 600 }}>
+          <Link href={lang === "de" ? "/login?lang=de" : "/login"} style={{ fontFamily: "var(--display)", fontWeight: 600 }}>
             {lang === "de" ? "Pilotphase starten →" : "Start the free pilot →"}
           </Link>
         </p>

@@ -2,12 +2,11 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import HeroArt from "@/components/HeroArt";
 import Positioning from "@/components/Positioning";
-import ProductWorkflow from "@/components/ProductWorkflow";
 import { heroFor } from "@/lib/hero";
 import { alternatesForLocale } from "@/lib/i18n";
 import { PLANS, RAW_RETENTION_DAYS } from "@/lib/tracking/plans";
 import { snippetFor } from "@/lib/tracking/snippet";
-import { CHECK_ORIGIN, CONTACT_EMAIL, GITHUB_URL, LEGAL, SITE_ORIGIN } from "@/lib/site";
+import { CHECK_ORIGIN, CONTACT_EMAIL, GITHUB_URL, SITE_ORIGIN } from "@/lib/site";
 
 // Cached for an hour and re-rendered from the running server's environment after that, so
 // the host and the legal entity follow the installation while the page still caches.
@@ -16,7 +15,7 @@ export const revalidate = 3600;
 export const metadata: Metadata = {
   title: { absolute: "Agent Tracking: KI-Agenten-Analytics für deine Website" },
   description:
-    "Erkannte KI-Referrals, unterstützte Browser-Tools, optionale verifizierte Crawler-Logs und serverbestätigte Abschlüsse mit sichtbaren Messgrenzen.",
+    "KI-Traffic messen, Tool-Fehler untersuchen und Korrekturen nachtesten. Open-Source-Analytics für Websites mit optionalen serverbestätigten Ergebnissen.",
   alternates: alternatesForLocale("/", "de"),
   robots: { index: true, follow: true, "max-image-preview": "large", "max-snippet": -1 },
   openGraph: { title: "Agent Tracking: sieh, was KI-Agenten auf deiner Website tun", description: "Erkannte KI-Referrals, unterstützte WebMCP-Beobachtungen, optionale Crawler-Log-Prüfung und Serverbelege. Open Source.", url: "/de", type: "website" },
@@ -31,7 +30,7 @@ const PAGE_LD = {
   name: "Agent Tracking: KI-Agenten-Analytics für deine Website",
   description: "Erkannte Assistenten-Referrals, Browser-Tool-Beobachtungen, optionale Crawler-Logs und Serverbelege mit expliziten Messgrenzen.",
   inLanguage: "de",
-  dateModified: LEGAL.revised,
+  dateModified: "2026-09-25",
   isPartOf: { "@id": `${SITE_ORIGIN}/#site` },
   about: { "@id": `${SITE_ORIGIN}/#app` },
 };
@@ -49,33 +48,31 @@ export default function Page() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(PAGE_LD) }} />
       <section className="shell pagehead withart" style={{ paddingTop: 64, paddingBottom: 20 }}>
         <HeroArt name={heroFor("home")!} />
-        <p className="eyebrow">Open Source · kostenlose Pilotphase</p>
+        <p className="eyebrow">KI-Analytics für deine Website · Kostenloser Pilot</p>
         <h1 style={{ fontSize: "clamp(30px,5.2vw,58px)", lineHeight: 1.05, maxWidth: "18ch", marginBottom: 20 }}>
-          Miss die Agenten auf deiner Site.
+          Was passiert nach dem KI-Klick?
         </h1>
         <p style={{ fontSize: "clamp(17px,2.1vw,22px)", lineHeight: 1.55, color: "var(--ink)", maxWidth: "52ch", marginTop: 0, marginBottom: 14 }}>
-          Sieh erkannte Assistenten-Referrals und im Browser beobachtbare Tool-Aktivität. Ergänze Origin-Logs für Crawler-Anfragen und Serverbelege für bestätigte Anfragen oder Buchungen.
+          Sieh, welche KI-Assistenten Besucher schicken, welche Tool-Aufrufe scheitern und welche Anfragen dein Server bestätigt. Halte Probleme fest, dokumentiere die Korrektur und prüfe den Ablauf erneut.
         </p>
         <p style={{ fontSize: "clamp(15px,1.6vw,18px)", lineHeight: 1.55, color: "var(--ink-2)", maxWidth: "52ch", marginTop: 0, marginBottom: 28 }}>
-          Das Snippet beobachtet unterstützte Browseraktionen. Logs und Serverintegrationen liefern getrennte Belege; ein Browser-Zielmarker bestätigt weder einen Abschluss noch den Akteur.
+          Insights verbindet beobachtete Probleme mit dem nächsten Schritt. Im Verlauf deiner Website bleiben Änderungen und ihre tatsächlichen Testergebnisse zusammen.
         </p>
         <form className="scanform" action="/login" method="get" style={{ maxWidth: 560 }} {...{ toolname: "start_free_pilot", tooldescription: "Startet die kostenlose Agent-Tracking-Pilotphase für eine Domain: öffnet die Anmeldeseite mit vorausgefüllter Domain." }}>
           <input type="hidden" name="lang" value="de" />
           <label htmlFor="domain" className="sr-only">Deine Domain</label>
           <input id="domain" type="text" name="domain" inputMode="url" autoComplete="url" placeholder="example.com" aria-describedby="pilot-note" required />
           <button className="btn" type="submit">
-            Pilotphase starten
+            Website verbinden
           </button>
         </form>
         <p id="pilot-note" className="formnote" style={{ marginTop: 10 }}>
-          Anmeldung per E-Mail und Snippet einbauen. Keine Karte. Das Snippet setzt keine Cookies; prüfe den dokumentierten Datenfluss für deine Installation. Vorher die <Link href="/demo">Demo-Seite</Link> ansehen geht auch.
+          Open Source. In Deutschland gehostet. Ohne Kreditkarte. Die <Link href="/demo">Demo-Seite</Link> zeigt dir den Einstieg.
         </p>
         <p className="formnote"><Link href="/de/guides/ki-agenten-traffic-website-messen-leitfaden">Ausführlichen Leitfaden zur Messung von KI-Traffic lesen</Link>.</p>
       </section>
 
       <Positioning lang="de" />
-      <Positioning lang="de" part="faq" />
-      <ProductWorkflow lang="de" />
 
       <section className="shell section centered">
         <h2>Ein Ausschnitt der Messansichten</h2>
@@ -91,7 +88,7 @@ export default function Page() {
               loading="lazy"
               style={{ width: "100%", aspectRatio: "16 / 11", objectFit: "cover", objectPosition: "top", borderRadius: 12, border: "1px solid var(--line, #e6e3dc)" }}
             />
-            <figcaption style={{ fontSize: 13, color: "var(--muted)", marginTop: 8 }}>Überblick: Interaktionen pro Tag, daneben der Check-Score.</figcaption>
+            <figcaption style={{ fontSize: 13, color: "var(--muted)", marginTop: 8 }}>Frühere Übersicht mit Demodaten. Insights ergänzt Belege und nächste Schritte.</figcaption>
           </figure>
           <figure style={{ margin: 0 }}>
             <img
@@ -106,7 +103,7 @@ export default function Page() {
       </section>
 
       <section className="shell section centered">
-        <h2>Eine Zeile, dann auf den ersten Agenten warten</h2>
+        <h2>Verbinde deine erste Datenquelle</h2>
         <p className="dek" style={{ maxWidth: "62ch" }}>
           Site im Dashboard anlegen, diese Zeile auf jede Seite, auf Prüfen drücken. Tools, die du über{" "}
           <code>navigator.modelContext</code> registrierst, werden ohne Änderung an deinem Code erkannt; deklarative
@@ -177,8 +174,10 @@ export default function Page() {
         <pre className="code" style={{ marginTop: 22 }}>{SELF_HOST}</pre>
       </section>
 
+      <Positioning lang="de" part="faq" />
+
       <section className="shell section centered" id="pilot">
-        <h2>In der Pilotphase kostenlos</h2>
+        <h2>Wir bauen mit den ersten Nutzern.</h2>
         <p className="dek" style={{ maxWidth: "62ch" }}>
           Agent Tracking ist neu, und der ehrliche Weg, etwas Neues zu bepreisen, ist, es erst laufen zu lassen. In
           der Pilotphase ist jedes Konto im Free-Plan: {free.domains} Site, {free.eventsPerMonth.toLocaleString("de-DE")}{" "}
@@ -198,7 +197,7 @@ export default function Page() {
           <label htmlFor="domain-2" className="sr-only">Deine Domain</label>
           <input id="domain-2" type="text" name="domain" inputMode="url" autoComplete="url" placeholder="example.com" aria-describedby="pilot-terms" required />
           <button className="btn" type="submit">
-            Pilotphase starten
+            Website verbinden
           </button>
         </form>
       </section>

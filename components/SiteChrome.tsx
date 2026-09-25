@@ -1,5 +1,6 @@
 import Link from "next/link";
 import LangSwitch from "@/components/LangSwitch";
+import { guideTranslations, workflowLinks } from "@/lib/guide-links";
 import Wordmark from "@/components/Wordmark";
 import { href, t, type Locale } from "@/lib/i18n";
 import { CHECK_ORIGIN, GITHUB_URL, SITE_HOST } from "@/lib/site";
@@ -11,6 +12,8 @@ import { CHECK_ORIGIN, GITHUB_URL, SITE_HOST } from "@/lib/site";
  */
 export default function SiteChrome({ locale, children }: { locale: Locale; children: React.ReactNode }) {
   const d = t(locale);
+  const translations = guideTranslations();
+  const login = locale === "de" ? "/login?lang=de" : "/login";
   const L = (p: string) => href(p, locale);
 
   const NAV = [
@@ -37,14 +40,14 @@ export default function SiteChrome({ locale, children }: { locale: Locale; child
             <a href={GITHUB_URL} rel="noopener">
               GitHub
             </a>
-            <LangSwitch label={d.langLabel} />
-            <Link href="/login" className="btn" style={{ padding: "9px 18px", fontSize: 14 }}>
+            <LangSwitch label={d.langLabel} translations={translations} />
+            <Link href={login} className="btn" style={{ padding: "9px 18px", fontSize: 14 }}>
               {d.nav.login}
             </Link>
           </nav>
 
           <div className="head-actions">
-            <Link href="/login" className="head-cta">
+            <Link href={login} className="head-cta">
               {d.nav.login}
             </Link>
             <details className="navtoggle">
@@ -62,10 +65,10 @@ export default function SiteChrome({ locale, children }: { locale: Locale; child
                 <a href={GITHUB_URL} rel="noopener">
                   GitHub
                 </a>
-                <a href="/login" className="btn">
+                <a href={login} className="btn">
                   {d.nav.login}
                 </a>
-                <LangSwitch label={d.langLabel} />
+                <LangSwitch label={d.langLabel} translations={translations} />
               </div>
             </details>
           </div>
@@ -92,6 +95,7 @@ export default function SiteChrome({ locale, children }: { locale: Locale; child
                 <li>
                   <Link href={L("/guides")}>{d.foot.guides}</Link>
                 </li>
+                {workflowLinks(locale).slice(0, 2).map(link => <li key={link.href}><Link href={link.href}>{link.label}</Link></li>)}
                 <li>
                   <Link href={`/stats/${SITE_HOST}`}>{d.foot.live}</Link>
                 </li>
@@ -99,7 +103,7 @@ export default function SiteChrome({ locale, children }: { locale: Locale; child
                   <Link href={`${L("/")}#plans`}>{d.foot.pricing}</Link>
                 </li>
                 <li>
-                  <Link href="/login">{d.foot.login}</Link>
+                  <Link href={login}>{d.foot.login}</Link>
                 </li>
               </ul>
             </div>

@@ -56,11 +56,9 @@ export type HomeContent = {
 
 const EN: HomeContent = {
   category: "AI agent analytics for websites",
-  definitionTitle: "What Agent Tracking does",
-  definition:
-    "Agent Tracking records recognized assistant referrals, browser-visible tool activity and, when connected, server-log fetches and server-confirmed inquiry receipts. Each source has its own evidence limit.",
-  definitionMore:
-    "The snippet observes selected browser actions without setting cookies. Origin logs and server integrations add separate evidence for crawler requests, remote tools and completed inquiries. A browser action alone cannot prove who acted or whether a business outcome succeeded.",
+  definitionTitle: "AI traffic is the beginning. What happens next?",
+  definition: "Agent Tracking helps website teams inspect AI referrals and tool failures, confirm inquiries through server receipts, and document fixes with browser retests.",
+  definitionMore: "Start with the signal you need. The snippet observes recognized referrals and supported browser tools. Origin logs add crawler access; server integrations confirm business outcomes.",
   notTitle: "What it is not",
   notDek: "The name is used for five other things. None of them is this. If a search engine or an assistant sent you here for one of those, this is the wrong page, and here is where the right one lives.",
   not: [
@@ -89,22 +87,12 @@ const EN: HomeContent = {
     { k: "Manifest", t: "When your tool list changes", d: "The manifest at /.well-known/webmcp is hashed once per visit. The dashboard shows when it last changed; Pro accounts are alerted by email." },
   ],
   seesScore: "A separate readiness check can show technical site findings beside observed activity when a scan has succeeded.",
-  fightTitle: "Win the fight for AI bot traffic",
-  fightDek: "Assistants can send visitors, fetch pages and use supported tools. Measure those signals separately, improve a task path and check it again.",
-  fight: [
-    { k: "1. Measure", t: "Observed, attributable signals", d: "Recognized referrals, access attempts, verified HTML fetches, browser-visible tool calls and optional server receipts. Unknown actors and missing sources remain explicit." },
-    { k: "2. Understand", t: "Inspect task and tool evidence", d: "Compare fetch paths, technical tool outcomes and browser goal attempts without inferring prompts, intent or a completed sale from those signals." },
-    { k: "3. Fix", t: "Change the site, the tools, the manifest", d: "Use a reproduced task failure to improve a tool description, error path or page. Record the change and run the same test again." },
-    { k: "4. Verify", t: "Retest the same task", d: "Use a deterministic staging browser check and compare real run IDs and versions. Results describe that test path; business impact needs separate evidence." },
-  ],
-  whoTitle: "Who it is for",
-  whoDek: "Teams that need evidence about recognized assistant referrals, crawler requests and tool activity on their own sites.",
-  who: [
-    { k: "Marketing and GEO", t: "Teams working on AI visibility", d: "See which assistants send identifiable visitors and where those people land, week over week. Compare that with crawler requests without treating either as a citation count." },
-    { k: "Developers", t: "Teams publishing MCP and WebMCP tools", d: "Inspect supported browser calls and separately integrated server calls, technical outcomes, duration and sanitized errors." },
-    { k: "Agencies", t: "Many client sites, one account", d: "Unlimited sites on the Agency plan, a public stats page per client, a white-label badge, one API token for your own reporting." },
-    { k: "European companies", t: "Documented data selection", d: "The snippet sets no cookies; raw addresses are not stored. Review the privacy notice, data processing agreement and your own deployment before making a consent decision." },
-  ],
+  fightTitle: "From a failure to a checked fix.",
+  fightDek: "Keep the problem, the change, and the retest together.",
+  fight: [{"k": "1. Investigate", "t": "Start with evidence", "d": "Insights highlights measurement gaps, observed failures, and pending retests. Open the supporting data before deciding what to change."}, {"k": "2. Fix", "t": "Document the correction", "d": "Record a finding, assign an owner, and describe the change. Link the correction to its test runs."}, {"k": "3. Retest", "t": "Check the same path again", "d": "Repeat a prepared browser inquiry test on your staging website. Compare the outcome and test conditions."}, {"k": "4. Share", "t": "Show what changed", "d": "Keep checked fixes in your site history and share findings, corrections, and retests in a protected report."}],
+  whoTitle: "For teams that can change the website.",
+  whoDek: "A practical workspace for investigating and checking improvements.",
+  who: [{"k": "Agencies", "t": "Evidence for each client", "d": "Document issues and checked fixes for each client website. Share the evidence with the people responsible."}, {"k": "Website and product teams", "t": "Investigate broken tool calls", "d": "Inspect technical failures and link inquiries to confirmations from your own system."}, {"k": "GEO and AEO teams", "t": "See what reaches your website", "d": "Add observed visits and website activity to your visibility analysis. Crawler requests remain separate from citations and recommendations."}],
   useTitle: "Ask your agent, not a dashboard",
   useDek: "A read-only MCP tool and JSON API expose authorized site summaries to compatible clients; CSV and private reports are available separately.",
   use: [
@@ -140,40 +128,40 @@ const EN: HomeContent = {
     { k: "Two languages", t: "Dashboard, docs and legal pages", d: "English and German throughout, English binding. Support in both." },
     { k: "Self-hostable", t: "When data must not leave your house", d: "One Node process, one SQLite file, AGPL-3.0, ten minutes with Docker. What the cloud does, your server does." },
   ],
-  valueTitle: "The concrete value",
-  valueDek: "Six practical questions answered from the sources you connect.",
-  value: [
-    { k: "Channels", t: "Who sends you business", d: "\"Perplexity referred 40 visitors this week, ChatGPT 12, and they land on the pricing page.\" A channel you can now optimise, and a number for whoever asks whether AI matters for your site." },
-    { k: "Readers", t: "Which requests reached your pages", d: "Verified crawler fetches and short bursts show requests to distinct paths. They do not reveal training use, the user's question or intent." },
-    { k: "Tools", t: "Which tool calls were observed", d: "For supported browser and integrated server calls, inspect technical outcomes, duration and sanitized errors. Unobserved calls remain outside the measurement." },
-    { k: "Goals", t: "Attempts and server receipts", d: "Browser goal markers show attempts. A separate site-server integration confirms an inquiry or booking. Unknown outcomes stay visible." },
-    { k: "Monitoring", t: "What machines do to your site", d: "Verified fetches, unverified bot claims, bursts and manifest changes: separate operational signals with visible evidence levels." },
-    { k: "Your agents", t: "The numbers in your own tools", d: "A bearer token and one MCP tool, and Claude, ChatGPT or Cursor answer \"which agents read our site this week?\" from your data." },
-  ],
-  faqTitle: "Questions people ask",
-  faqDek: "Short answers. The documentation has the long ones.",
+  valueTitle: "Three questions worth opening a dashboard for.",
+  valueDek: "Use the evidence to decide what to investigate next.",
+  value: [{"k": "Visitors", "t": "Who brings visitors?", "d": "See attributable visits from AI assistants and their landing pages. Find out where AI traffic reaches your website."}, {"k": "Tool failures", "t": "What breaks on your site?", "d": "Inspect observed tool calls, technical errors, and response times. Insights links observed failures to the relevant evidence and a next step."}, {"k": "Results", "t": "Did the inquiry arrive?", "d": "Your server confirms successfully created inquiries or bookings. Missing confirmation remains unknown, rather than becoming a lost sale."}],
+  faqTitle: "Before you connect your website",
+  faqDek: "What you can measure, what needs an integration, and what the results mean.",
   faq: [
-    { q: "What is Agent Tracking?", a: "Agent Tracking combines recognized assistant referrals, supported WebMCP browser observations, optional verified crawler log fetches and authenticated server outcome receipts. The snippet sets no cookies; actor identity and business success are shown only with the evidence available for each source." },
-    { q: "Is this the same as AgentOps, LangSmith or LLM observability?", a: "No. Observability tools trace the agents you build, from inside your code. Agent Tracking measures agents that other people run when they visit your website, from the outside, through a script tag on your pages. It does not see prompts, spans or token costs, and it needs no SDK. The two complement each other." },
-    { q: "Does it track call-centre agents, field staff or parcels?", a: "No. Agent here means software acting for a person: ChatGPT, Claude, Perplexity, a crawler, a WebMCP-capable browser. Nothing in the product records people, locations, shifts or shipments." },
-    { q: "Is agenttracking.co the same as Agent Track, AgencyTrack or AgenTrak?", a: "No. Agent Track (agenttrack.io) is a CRM for real-estate agents, AgencyTrack (agencytrack.app) manages insurance agencies, and AgenTrak monitors employees. agenttracking.co is Agent Tracking, an open-source analytics service that measures what AI agents such as ChatGPT, Claude, Perplexity and their crawlers do on a website. The names are similar; the products have nothing in common." },
-    { q: "How is it different from Google Analytics or Plausible?", a: "Web analytics counts people and their pages. Agent Tracking counts agents and their actions: which assistant sent the visitor, which crawler read which pages, which tool an agent called and whether it succeeded. It runs beside your analytics, not instead of it." },
-    { q: "How is it different from Cloudflare AI Crawl Control?", a: "Cloudflare measures and controls crawler requests at the edge and offers referral analytics on supported plans. Agent Tracking works without a CDN, combines assistant referrals with optional origin logs, and measures browser tool calls and goals." },
-    { q: "Do I need a cookie banner for it?", a: "The snippet sets no cookies or local storage entries. Your privacy and consent assessment depends on your deployment, other scripts and applicable law; review the documented data flow." },
-    { q: "Where is the data stored?", a: "On a server in Germany. A data processing agreement with the EU standard contractual clauses is concluded when you add a site. Or run the software yourself: it is open source under AGPL-3.0." },
-    { q: "How long does installation take?", a: "Add the domain, install the snippet and verify it. Supported browser model-context tools can be observed when the snippet loads in time. Crawler logs and server-confirmed outcomes need separate setup." },
-    { q: "What does it cost?", a: "Free during the pilot: one site, 10,000 agent events a month, 30 days of history, no card. Plain page views are never counted. Paid plans with more sites and a year of history follow with 30 days' notice. Self-hosting is free." },
-    { q: "Can my own agents read the numbers?", a: "Yes. Authorized readers can query evidence-labeled site statistics through JSON and the get_agent_stats MCP tool. Ask about observed, verified and unknown signals separately." },
-  ],
+  {
+    "q": "Will Agent Tracking improve my rankings in AI answers?",
+    "a": "Agent Tracking shows observed activity on your website. You can use it to investigate technical problems and retest changes. It does not guarantee more mentions, citations, or better placement in AI answers."
+  },
+  {
+    "q": "Can I see what people asked ChatGPT?",
+    "a": "Recorded referrals and server logs do not reliably reveal the original question. Closely timed page requests do not identify a specific prompt either."
+  },
+  {
+    "q": "Is one script enough?",
+    "a": "The snippet records recognized referrals and supported browser activity. Crawler analysis requires origin logs. Confirmed business outcomes require a server integration."
+  },
+  {
+    "q": "What can I check before agents visit my site?",
+    "a": "You can run a prepared browser inquiry test on a test or staging website. This synthetic test is shown separately from real usage."
+  },
+  {
+    "q": "Can I take my data with me?",
+    "a": "Statistics are available through API, MCP, and CSV. Protected reports can be exported as JSON. You can also host Agent Tracking yourself."
+  }
+],
 };
 
 const DE: HomeContent = {
   category: "KI-Agenten-Analytics für Websites",
-  definitionTitle: "Was Agent Tracking macht",
-  definition:
-    "Agent Tracking erfasst erkannte Assistenten-Referrals, im Browser beobachtbare Tool-Aktivität und – bei angebundener Quelle – Server-Log-Abrufe sowie serverbestätigte Anfragen. Jede Quelle hat eigene Nachweisgrenzen.",
-  definitionMore:
-    "Das Snippet beobachtet ausgewählte Browseraktionen, ohne Cookies zu setzen. Origin-Logs und Serverintegrationen liefern getrennte Belege für Crawler-Anfragen, Remote-Tools und abgeschlossene Anfragen. Eine Browseraktion allein beweist weder den Akteur noch einen fachlichen Abschluss.",
+  definitionTitle: "KI-Traffic ist der Anfang. Was passiert danach?",
+  definition: "Agent Tracking hilft Website-Teams, KI-Referrals und Tool-Fehler zu untersuchen, Anfragen durch Serverbelege zu bestätigen und Korrekturen mit Browser-Nachtests zu dokumentieren.",
+  definitionMore: "Starte mit dem Signal, das du brauchst. Das Snippet beobachtet erkannte Referrals und unterstützte Browser-Tools. Origin-Logs ergänzen Crawler-Zugriffe; Serverintegrationen bestätigen Geschäftsergebnisse.",
   notTitle: "Was es nicht ist",
   notDek: "Der Name steht auch für fünf andere Dinge. Keines davon ist das hier. Wenn dich eine Suchmaschine oder ein Assistent wegen einem davon hierher geschickt hat, ist das die falsche Seite, und hier steht, wo die richtige liegt.",
   not: [
@@ -202,22 +190,12 @@ const DE: HomeContent = {
     { k: "Manifest", t: "Wenn sich deine Tool-Liste ändert", d: "Das Manifest unter /.well-known/webmcp wird einmal pro Besuch gehasht. Das Dashboard zeigt die letzte Änderung; Pro-Konten bekommen eine Mail." },
   ],
   seesScore: "Ein separater Readiness-Check kann technische Befunde neben beobachteter Aktivität zeigen, sobald ein Scan erfolgreich war.",
-  fightTitle: "Den Kampf um AI-Bot-Traffic gewinnen",
-  fightDek: "Assistenten können Besucher schicken, Seiten abrufen und unterstützte Tools nutzen. Miss diese Signale getrennt, verbessere einen Aufgabenweg und teste ihn erneut.",
-  fight: [
-    { k: "1. Messen", t: "Beobachtete Signale", d: "Erkannte Referrals, Zugriffsversuche, verifizierte HTML-Abrufe, sichtbare Browser-Tools und optionale Serverbelege. Unbekannte Akteure und fehlende Quellen bleiben sichtbar." },
-    { k: "2. Verstehen", t: "Aufgaben- und Tool-Belege prüfen", d: "Abrufpfade, technische Tool-Ausgänge und Browser-Zielversuche vergleichen, ohne daraus Prompts, Absicht oder Verkäufe abzuleiten." },
-    { k: "3. Beheben", t: "Site, Tools und Manifest ändern", d: "Nutze einen reproduzierten Aufgabenfehler, um Tool-Beschreibung, Fehlerpfad oder Seite zu verbessern. Dokumentiere die Änderung und teste denselben Fall erneut." },
-    { k: "4. Prüfen", t: "Dieselbe Aufgabe erneut testen", d: "Eine deterministische Browserprüfung auf Staging ausführen und echte Run-IDs und Versionen vergleichen. Das Ergebnis beschreibt diese Teststrecke; Geschäftswirkung braucht weitere Belege." },
-  ],
-  whoTitle: "Für wen es ist",
-  whoDek: "Für Teams, die Belege zu erkannten Assistenten-Referrals, Crawler-Anfragen und Tool-Aktivität auf eigenen Sites brauchen.",
-  who: [
-    { k: "Marketing und GEO", t: "Teams, die an KI-Sichtbarkeit arbeiten", d: "Sehen, welche Assistenten erkennbare Besucher schicken und wo diese landen. Crawler-Abrufe lassen sich daneben auswerten, ohne beides als Zitat-Zahl auszugeben." },
-    { k: "Entwickler", t: "Teams, die MCP- und WebMCP-Tools veröffentlichen", d: "Unterstützte Browser-Calls und getrennt integrierte Server-Calls mit technischem Ausgang, Dauer und bereinigten Fehlern prüfen." },
-    { k: "Agenturen", t: "Viele Kundensites, ein Konto", d: "Unbegrenzt Sites im Agency-Plan, eine öffentliche Stats-Seite je Kunde, White-Label-Badge, ein API-Token für dein eigenes Reporting." },
-    { k: "Europäische Unternehmen", t: "Dokumentierte Datenauswahl", d: "Das Snippet setzt keine Cookies; rohe Adressen werden nicht gespeichert. Datenschutzhinweise, AVV und eigene Installation vor einer Einwilligungsentscheidung prüfen." },
-  ],
+  fightTitle: "Vom Fehler zum überprüften Fix.",
+  fightDek: "Halte Problem, Änderung und Nachtest zusammen.",
+  fight: [{"k": "1. Untersuchen", "t": "Mit Belegen anfangen", "d": "Insights zeigt Messlücken, beobachtete Fehler und offene Nachtests. Öffne die zugehörigen Daten, bevor du über eine Änderung entscheidest."}, {"k": "2. Korrigieren", "t": "Die Änderung dokumentieren", "d": "Halte einen Befund fest, ordne eine verantwortliche Person zu und beschreibe die Änderung. Verknüpfe die Korrektur mit ihren Testläufen."}, {"k": "3. Nachtesten", "t": "Denselben Ablauf erneut prüfen", "d": "Wiederhole einen vorbereiteten Anfrage-Test im Browser auf deiner Staging-Website. Vergleiche Ergebnis und Testbedingungen."}, {"k": "4. Belegen", "t": "Zeigen, was sich geändert hat", "d": "Bewahre überprüfte Korrekturen im Verlauf deiner Website auf. Teile Befunde, Änderungen und Nachtests in einem geschützten Bericht."}],
+  whoTitle: "Für Teams, die an der Website etwas ändern können.",
+  whoDek: "Ein Arbeitsbereich, um Probleme zu untersuchen und Verbesserungen zu überprüfen.",
+  who: [{"k": "Agenturen", "t": "Belege für jeden Kunden", "d": "Dokumentiere Probleme und überprüfte Korrekturen pro Kundenwebsite. Teile die Ergebnisse mit den zuständigen Ansprechpartnern."}, {"k": "Website- und Produktteams", "t": "Tool-Fehler untersuchen", "d": "Prüfe technische Fehler und verknüpfe Anfragen mit Bestätigungen aus deinem eigenen System."}, {"k": "GEO- und AEO-Teams", "t": "Sehen, was die Website erreicht", "d": "Ergänze deine Sichtbarkeitsanalyse um beobachtete Besuche und Vorgänge auf deiner Website. Crawler-Abrufe bleiben getrennt von Zitierungen und Empfehlungen."}],
   useTitle: "Frag deinen Agenten, nicht ein Dashboard",
   useDek: "Ein lesendes MCP-Tool und die JSON-API geben berechtigte Site-Summen an kompatible Clients aus; CSV und interne Berichte sind getrennt verfügbar.",
   use: [
@@ -253,31 +231,33 @@ const DE: HomeContent = {
     { k: "Zwei Sprachen", t: "Dashboard, Doku und Rechtstexte", d: "Durchgehend Englisch und Deutsch, Englisch bindend. Support in beiden." },
     { k: "Selbst hostbar", t: "Wenn Daten das Haus nicht verlassen dürfen", d: "Ein Node-Prozess, eine SQLite-Datei, AGPL-3.0, zehn Minuten mit Docker. Was die Cloud kann, kann dein Server." },
   ],
-  valueTitle: "Der konkrete Mehrwert",
-  valueDek: "Sechs praktische Fragen, die sich mit den angebundenen Quellen beantworten lassen.",
-  value: [
-    { k: "Kanäle", t: "Wer dir Geschäft schickt", d: "„Perplexity hat diese Woche 40 Besucher geschickt, ChatGPT 12, und sie landen auf der Preisseite.“ Ein Kanal, den du jetzt optimieren kannst, und eine Zahl für jeden, der fragt, ob KI für deine Site eine Rolle spielt." },
-    { k: "Leser", t: "Welche Anfragen deine Seiten erreichen", d: "Verifizierte Crawler-Abrufe und kurze Bursts zeigen Anfragen an unterschiedliche Pfade. Sie verraten weder Training noch Suchfrage oder Absicht." },
-    { k: "Tools", t: "Welche Tool-Aufrufe beobachtet wurden", d: "Bei unterstützten Browser- und integrierten Server-Calls siehst du technische Ausgänge, Dauer und bereinigte Fehler. Nicht beobachtete Aufrufe bleiben außerhalb der Messung." },
-    { k: "Ziele", t: "Versuche und Serverbelege", d: "Browser-Zielmarker zeigen Versuche. Eine getrennte Site-Serverintegration bestätigt Anfragen oder Buchungen. Unbekannte Ausgänge bleiben sichtbar." },
-    { k: "Monitoring", t: "Was Maschinen mit deiner Site machen", d: "Verifizierte Abrufe, unverifizierte Bot-Namen, Bursts und Manifest-Änderungen: getrennte Betriebssignale mit sichtbaren Belegstufen." },
-    { k: "Deine Agenten", t: "Die Zahlen in deinen eigenen Werkzeugen", d: "Ein Bearer-Token und ein MCP-Tool, und Claude, ChatGPT oder Cursor beantworten „welche Agenten haben unsere Site diese Woche gelesen?“ aus deinen Daten." },
-  ],
-  faqTitle: "Fragen, die gestellt werden",
-  faqDek: "Kurze Antworten. Die langen stehen in der Dokumentation.",
+  valueTitle: "Drei Fragen, für die sich ein Dashboard lohnt.",
+  valueDek: "Nutze die Belege, um den nächsten sinnvollen Schritt zu wählen.",
+  value: [{"k": "Besucher", "t": "Wer bringt Besucher?", "d": "Erkenne zuordenbare Besuche aus KI-Assistenten und ihre Einstiegsseiten. So siehst du, wo KI-Traffic auf deiner Website ankommt."}, {"k": "Tool-Fehler", "t": "Was scheitert auf deiner Website?", "d": "Untersuche beobachtete Tool-Aufrufe, technische Fehler und Laufzeiten. Insights verbindet beobachtete Fehler mit den passenden Belegen und einem nächsten Schritt."}, {"k": "Ergebnisse", "t": "Ist die Anfrage angekommen?", "d": "Dein Server bestätigt erfolgreich angelegte Anfragen oder Buchungen. Ohne Bestätigung bleibt der Ausgang unbekannt; daraus wird kein verlorener Auftrag."}],
+  faqTitle: "Bevor du deine Website verbindest",
+  faqDek: "Was du messen kannst, welche Integration du brauchst und was die Ergebnisse bedeuten.",
   faq: [
-    { q: "Was ist Agent Tracking?", a: "Agent Tracking kombiniert erkannte Assistenten-Referrals, unterstützte WebMCP-Browserbeobachtungen, optionale verifizierte Crawler-Log-Abrufe und authentifizierte Serverbelege. Das Snippet setzt keine Cookies; Akteur und fachlicher Erfolg werden nur mit den jeweils verfügbaren Belegen ausgewiesen." },
-    { q: "Ist das dasselbe wie AgentOps, LangSmith oder LLM-Observability?", a: "Nein. Observability-Werkzeuge tracen die Agenten, die du selbst baust, von innen aus deinem Code. Agent Tracking misst Agenten, die andere betreiben, wenn sie deine Website besuchen, von außen über ein Script-Tag auf deinen Seiten. Es sieht keine Prompts, Spans oder Token-Kosten und braucht kein SDK. Beides ergänzt sich." },
-    { q: "Verfolgt es Callcenter-Agenten, Außendienst oder Pakete?", a: "Nein. Agent heißt hier Software, die für einen Menschen handelt: ChatGPT, Claude, Perplexity, ein Crawler, ein WebMCP-fähiger Browser. Nichts im Produkt erfasst Personen, Standorte, Schichten oder Sendungen." },
-    { q: "Ist agenttracking.co dasselbe wie Agent Track, AgencyTrack oder AgenTrak?", a: "Nein. Agent Track (agenttrack.io) ist ein CRM für Immobilienmakler, AgencyTrack (agencytrack.app) verwaltet Versicherungsagenturen, und AgenTrak überwacht Mitarbeiter. agenttracking.co ist Agent Tracking, ein Open-Source-Analytics-Dienst, der misst, was KI-Agenten wie ChatGPT, Claude, Perplexity und ihre Crawler auf einer Website tun. Die Namen ähneln sich; die Produkte haben nichts gemeinsam." },
-    { q: "Was unterscheidet es von Google Analytics oder Plausible?", a: "Web-Analytics zählt Menschen und ihre Seiten. Agent Tracking zählt Agenten und ihre Aktionen: welcher Assistent den Besucher geschickt hat, welcher Crawler welche Seiten gelesen hat, welches Tool ein Agent aufgerufen hat und ob es geklappt hat. Es läuft neben deinem Analytics, nicht statt dessen." },
-    { q: "Was unterscheidet es von Cloudflare AI Crawl Control?", a: "Cloudflare misst und steuert Crawler-Anfragen am Netzrand und bietet auf unterstützten Plänen Referral-Analysen. Agent Tracking funktioniert ohne CDN, kombiniert Assistenten-Referrals mit optionalen Origin-Logs und misst Browser-Tools und Ziele." },
-    { q: "Brauche ich dafür ein Cookie-Banner?", a: "Das Snippet setzt keine Cookies oder Local-Storage-Einträge. Die Bewertung von Datenschutz und Einwilligung hängt von deiner Installation, weiteren Skripten und geltendem Recht ab; prüfe den dokumentierten Datenfluss." },
-    { q: "Wo liegen die Daten?", a: "Auf einem Server in Deutschland. Ein Auftragsverarbeitungsvertrag mit den EU-Standardvertragsklauseln wird geschlossen, wenn du eine Site hinzufügst. Oder du betreibst die Software selbst: Sie ist Open Source unter AGPL-3.0." },
-    { q: "Wie lange dauert die Installation?", a: "Domain hinzufügen, Snippet einbauen und prüfen. Unterstützte Browser-Model-Context-Tools lassen sich bei rechtzeitig geladenem Snippet beobachten. Crawler-Logs und serverbestätigte Abschlüsse brauchen getrennte Einrichtung." },
-    { q: "Was kostet es?", a: "In der Pilotphase kostenlos: eine Site, 10.000 Agenten-Ereignisse im Monat, 30 Tage Verlauf, keine Karte. Reine Seitenaufrufe zählen nie. Bezahlte Pläne mit mehr Sites und einem Jahr Verlauf folgen mit 30 Tagen Vorlauf. Selbst hosten ist kostenlos." },
-    { q: "Können meine eigenen Agenten die Zahlen lesen?", a: "Ja. Berechtigte Leser können nach Belegstufe gekennzeichnete Site-Statistiken über JSON und das MCP-Tool get_agent_stats abrufen. Fragen nach beobachteten, verifizierten und unbekannten Signalen bleiben getrennt." },
-  ],
+  {
+    "q": "Verbessert Agent Tracking mein Ranking in KI-Antworten?",
+    "a": "Agent Tracking zeigt beobachtete Aktivität auf deiner Website. Du kannst damit technische Probleme untersuchen und Änderungen nachtesten. Daraus folgt keine Garantie für mehr Erwähnungen, Zitierungen oder bessere Platzierungen in KI-Antworten."
+  },
+  {
+    "q": "Sehe ich, was Menschen ChatGPT gefragt haben?",
+    "a": "Die erfassten Referrals und Serverlogs enthalten keinen verlässlichen Nachweis der ursprünglichen Frage. Auch zeitlich nahe Seitenabrufe verraten keinen konkreten Prompt."
+  },
+  {
+    "q": "Reicht ein Script?",
+    "a": "Das Snippet erfasst erkennbare Referrals und unterstützte Browser-Aktivität. Crawler-Auswertungen benötigen Serverlogs. Bestätigte Geschäftsergebnisse benötigen eine Serverintegration."
+  },
+  {
+    "q": "Was kann ich ohne bisherigen Agentenverkehr prüfen?",
+    "a": "Du kannst einen vorbereiteten Anfrageablauf auf einer Test- oder Staging-Website im Browser testen. Dieser synthetische Test wird getrennt von echter Nutzung ausgewiesen."
+  },
+  {
+    "q": "Kann ich meine Daten mitnehmen?",
+    "a": "Statistiken sind über API, MCP und CSV verfügbar. Geschützte Berichte lassen sich als JSON exportieren. Du kannst Agent Tracking auch selbst hosten."
+  }
+],
 };
 
 export function homeContent(lang: DashLang): HomeContent {

@@ -3,22 +3,23 @@ import DashboardShell from "@/components/DashboardShell";
 import { requireSite } from "@/lib/tracking/auth";
 import { dashCopy, dashLang } from "@/lib/tracking/copy";
 import { loadDashboard } from "@/lib/tracking/dashboard";
-import { planFor } from "@/lib/tracking/plans";
+import { clampDays } from "@/lib/tracking/stats-api";
 
 export const metadata: Metadata = { title: "Tools", robots: { index: false, follow: false } };
 export const runtime = "nodejs";
 
-export default async function Page({ params }: { params: Promise<{ domain: string }> }) {
+export default async function Page({ params, searchParams }: { params: Promise<{ domain: string }>; searchParams: Promise<{ days?: string }> }) {
   const { domain } = await params;
   const { account, site } = await requireSite(decodeURIComponent(domain));
+  const days = clampDays((await searchParams).days, account);
   const c = dashCopy(dashLang(account.lang)).tools;
-  const dash = loadDashboard(site.domain, planFor(account.plan).windowDays);
+  const dash = loadDashboard(site.domain, days);
   const never = dash.tools.filter((t) => t.neverCalled);
 
   return (
     <DashboardShell account={account} site={site} view="tools">
       <section className="shell section" style={{ paddingTop: 32 }}>
-        <p className="dek" style={{ marginBottom: 20, maxWidth: "62ch" }}>{c.intro}</p>
+        <p className="dek" style={{ marginBottom: 20, maxWidth: "62ch" }}>{c.intro} · {days} {account.lang === "de" ? "Tage" : "days"}</p>
         {never.length ? (
           <div className="callout hot" style={{ marginBottom: 24 }}>
             <span className="tag">{c.neverCalled}</span>
@@ -42,7 +43,7 @@ export default async function Page({ params }: { params: Promise<{ domain: strin
             <tbody>
               {dash.tools.length ? (
                 dash.tools.map((t) => (
-                  <tr key={t.name} style={t.calls === 0 ? { color: "var(--muted)" } : undefined}>
+                  <tr id={`tool-${encodeURIComponent(t.name)}`} key={t.name} style={t.calls === 0 ? { color: "var(--muted)" } : undefined}>
                     <td>
                       {t.name}
                       {t.declarative ? <span className="chip" style={{ marginLeft: 8 }}>{c.form}</span> : null}

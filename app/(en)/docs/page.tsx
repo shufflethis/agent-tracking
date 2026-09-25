@@ -1,3 +1,4 @@
+import WorkflowLinks from "@/components/WorkflowLinks";
 import type { Metadata } from "next";
 import Link from "next/link";
 import CopyButton from "@/components/CopyButton";
@@ -259,6 +260,7 @@ export default function Page() {
           {sources.agents.map((a) => a.label).join(", ")}. Missing one? Write to {CONTACT_EMAIL}, or open a pull request against <code>lib/tracking/ai-sources.json</code>.
         </p>
       </section>
+      <div className="shell section"><WorkflowLinks lang="en" /></div>
     </>
   );
 }

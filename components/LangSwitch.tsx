@@ -27,7 +27,7 @@ function localeOf(pathname: string): Locale {
   return DEFAULT_LOCALE;
 }
 
-export default function LangSwitch({ label }: { label: string }) {
+export default function LangSwitch({ label, translations = {} }: { label: string; translations?: Record<string, string> }) {
   const pathname = usePathname() || "/";
   const current = localeOf(pathname);
   const base = canonicalPath(basePath(pathname), current);
@@ -37,7 +37,7 @@ export default function LangSwitch({ label }: { label: string }) {
       {LOCALES.map((l) => {
         const isCurrent = l === current;
         const hasPage = hasLocale(base, l);
-        const target = isCurrent ? pathname : hasPage ? href(base, l) : href("/", l);
+        const target = isCurrent ? pathname : translations[pathname] ? translations[pathname] : hasPage ? href(base, l) : href("/", l);
         return (
           <Link key={l} href={target} hrefLang={l} lang={l} aria-current={isCurrent ? "page" : undefined} className={isCurrent ? "on" : undefined} title={LOCALE_LABEL[l]}>
             {LOCALE_SHORT[l]}

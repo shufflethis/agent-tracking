@@ -18,6 +18,7 @@ export default function DashboardShell({ account, site, view, children }: { acco
   const base = site ? `/app/${encodeURIComponent(site.domain)}` : "/app";
   const views = [
     { slug: "", label: c.shell.views.overview },
+    { slug: "insights", label: "Insights" },
     { slug: "agents", label: c.shell.views.agents },
     { slug: "tools", label: c.shell.views.tools },
     { slug: "pages", label: c.shell.views.pages },

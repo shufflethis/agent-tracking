@@ -1,3 +1,4 @@
+import WorkflowLinks from "@/components/WorkflowLinks";
 import type { Metadata } from "next";
 import Link from "next/link";
 import CopyButton from "@/components/CopyButton";
@@ -261,6 +262,7 @@ export default function Page() {
           an {CONTACT_EMAIL}, oder öffne einen Pull Request gegen <code>lib/tracking/ai-sources.json</code>.
         </p>
       </section>
+      <div className="shell section"><WorkflowLinks lang="de" /></div>
     </>
   );
 }
