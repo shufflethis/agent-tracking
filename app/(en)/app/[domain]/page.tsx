@@ -1,3 +1,4 @@
+import { sourceDetailHref } from "@/lib/tracking/source-detail";
 import { checkUrl } from "@/lib/site";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -28,7 +29,7 @@ type Params = { params: Promise<{ domain: string }> };
  * the chart so a year's worth of days does not become a comb.
  */
 /** A short ranked list with a bar behind each row, the way an overview should read at a glance. */
-function TopList({ title, all, href, empty, rows }: { title: string; all: string; href: string; empty: string; rows: { label: string; value: string; share: number }[] }) {
+function TopList({ title, all, href, empty, rows }: { title: string; all: string; href: string; empty: string; rows: { label: string; value: string; share: number; href?: string }[] }) {
   return (
     <div className="card" style={{ padding: 26 }}>
       <p className="smallcaps" style={{ marginBottom: 12, display: "flex", justifyContent: "space-between" }}>
@@ -44,7 +45,7 @@ function TopList({ title, all, href, empty, rows }: { title: string; all: string
           {rows.map((r) => (
             <li key={r.label} style={{ position: "relative", display: "flex", justifyContent: "space-between", gap: 12, padding: "7px 10px", fontSize: 14, borderRadius: 6, overflow: "hidden" }}>
               <span aria-hidden="true" style={{ position: "absolute", inset: 0, width: `${Math.max(2, Math.round(r.share * 100))}%`, background: "var(--cyan-12)", borderRadius: 6 }} />
-              <span style={{ position: "relative", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.label}</span>
+              <span style={{ position: "relative", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.href ? <Link href={r.href}>{r.label} →</Link> : r.label}</span>
               <span style={{ position: "relative", fontFamily: "var(--mono)", color: "var(--ink-2)" }}>{r.value}</span>
             </li>
           ))}
@@ -127,7 +128,7 @@ export default async function Page({ params }: Params) {
 
       <section className="shell section" style={{ paddingTop: 0 }}>
         <div className="grid2" style={{ gap: 18 }}>
-          <TopList title={c.topAgents} all={c.allAgents} href={`/app/${encodeURIComponent(site.domain)}/agents`} empty={c.noneYet} rows={dash.agents.filter((a) => a.count > 0).slice(0, 6).map((a) => ({ label: a.label, value: a.count.toLocaleString(nl), share: a.share }))} />
+          <TopList title={c.topAgents} all={c.allAgents} href={`/app/${encodeURIComponent(site.domain)}/agents`} empty={c.noneYet} rows={dash.agents.filter((a) => a.count > 0).slice(0, 6).map((a) => ({ label: a.label, value: a.count.toLocaleString(nl), share: a.share, href: sourceDetailHref(site.domain, a.kind, a.id, dash.days) }))} />
           <TopList title={c.topPages} all={c.allPages} href={`/app/${encodeURIComponent(site.domain)}/pages`} empty={c.noneYet} rows={dash.pages.slice(0, 6).map((p) => ({ label: p.path, value: (p.fetches + p.calls).toLocaleString(nl), share: dash.pages[0] ? (p.fetches + p.calls) / (dash.pages[0].fetches + dash.pages[0].calls) : 0 }))} />
         </div>
       </section>

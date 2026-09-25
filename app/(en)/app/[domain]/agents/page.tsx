@@ -1,3 +1,5 @@
+import Link from "next/link";
+import { sourceDetailHref } from "@/lib/tracking/source-detail";
 import type { Metadata } from "next";
 import DashboardShell from "@/components/DashboardShell";
 import { requireSite } from "@/lib/tracking/auth";
@@ -42,7 +44,7 @@ export default async function Page({ params }: { params: Promise<{ domain: strin
               {dash.agents.length ? (
                 dash.agents.map((a) => (
                   <tr key={`${a.kind}:${a.id}`}>
-                    <td>{a.label}</td>
+                    <td><Link href={sourceDetailHref(site.domain, a.kind, a.id, dash.days)}>{a.label} →</Link></td>
                     <td>{a.kind === "fetch" ? c.fetch : c.referral}</td>
                     <td className="num">{a.count}</td>
                     <td className="num">{Math.round(a.share * 100)}%</td>
