@@ -31,7 +31,7 @@ export function WriteTokenPanel({ domain, lang, outcomeConfigured, toolConfigure
     {error && <p role="alert" className="formerror">{error}</p>}
   </div>;
 }
-import type { ActionCopy } from "@/lib/tracking/copy";
+import type { ActionCopy, DashCopy } from "@/lib/tracking/copy";
 
 /**
  * The buttons of the dashboard: add a site, verify the snippet, toggle the
@@ -110,6 +110,51 @@ export function VerifyButton({ domain, verified, c }: { domain: string; verified
       {note ? <span style={{ fontSize: 13, color: "var(--muted)" }}>{note}</span> : null}
       {note === c.found ? <Link href={`/app/${encodeURIComponent(domain)}#measurement`} style={{ fontSize: 13 }}>{c.nextAfterVerify}</Link> : null}
     </span>
+  );
+}
+
+export function SiteListSnippetStatus({ domain, verified, lastFailed, labels, actions }: {
+  domain: string;
+  verified: boolean;
+  lastFailed: boolean;
+  labels: Pick<DashCopy["list"], "verified" | "notVerified" | "recentCheckFailed">;
+  actions: ActionCopy;
+}) {
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+  const [checked, setChecked] = useState<{ verified: boolean; detail?: string } | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const isVerified = checked?.verified ?? verified;
+  const failed = checked ? !checked.verified : lastFailed;
+
+  async function recheck() {
+    setBusy(true);
+    setError(null);
+    const result = await call({ action: "verify", domain });
+    setBusy(false);
+    if (!result.ok) {
+      setError(result.detail ?? actions.couldNotCheck);
+      return;
+    }
+    setChecked({ verified: result.verified === true, detail: result.detail });
+    router.refresh();
+  }
+
+  return (
+    <div>
+      <span className={isVerified ? "chip pass" : "chip partial"}>{isVerified ? labels.verified : labels.notVerified}</span>
+      {(failed || !isVerified) && (
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginTop: 4, fontSize: 12 }}>
+          {failed && <span style={{ color: "var(--warn)" }}>⚠ {labels.recentCheckFailed}</span>}
+          <button type="button" className="btn ghost" style={{ fontSize: 12, padding: "4px 8px" }} disabled={busy} onClick={recheck}>
+            {busy ? actions.checking : `↻ ${failed ? actions.checkAgain : actions.checkSnippet}`}
+          </button>
+        </div>
+      )}
+      {checked?.verified && <span role="status" style={{ display: "block", color: "var(--good)", fontSize: 12, marginTop: 4 }}>{actions.found}</span>}
+      {checked && !checked.verified && <span role="status" style={{ display: "block", color: "var(--warn)", fontSize: 12, marginTop: 4 }}>{checked.detail ?? actions.notFound}</span>}
+      {error && <span role="alert" style={{ display: "block", color: "var(--crit)", fontSize: 12, marginTop: 4 }}>{error}</span>}
+    </div>
   );
 }
 

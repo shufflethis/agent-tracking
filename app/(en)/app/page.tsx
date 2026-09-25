@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import DashboardShell from "@/components/DashboardShell";
-import { AddSiteForm } from "@/components/SiteActions";
+import { AddSiteForm, SiteListSnippetStatus } from "@/components/SiteActions";
 import { requireAccount } from "@/lib/tracking/auth";
 import { actionStrings, dashCopy, dashLang } from "@/lib/tracking/copy";
 import { lastSiteCheck, scanJob, sitesFor } from "@/lib/tracking/db";
@@ -17,6 +17,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ a
   const account = await requireAccount("/app");
   const lang = dashLang(account.lang);
   const c = dashCopy(lang).list;
+  const actions = actionStrings(lang);
   const ownedSites = sitesFor(account.email);
   const sites = readableSites(account.email);
   const plan = planFor(account.plan);
@@ -43,8 +44,9 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ a
                       <Link href={`/app/${encodeURIComponent(s.domain)}`}>{s.domain}</Link>
                     </td>
                     <td>
-                      {s.verified_at ? <span className="chip pass">{c.verified}</span> : <span className="chip partial">{c.notVerified}</span>}
-                      {s.owner === account.email && lastSiteCheck(s.domain, "snippet")?.success === false && <Link href={`/app/${encodeURIComponent(s.domain)}/settings#measurement`} style={{ display: "block", color: "var(--warn)", fontSize: 12, marginTop: 4 }}>⚠ {c.recentCheckFailed}</Link>}
+                      {s.owner === account.email
+                        ? <SiteListSnippetStatus domain={s.domain} verified={Boolean(s.verified_at)} lastFailed={lastSiteCheck(s.domain, "snippet")?.success === false} labels={{ verified: c.verified, notVerified: c.notVerified, recentCheckFailed: c.recentCheckFailed }} actions={actions} />
+                        : <span className={s.verified_at ? "chip pass" : "chip partial"}>{s.verified_at ? c.verified : c.notVerified}</span>}
                     </td>
                     <td>{s.last_score !== null ? `${s.last_score} / 100 (${s.last_grade}) · ${scanStatusText(scanJob(s.domain), c)}` : scanStatusText(scanJob(s.domain), c)}</td>
                     <td>{s.public_share ? <Link href={`/stats/${encodeURIComponent(s.domain)}`}>{c.public}</Link> : c.private}</td>
@@ -58,7 +60,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ a
         )}
         <div className="card" style={{ padding: 28 }}>
           <h2 style={{ fontSize: 22, marginBottom: 6 }}>{c.addTitle}</h2>
-          {canAdd ? <AddSiteForm initial={add ?? ""} c={actionStrings(lang)} /> : <p style={{ color: "var(--ink-2)", margin: 0 }}>{c.planCovers(plan.name, plan.domains)}</p>}
+          {canAdd ? <AddSiteForm initial={add ?? ""} c={actions} /> : <p style={{ color: "var(--ink-2)", margin: 0 }}>{c.planCovers(plan.name, plan.domains)}</p>}
         </div>
       </section>
     </DashboardShell>
