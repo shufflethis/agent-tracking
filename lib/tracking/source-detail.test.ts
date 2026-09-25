@@ -47,3 +47,33 @@ test("Berlin day boundaries include the full first day and handle daylight savin
  const detail=sourceDetail("one.example","referral:chatgpt",30,Date.UTC(2026,9,25,23,30))!;
  assert.equal(new Set(detail.timeline.map(d=>d.day)).size,30);
 });
+
+test("a selected page gets its complete daily history and matching events, not the source's recent sample",()=>{
+ const earlier=Date.UTC(2026,8,23,22,30); // 24 September in Berlin
+ db().prepare("insert into events(domain,t,kind,path,source,transport) values('one.example',?,'view','/pricing','chatgpt','browser')").run(earlier);
+ const detail=sourceDetail("one.example","referral:chatgpt",7,now,"/pricing")!;
+ assert.equal(detail.selected?.count,3);
+ assert.equal(detail.selected?.firstAt,earlier);
+ assert.equal(detail.selected?.activeDays,2);
+ assert.deepEqual(detail.selected?.timeline.filter(d=>d.count),[{day:"2026-09-24",count:1},{day:"2026-09-25",count:2}]);
+ assert.equal(detail.selected?.recent.length,3);
+ assert.ok(detail.selected?.recent.every(r=>r.path==="/pricing"));
+ assert.deepEqual(detail.selected?.transports,[{transport:"unknown",count:2},{transport:"browser",count:1}]);
+ const protectedGroup=sourceDetail("one.example","referral:chatgpt",7,now,"/[redacted]")!;
+ assert.equal(protectedGroup.selected?.count,1);
+ assert.doesNotMatch(JSON.stringify(protectedGroup),/alice|secret|private/);
+ assert.equal(sourceDetail("one.example","referral:chatgpt",7,now,"/other-tenant")?.selected,null);
+ assert.equal(sourceDetail("one.example","referral:chatgpt",7,now,"/pricing' OR 1=1")?.selected,null);
+});
+
+test("previous-period comparisons use the same source and non-overlapping Berlin calendar windows",()=>{
+ const insert=db().prepare("insert into daily(domain,day,kind,name,count) values(?,?,?,?,?)");
+ insert.run("one.example","2026-09-18","ai_referral","chatgpt",12);
+ insert.run("one.example","2026-09-11","ai_referral","chatgpt",99); // before previous period
+ insert.run("one.example","2026-09-18","ai_referral","perplexity",42);
+ insert.run("two.example","2026-09-18","ai_referral","chatgpt",66);
+ const detail=sourceDetail("one.example","referral:chatgpt",7,now)!;
+ assert.equal(detail.previous.referrals,12);
+ assert.equal(detail.totals.referrals,105);
+ assert.equal(detail.previous.verified,0);
+});

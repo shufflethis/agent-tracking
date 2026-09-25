@@ -101,7 +101,7 @@ export function recordServerToolCall(domain: string, input: ServerToolCall, now 
   } catch (error) { d.exec("rollback"); throw error; }
 }
 
-export function outcomeSummary(domain: string, days: number, now = Date.now()) {
+export function outcomeSummary(domain: string, days: number, now = Date.now(), attemptFrom = now - days * 86_400_000) {
   const from = now - days * 86_400_000;
   const row = db().prepare(`select count(*) as reports,
     sum(case when status='confirmed' then 1 else 0 end) as confirmed,
@@ -113,7 +113,7 @@ export function outcomeSummary(domain: string, days: number, now = Date.now()) {
     .get(domain.toLowerCase(), from, now) as Record<string, number | null>;
   const linked = db().prepare(`select count(distinct e.id) as n from server_outcomes o join events e on e.id=o.observed_event_id and e.domain=o.domain
     where o.domain=? and o.status='confirmed' and e.kind='goal_attempt' and e.t>=? and e.t<=?`)
-    .get(domain.toLowerCase(), from, now) as { n: number };
+    .get(domain.toLowerCase(), attemptFrom, now) as { n: number };
   return { reports: row.reports ?? 0, confirmed: row.confirmed ?? 0, failed: row.failed ?? 0, agentReported: row.agentReported ?? 0, actorUnknown: row.actorUnknown ?? 0, browserLinked: row.browserLinked ?? 0, linkedGoalAttempts: linked.n ?? 0 };
 }
 

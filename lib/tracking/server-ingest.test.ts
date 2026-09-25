@@ -73,6 +73,10 @@ describe("authenticated server receipts", () => {
     recordServerToolCall("a.example", { invocationId, taskId, occurredAt: NOW, toolName: "create_inquiry", technicalOutcome: "completed", actorKind: "agent" }, NOW);
     assert.equal(row().actor, "site_server_reported_agent");
     assert.equal(row().server, invocationId);
+    // The overview uses Berlin calendar days for attempts, unlike the rolling
+    // receipt window. Its linked count must use the attempt denominator's start.
+    assert.equal(outcomeSummary("a.example", 1, NOW + 1, NOW).linkedGoalAttempts, 1);
+    assert.equal(outcomeSummary("a.example", 1, NOW + 1, NOW + 1).linkedGoalAttempts, 0);
   });
 
   it("runs the local inquiry adapter after a successful local save", async () => {

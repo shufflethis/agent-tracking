@@ -18,7 +18,7 @@ export default function BarChart({ days, series, height = 180 }: { days: string[
   const groupW = innerW / Math.max(1, days.length);
   const barW = Math.max(1, (groupW - 3) / Math.max(1, series.length));
   const y = (v: number) => padT + innerH - (v / max) * innerH;
-  const ticks = [0, 0.5, 1].map((f) => Math.round(max * f));
+  const ticks = [...new Set([0, 0.5, 1].map((f) => Math.round(max * f)))];
   const labelEvery = days.length > 14 ? Math.ceil(days.length / 10) : 1;
 
   return (
