@@ -34,6 +34,12 @@ Site owners can run a deterministic inquiry check against a `test.` or `staging.
 
 Site owners can create seven-day, email-bound read links without sending invitation mail. A reader sees only the granted site and its internal report. Findings link evidence, category, responsible person, correction and retest. The printable HTML report and protected JSON export show coverage, findings, retests and open points. Public stats pages do not expose internal findings. Generic diagnostic recipes are suggestions; only an actual site retest can confirm a specific case.
 
+## Public stats and private workspace
+
+An owner may publish a site's `/stats/{domain}` page. It displays selected 30-day aggregates, a chart and short agent/page lists. It does not grant access to source diagnostics, tool errors, server outcome receipts, task runs, findings or client reports. Those belong to the authenticated site workspace and its explicit site reader grants. The public page also labels old user-agent fetch counts as legacy claims; they are not retroactively IP-verified.
+
+The [live public stats for agenttracking.co](https://agenttracking.co/stats/agenttracking.co) are an example of actual measured data, not a full product demo. Individual integrations determine which signal categories contain data. For the private workflow, see the [product documentation](https://agenttracking.co/docs#private-workflow) and the [task check contract](docs/task-tests.md).
+
 ## API and MCP
 
 The authenticated Stats API, CSV export and read-only MCP tool expose site summaries. A reader can access only explicitly shared sites. For details, see [API documentation](https://agenttracking.co/docs#api), [measurement contract](docs/measurement.md), [source classification](docs/source-classification.md), [task tests](docs/task-tests.md) and [agency workflow](docs/agency-workflow.md).
@@ -99,7 +105,7 @@ Plan limits live in [`lib/tracking/plans.ts`](lib/tracking/plans.ts). `deploy/` 
 
 ## Stats API and MCP server
 
-Every number in the dashboard is available as JSON, read-only, daily totals only, with one token per account from the settings page:
+Authorized site statistics are available as JSON with an account read token from the settings page. Protected findings and reports use separate routes and the same site access rules:
 
 ```sh
 curl -s "https://agenttracking.co/api/stats/example.com?days=30" -H "Authorization: Bearer wmt_your_token"
@@ -127,7 +133,7 @@ server log ──upload or cron──▶ POST /api/logs ──▶ verify against
 ```
 
 - `snippet/agent.src.js`: the tracker. Batches events, sends them with `sendBeacon`, wraps the model context API, watches forms and goals. Built to `public/agent.js`; a test keeps it under 5 KB.
-- `lib/tracking/`: classification, storage (`node:sqlite`, aggregation at write time), the four views, the stats API, log import, crawler IP ranges, digest.
+- `lib/tracking/`: classification, storage (`node:sqlite`, aggregation at write time), measurement views, protected task and report workflows, the stats API, log import, crawler IP ranges and digest.
 - `app/api/`: ingest, sign-in by magic link, sites, tokens, logs, stats, export, MCP, billing.
 - `scripts/`: the nightly run (prune, refresh IP ranges, monthly re-score, manifest alerts, triage of unplaced user agents), log import, weekly digest, encrypted backup.
 

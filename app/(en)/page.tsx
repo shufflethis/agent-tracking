@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import HeroArt from "@/components/HeroArt";
 import Positioning from "@/components/Positioning";
+import ProductWorkflow from "@/components/ProductWorkflow";
 import { heroFor } from "@/lib/hero";
 import { alternatesFor } from "@/lib/i18n";
 import { PLANS, RAW_RETENTION_DAYS } from "@/lib/tracking/plans";
@@ -82,13 +83,13 @@ export default function Page() {
 
       <Positioning lang="en" />
       <Positioning lang="en" part="faq" />
+      <ProductWorkflow lang="en" />
 
       <section className="shell section centered">
-        <h2>Four views, nothing else</h2>
+        <h2>A sample of the measurement views</h2>
         <p className="dek" style={{ maxWidth: "62ch" }}>
-          Overview, Agents, Tools, Pages. Each one answers a question you would otherwise have to guess at. The
-          screenshots below come from our demo page with test data, which is why the numbers are small; they are
-          not a customer&apos;s.
+          Overview, Agents, Tools and Pages show the observed activity. The private workspace also has task tests,
+          fixes and reports. These screenshots use demo data; they are not customer results.
         </p>
         <div className="grid2" style={{ gap: 18, marginTop: 22 }}>
           <figure style={{ margin: 0 }}>

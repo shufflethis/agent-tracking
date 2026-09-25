@@ -245,6 +245,13 @@ export default function Page() {
         <p className="dek">For external MCP servers, send a separate credential to <code>/api/server-tools/example.com</code> with an invocation ID, optional task ID, tool name, time, technical outcome and actor kind. An agent actor is reported by your server, not independently verified. The browser snippet does not observe every remote MCP call. The runnable TypeScript example is in <code>examples/inquiry-app</code> in the repository.</p>
       </section>
 
+      <section className="shell section" id="private-workflow">
+        <h2>Private task checks, fixes and client reports</h2>
+        <p className="dek">The public stats page shows selected 30-day aggregates. Sign in to a site you own or have been invited to read for source status and the protected workflow. Owners can run one deterministic Chrome inquiry check against a <code>test.</code> or <code>staging.</code> host. Its synthetic input and result are kept separate from production counters; a third-party model-agent test is not configured without an adapter.</p>
+        <p className="dek">A documented correction links a failed run and a later run of the same task with version IDs, sample sizes and unknown outcomes. Findings can reference versioned diagnostic recipes, but recipes are suggestions until a real retest confirms the specific case. The printable site report and JSON export show coverage, findings, corrections, retests and open points.</p>
+        <p className="dek">Owners can create a seven-day, email-bound invitation link for a reader; the product does not send the invitation mail. Readers can access only their granted site, and revoked access stops private report and export access. Public stats links do not expose internal findings, task runs or server receipts. Read the <a href={`${GITHUB_URL}/blob/main/docs/task-tests.md`}>task-check contract</a> and <a href={`${GITHUB_URL}/blob/main/docs/agency-workflow.md`}>agency workflow</a> in the open-source repository.</p>
+      </section>
+
       <section className="shell section">
         <h2>The agents on the list</h2>
         <p className="dek" style={{ maxWidth: "62ch" }}>

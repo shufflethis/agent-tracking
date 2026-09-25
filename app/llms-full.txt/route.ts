@@ -91,6 +91,10 @@ Recorded: redacted page path without query string; recognized referrer host or s
 
 POST ${SITE_ORIGIN}/api/outcomes/{domain} with a site-bound outcome write credential only after your backend creates an inquiry or booking. Stable receipt IDs make retries idempotent. A separate site-bound credential reports remote MCP invocations at /api/server-tools/{domain}; browser and server sources may overlap. A browser ID alone never confirms an agent actor. Site owners can run deterministic synthetic Chrome inquiry checks on test/staging hosts. Model-driven provider tests remain not configured without an adapter. Protected site reports link findings, fixes and real retests; public stats do not expose them.
 
+## Public stats and private workspace
+
+An owner may publish /stats/{domain}. It shows selected 30-day aggregates, a chart and short source/page lists. Legacy user-agent fetch counts remain unverified claims; a verified fetch requires a supported, fresh published range and origin-log evidence. The public link does not expose internal source diagnostics, server receipts, task runs, findings, corrections or client reports. Those require the site owner's account or an explicit site-scoped reader grant. See ${SITE_ORIGIN}/docs#private-workflow and the open-source documentation at ${GITHUB_URL}/blob/main/docs/agency-workflow.md.
+
 ## Plans
 
 ${Object.values(PLANS)

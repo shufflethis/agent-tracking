@@ -247,6 +247,13 @@ export default function Page() {
         <p className="dek">Für externe MCP-Server nutze den separaten Zugang und <code>/api/server-tools/example.com</code> mit Invocation-ID, optionaler Task-ID, Toolname, Zeitpunkt, technischem Ausgang und Akteurstyp. Ein Agentenakteur ist eine Aussage deines Servers, keine unabhängige Verifikation. Das Browser-Snippet sieht nicht jeden externen MCP-Aufruf. Das ausführbare TypeScript-Beispiel liegt im Repository unter <code>examples/inquiry-app</code>.</p>
       </section>
 
+      <section className="shell section" id="private-workflow">
+        <h2>Private Aufgabentests, Korrekturen und Kundenberichte</h2>
+        <p className="dek">Die öffentliche Statistik zeigt ausgewählte Tagessummen aus 30 Tagen. Im geschützten Bereich sehen Eigentümer und berechtigte Leser den Quellenstatus und den Arbeitsablauf. Eigentümer können einen deterministischen Chrome-Anfragetest auf einem <code>test.</code>- oder <code>staging.</code>-Host ausführen. Synthetische Eingaben und Ergebnisse bleiben von Produktionszählern getrennt; ein Test mit einem fremden Modellagenten ist ohne Adapter nicht eingerichtet.</p>
+        <p className="dek">Eine dokumentierte Korrektur verknüpft einen fehlgeschlagenen Lauf mit einem späteren Lauf derselben Aufgabe, einschließlich Versionen, Stichprobe und unbekannter Ausgänge. Befunde können versionierte Diagnose-Rezepte referenzieren; diese bleiben Vorschläge, bis ein echter Nachtest den konkreten Fall bestätigt. Druckbarer Site-Bericht und JSON-Export zeigen Abdeckung, Befunde, Korrekturen, Nachtests und offene Punkte.</p>
+        <p className="dek">Eigentümer können einen siebentägigen, an eine E-Mail-Adresse gebundenen Leselink erstellen; das Produkt versendet dafür keine Einladung. Leser sehen nur freigegebene Sites, und ein Widerruf beendet den Zugriff auf private Berichte und Exporte. Öffentliche Statistiklinks zeigen keine internen Befunde, Testläufe oder Serverbelege. Die Verträge für <a href={`${GITHUB_URL}/blob/main/docs/task-tests.md`}>Aufgabentests</a> und den <a href={`${GITHUB_URL}/blob/main/docs/agency-workflow.md`}>Agenturablauf</a> stehen im offenen Repository.</p>
+      </section>
+
       <section className="shell section">
         <h2>Die Agenten auf der Liste</h2>
         <p className="dek" style={{ maxWidth: "62ch" }}>

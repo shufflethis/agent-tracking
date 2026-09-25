@@ -141,7 +141,7 @@ const EN: HomeContent = {
     { k: "Self-hostable", t: "When data must not leave your house", d: "One Node process, one SQLite file, AGPL-3.0, ten minutes with Docker. What the cloud does, your server does." },
   ],
   valueTitle: "The concrete value",
-  valueDek: "Six questions the dashboard answers that nothing else on your site can.",
+  valueDek: "Six practical questions answered from the sources you connect.",
   value: [
     { k: "Channels", t: "Who sends you business", d: "\"Perplexity referred 40 visitors this week, ChatGPT 12, and they land on the pricing page.\" A channel you can now optimise, and a number for whoever asks whether AI matters for your site." },
     { k: "Readers", t: "Which requests reached your pages", d: "Verified crawler fetches and short bursts show requests to distinct paths. They do not reveal training use, the user's question or intent." },
@@ -254,7 +254,7 @@ const DE: HomeContent = {
     { k: "Selbst hostbar", t: "Wenn Daten das Haus nicht verlassen dürfen", d: "Ein Node-Prozess, eine SQLite-Datei, AGPL-3.0, zehn Minuten mit Docker. Was die Cloud kann, kann dein Server." },
   ],
   valueTitle: "Der konkrete Mehrwert",
-  valueDek: "Sechs Fragen, die das Dashboard beantwortet und sonst nichts auf deiner Site.",
+  valueDek: "Sechs praktische Fragen, die sich mit den angebundenen Quellen beantworten lassen.",
   value: [
     { k: "Kanäle", t: "Wer dir Geschäft schickt", d: "„Perplexity hat diese Woche 40 Besucher geschickt, ChatGPT 12, und sie landen auf der Preisseite.“ Ein Kanal, den du jetzt optimieren kannst, und eine Zahl für jeden, der fragt, ob KI für deine Site eine Rolle spielt." },
     { k: "Leser", t: "Welche Anfragen deine Seiten erreichen", d: "Verifizierte Crawler-Abrufe und kurze Bursts zeigen Anfragen an unterschiedliche Pfade. Sie verraten weder Training noch Suchfrage oder Absicht." },
@@ -276,7 +276,7 @@ const DE: HomeContent = {
     { q: "Wo liegen die Daten?", a: "Auf einem Server in Deutschland. Ein Auftragsverarbeitungsvertrag mit den EU-Standardvertragsklauseln wird geschlossen, wenn du eine Site hinzufügst. Oder du betreibst die Software selbst: Sie ist Open Source unter AGPL-3.0." },
     { q: "Wie lange dauert die Installation?", a: "Domain hinzufügen, Snippet einbauen und prüfen. Unterstützte Browser-Model-Context-Tools lassen sich bei rechtzeitig geladenem Snippet beobachten. Crawler-Logs und serverbestätigte Abschlüsse brauchen getrennte Einrichtung." },
     { q: "Was kostet es?", a: "In der Pilotphase kostenlos: eine Site, 10.000 Agenten-Ereignisse im Monat, 30 Tage Verlauf, keine Karte. Reine Seitenaufrufe zählen nie. Bezahlte Pläne mit mehr Sites und einem Jahr Verlauf folgen mit 30 Tagen Vorlauf. Selbst hosten ist kostenlos." },
-    { q: "Können meine eigenen Agenten die Zahlen lesen?", a: "Ja. Jede Zahl gibt es als JSON über ein Bearer-Token und als MCP-Tool namens get_agent_stats, sodass Claude, ChatGPT, Cursor oder ein Script fragen können, welche Agenten deine Site diese Woche gelesen haben." },
+    { q: "Können meine eigenen Agenten die Zahlen lesen?", a: "Ja. Berechtigte Leser können nach Belegstufe gekennzeichnete Site-Statistiken über JSON und das MCP-Tool get_agent_stats abrufen. Fragen nach beobachteten, verifizierten und unbekannten Signalen bleiben getrennt." },
   ],
 };
 

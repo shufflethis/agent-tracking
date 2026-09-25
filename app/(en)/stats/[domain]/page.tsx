@@ -1,4 +1,4 @@
-import { SITE_HOST, SITE_NAME, SITE_ORIGIN } from "@/lib/site";
+import { GITHUB_URL, SITE_HOST, SITE_NAME, SITE_ORIGIN } from "@/lib/site";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -101,6 +101,32 @@ export default async function Page({ params }: Params) {
           />
         </div>
       </section>}
+      <section className="shell section" style={{ paddingTop: 0 }}>
+        <div className="grid2" style={{ gap: 18 }}>
+          <div className="card" style={{ padding: 26 }}>
+            <h2 style={{ fontSize: 20, margin: "0 0 10px" }}>About these public numbers</h2>
+            <p style={{ color: "var(--ink-2)", margin: 0 }}>
+              The site owner published selected 30-day aggregates: identifiable referrals, crawler claims and verified fetches, observed browser tool calls and unverified goal signals. They describe different events and must not be added as unique agents or completed tasks.
+            </p>
+            {o.totals.fetches > 0 && o.totals.verifiedFetches === 0 && (
+              <p style={{ color: "var(--warn)", margin: "12px 0 0" }}>
+                The {o.totals.fetches.toLocaleString("en-GB")} legacy fetch claims have no per-request IP proof. The verified fetch count needs recent origin logs and supported, fresh vendor ranges.
+              </p>
+            )}
+          </div>
+          <div className="card" style={{ padding: 26 }}>
+            <h2 style={{ fontSize: 20, margin: "0 0 10px" }}>The private workspace</h2>
+            <p style={{ color: "var(--ink-2)", margin: 0 }}>
+              Site owners and invited readers can inspect source coverage, tool errors, server-confirmed outcomes, deterministic task tests, documented fixes and protected reports. This public link grants access to none of those internal records.
+            </p>
+            <p style={{ display: "flex", gap: 16, flexWrap: "wrap", margin: "14px 0 0" }}>
+              <Link href={`/app/${encodeURIComponent(site.domain)}`}>Open your dashboard</Link>
+              <Link href="/docs#private-workflow">How the workflow works</Link>
+              <a href={GITHUB_URL} rel="noopener">Open-source code</a>
+            </p>
+          </div>
+        </div>
+      </section>
       <section className="shell section" style={{ paddingTop: 0 }}>
         <div className="grid2" style={{ gap: 18 }}>
           <div className="card" style={{ padding: 28 }}>
