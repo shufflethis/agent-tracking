@@ -53,7 +53,9 @@ describe("authenticated server receipts", () => {
     assert.equal(recordServerOutcome("a.example", input, NOW + 1), "duplicate");
     assert.equal(recordServerOutcome("a.example", { ...input, status: "failed" }, NOW + 2), "conflict");
     assert.equal(recordServerOutcome("a.example", { ...input, receiptId: "receipt_2234567890123" }, NOW + 3), "created");
-    assert.equal(outcomeSummary("a.example", 1, NOW + 4).confirmed, 3);
+    // The HTTP-boundary receipt above uses real receipt time, so it is outside
+    // this deliberately fixed, historical one-day summary window.
+    assert.equal(outcomeSummary("a.example", 1, NOW + 4).confirmed, 2);
     assert.equal(outcomeSummary("b.example", 1, NOW + 4).confirmed, 0);
   });
 

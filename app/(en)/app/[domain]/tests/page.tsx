@@ -2,10 +2,12 @@ import type { Metadata } from "next";
 import DashboardShell from "@/components/DashboardShell";
 import TaskRunForm from "@/components/TaskRunForm";
 import TaskFixForm from "@/components/TaskFixForm";
+import ContentFactChecks from "@/components/ContentFactChecks";
 import { requireSite } from "@/lib/tracking/auth";
 import { dashLang } from "@/lib/tracking/copy";
 import { taskRunsFor } from "@/lib/tracking/task-runs";
 import { siteVersionsFor, taskFixesFor } from "@/lib/tracking/task-fixes";
+import { contentCapturesFor, contentChecksFor } from "@/lib/tracking/content-checks";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -18,6 +20,8 @@ export default async function Page({ params }: { params: Promise<{ domain: strin
   const runs = taskRunsFor(site.domain);
   const fixes = taskFixesFor(site.domain);
   const versions = siteVersionsFor(site.domain);
+  const checks = contentChecksFor(site.domain);
+  const captures = contentCapturesFor(site.domain);
   return <DashboardShell account={account} site={site} view="tests"><section className="shell section" style={{ display: "grid", gap: 18 }}>
     <div className="card" style={{ padding: 28 }}>
       <h2>{lang === "de" ? "Kontrollierte Anfrageprüfung" : "Controlled inquiry check"}</h2>
@@ -39,6 +43,7 @@ export default async function Page({ params }: { params: Promise<{ domain: strin
         <p>{lang === "de" ? "Stichprobe" : "Sample"}: {fix.sample.before} → {fix.sample.after}; {lang === "de" ? "unbekannter Anteil" : "unknown share"}: {fix.sample.beforeUnknown}/1 → {fix.sample.afterUnknown}/1. {fix.outcome === "confirmed_by_browser_retest" ? (lang === "de" ? "Durch Browser-Nachtest bestätigt" : "Confirmed by browser retest") : (lang === "de" ? "Nicht bestätigt" : "Not confirmed")}</p>
       </div>)}
     </div>
+    <ContentFactChecks domain={site.domain} lang={lang} owner={site.owner === account.email} checks={checks} captures={captures} />
     <div className="card" style={{ padding: 28 }}><h2>{lang === "de" ? "Beobachtete Versionen" : "Observed versions"}</h2>
       {versions.length ? <ul>{versions.map((version) => <li key={`${version.kind}:${version.versionId}`}>{version.kind}: <code>{version.versionId}</code> ({new Date(version.firstSeenAt).toISOString()} – {new Date(version.lastSeenAt).toISOString()})</li>)}</ul> : <p>–</p>}
     </div>

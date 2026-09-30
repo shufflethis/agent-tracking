@@ -354,6 +354,32 @@ function migrate(instance: DatabaseSync): void {
     instance.exec("alter table findings add column recipe_id text");
     instance.prepare("insert into schema_migrations (version, applied_at) values (15, ?)").run(Date.now());
   }
+  if ((current.version ?? 0) < 16) {
+    instance.exec(`create table content_checks (
+      domain text not null, check_id text not null, page_path text not null,
+      label text not null, expected_text text not null, alternatives_json text not null,
+      created_at integer not null,
+      primary key (domain, check_id)
+    )`);
+    instance.exec("create index content_checks_domain_path on content_checks(domain, page_path, created_at)");
+    instance.exec(`create table content_captures (
+      domain text not null, run_id text not null, page_path text not null,
+      content_version text not null, content_hash text not null,
+      method text not null, verifier_version text not null,
+      captured_at integer not null, results_json text not null,
+      html_snapshot text not null default '',
+      primary key (domain, run_id)
+    )`);
+    instance.exec("create index content_captures_domain_path_time on content_captures(domain, page_path, captured_at)");
+    instance.prepare("insert into schema_migrations (version, applied_at) values (16, ?)").run(Date.now());
+  }
+  if ((current.version ?? 0) < 17) {
+    const columns = instance.prepare("pragma table_info(content_captures)").all() as { name: string }[];
+    if (!columns.some((column) => column.name === "html_snapshot")) {
+      instance.exec("alter table content_captures add column html_snapshot text not null default ''");
+    }
+    instance.prepare("insert into schema_migrations (version, applied_at) values (17, ?)").run(Date.now());
+  }
   instance.exec("commit");
   } catch (err) {
     instance.exec("rollback");
@@ -547,6 +573,8 @@ export function removeSite(domain: string, owner: string): boolean {
   d.prepare("delete from site_versions where domain = ?").run(key);
   d.prepare("delete from task_fixes where domain = ?").run(key);
   d.prepare("delete from findings where domain = ?").run(key);
+  d.prepare("delete from content_checks where domain = ?").run(key);
+  d.prepare("delete from content_captures where domain = ?").run(key);
   d.prepare("delete from site_access where domain = ?").run(key);
   d.prepare("delete from site_invites where domain = ?").run(key);
   d.prepare("delete from log_attempts where domain = ?").run(key);
@@ -911,6 +939,7 @@ export function registerTool(domain: string, name: string, descriptionHash: stri
 export function pruneRaw(now = Date.now()): number {
   const cutoff = now - RAW_RETENTION_DAYS * 86_400_000;
   const d = db();
+  d.prepare("update content_captures set html_snapshot='' where captured_at < ? and html_snapshot <> ''").run(cutoff);
   d.prepare("delete from event_receipts where received_at < ?").run(cutoff);
   d.prepare("delete from tool_session_receipts where day < ?").run(dayKey(cutoff));
   const result = d.prepare("delete from events where t < ?").run(cutoff);

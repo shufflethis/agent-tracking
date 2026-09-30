@@ -84,3 +84,13 @@ successful refresh of another provider does not refresh a failed list.
 method, result and last check time as aggregate evidence. The legacy
 `ai_fetch`/`fetches` counter remains separate and is never promoted from
 historic totals. `verifiedFetches` starts with the new evidence rule.
+
+Page-level content fact checks are a separate, authenticated test workflow. The
+owner creates page-scoped expected text and optional alternatives, then supplies
+an HTML capture and a content version. A parser compares normalized source text
+and records the SHA-256 of the original capture, checker/method versions, time,
+criteria, status, and short evidence excerpts. The private HTML test capture is
+retained for up to 90 days, then removed while comparison results and evidence
+remain until site deletion. Raw HTML is not returned by the API. These checks do not establish fact correctness, model
+understanding, citations, agent success, rankings, or business outcomes; see
+[`task-tests.md`](./task-tests.md#faktenzug%C3%A4nglichkeit-aus-html-testaufnahmen).
