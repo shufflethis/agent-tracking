@@ -22,6 +22,7 @@
     "cron:nightly": "tsx --no-warnings scripts/tracking-cron.ts",
     "cron:logs": "tsx --no-warnings scripts/log-import.ts",
     "cron:digest": "tsx --no-warnings scripts/weekly-digest.ts",
+    "cron:agents": "tsx --no-warnings scripts/agents-cron.ts",
     "indexnow": "node --env-file-if-exists=.env.production --import tsx scripts/indexnow.ts"
   },
   "browserslist": [
