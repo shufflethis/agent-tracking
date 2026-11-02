@@ -30,6 +30,9 @@ export const PLANS: Record<PlanId, Plan> = {
 
 /** Raw events are kept this long whatever the plan; aggregates are kept forever. */
 export const RAW_RETENTION_DAYS = 90;
+/** Agent monitoring: raw agent events and stderr tails expire sooner than runs (which follow RAW_RETENTION_DAYS). */
+export const AGENT_EVENT_RETENTION_DAYS = 30;
+export const AGENT_TAIL_RETENTION_DAYS = 7;
 
 /** Server-reported calls and receipts have no aggregate, so their views never reach past raw retention. */
 export const serverWindowDays = (days: number) => Math.min(days, RAW_RETENTION_DAYS);

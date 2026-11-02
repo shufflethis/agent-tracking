@@ -5,7 +5,7 @@ import { DatabaseSync } from "node:sqlite";
 import type { CleanEvent } from "./classify";
 import { MEASUREMENT_VERSION, type BusinessOutcome, type IdentityEvidence, type IdentityStatus, type TechnicalOutcome, type Transport } from "./measurement";
 import { redactPath, safeErrorClass, safeEventName } from "./privacy";
-import { RAW_RETENTION_DAYS, type PlanId } from "./plans";
+import { AGENT_EVENT_RETENTION_DAYS, AGENT_TAIL_RETENTION_DAYS, RAW_RETENTION_DAYS, type PlanId } from "./plans";
 import { planFor } from "./plans";
 import { browserUsage, logUsage } from "./usage-rules";
 import { CHECK_ORIGIN } from "../site";
@@ -388,6 +388,51 @@ function migrate(instance: DatabaseSync): void {
     instance.exec("alter table server_tool_calls add column plugin_version text");
     instance.exec("alter table server_tool_calls add column error_class text");
     instance.prepare("insert into schema_migrations (version, applied_at) values (18, ?)").run(Date.now());
+  }
+  if ((current.version ?? 0) < 19) {
+    // Agent monitoring: account-scoped, not domain-scoped. See docs/superpowers/specs/2026-11-02-agent-monitoring-design.md.
+    instance.exec(`
+      create table if not exists agent_tokens (
+        id text primary key, owner text not null references accounts(email), hash text unique not null,
+        host_label text not null, created_at integer not null, last_seen_at integer, revoked_at integer
+      );
+      create index if not exists agent_tokens_owner on agent_tokens(owner);
+      create table if not exists agent_device_codes (
+        device_code_hash text primary key, user_code text unique not null, host_label text not null,
+        created_at integer not null, expires_at integer not null, approved_by text, token_id text, token_plain_once text
+      );
+      create table if not exists agents (
+        id text primary key, owner text not null, kind text not null check (kind in ('claude','cron','custom')),
+        name text not null, host text not null, first_seen integer not null, last_seen integer not null,
+        expect_every_ms integer, unique (owner, kind, host, name)
+      );
+      create table if not exists agent_runs (
+        id text primary key, agent_id text not null references agents(id), run_key text not null,
+        started_at integer not null, ended_at integer,
+        status text not null check (status in ('running','ok','failed','hung','missed')),
+        exit_code integer, duration_ms integer, tool_calls integer not null default 0, tool_errors integer not null default 0,
+        turns integer not null default 0, open_tools integer not null default 0,
+        last_event_at integer not null, last_event_type text not null, tail text, tail_at integer, alerted_at integer,
+        unique (agent_id, run_key)
+      );
+      create index if not exists agent_runs_agent_started on agent_runs(agent_id, started_at);
+      create table if not exists agent_events (
+        id text not null, owner text not null, run_id text not null, at integer not null, received_at integer not null,
+        type text not null, tool text, ok integer, primary key (owner, id)
+      );
+      create index if not exists agent_events_received on agent_events(received_at);
+      create table if not exists agent_daily (
+        agent_id text not null, day text not null, runs integer not null default 0, failed integer not null default 0,
+        tool_calls integer not null default 0, primary key (agent_id, day)
+      );
+      create table if not exists agent_usage (owner text not null, month text not null, count integer not null default 0, primary key (owner, month));
+    `);
+    const accountColumns = new Set((instance.prepare("pragma table_info(accounts)").all() as { name: string }[]).map((c) => c.name));
+    for (const [name, definition] of [
+      ["briefing_hour", "integer not null default 7"], ["briefing_last_day", "text"], ["webhook_kind", "text"],
+      ["webhook_url", "text"], ["webhook_chat_id", "text"], ["alerts_email", "integer not null default 1"],
+    ]) if (!accountColumns.has(name)) instance.exec(`alter table accounts add column ${name} ${definition}`);
+    instance.prepare("insert into schema_migrations (version, applied_at) values (19, ?)").run(Date.now());
   }
   instance.exec("commit");
   } catch (err) {
@@ -954,6 +999,11 @@ export function pruneRaw(now = Date.now()): number {
   // Server-reported calls and receipts are raw data too: they have no daily aggregate and expire with the rest.
   d.prepare("delete from server_tool_calls where received_at < ?").run(cutoff);
   d.prepare("delete from server_outcomes where received_at < ?").run(cutoff);
+  // Agent monitoring keeps less: events 30 days, runs 90, stderr tails 7. Daily aggregates stay.
+  d.prepare("delete from agent_events where received_at < ?").run(now - AGENT_EVENT_RETENTION_DAYS * 86_400_000);
+  d.prepare("delete from agent_runs where ended_at is not null and started_at < ?").run(cutoff);
+  d.prepare("update agent_runs set tail = null, tail_at = null where tail is not null and tail_at < ?").run(now - AGENT_TAIL_RETENTION_DAYS * 86_400_000);
+  d.prepare("delete from agent_device_codes where expires_at < ?").run(now);
   const result = d.prepare("delete from events where t < ?").run(cutoff);
   return Number(result.changes);
 }
