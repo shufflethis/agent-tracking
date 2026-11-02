@@ -73,7 +73,7 @@ Von mir (Claude) gesetzt, korrigierbar:
 - **„Hängt“ bei Claude-Sessions:** Eine Session gilt als hängend, wenn sie nicht beendet ist, das letzte Event kein `Stop` oder `Notification` war (also kein Warten auf Eingabe) und seit über 30 Minuten (konfigurierbar) kein Event kam.
 - **Datenmodell** neu und kontobezogen: `agents` (Konto, Typ `claude|cron|custom`, Name, Host-Label, erste und letzte Sichtung), `agent_runs` (Agent, Start, Ende, Status `running|ok|failed|hung|missed`, Exit-Code, Dauer, Zähler wie Tool-Calls und Fehler), `agent_events` (Run, Zeit, Typ, Tool-Name, Fehlerklasse aus Allowlist). Retention: `agent_events` 30 Tage, `agent_runs` 90 Tage, Tagesaggregate dauerhaft. Wird in `pruneRaw()` aufgenommen.
 - **Briefing-Inhalt pro Agent:** Läufe seit dem letzten Briefing, davon ok, fehlgeschlagen oder hängend, Dauer im Vergleich zum Median der letzten 14 Tage, bei Claude die Zahl der Sessions und Tool-Calls pro Projekt. Ganz oben steht ein Satz („2 Probleme, 9 Agents unauffällig“).
-- **Grenzen in der Beta** gegen Missbrauch und Kosten: z. B. 20 Agents und 50.000 Events pro Monat pro Konto, über das bestehende Quota- und Rate-Limit-Muster.
+- **Grenzen in der Beta** gegen Missbrauch und Kosten: z. B. 50 Agents und 50.000 Events pro Monat pro Konto, über das bestehende Quota- und Rate-Limit-Muster.
 
 Nach dem Builder-Check von mir (Claude) entschieden, korrigierbar:
 - **Hosting:** wie heute ein einzelner Node-Prozess auf dem eigenen Server (`agent-tracking.service`, systemd), SQLite-Datei, Cron über `scripts/*.sh`. Ein viertelstündlicher Job erkennt `hung` und `missed` per Abfrage und verschickt fällige Briefings und Sofort-Meldungen. Echtzeit unter einer Minute ist kein Ziel.

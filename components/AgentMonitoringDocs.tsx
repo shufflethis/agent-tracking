@@ -15,7 +15,7 @@ const CMD = {
 const COPY = {
   en: {
     title: "Monitor your own agents",
-    intro: "The other side of agent traffic: what your own Claude Code loops and cron jobs did while you were away. Free during the beta, up to 20 agents and 50,000 events a month.",
+    intro: "The other side of agent traffic: what your own Claude Code loops and cron jobs did while you were away. Free during the beta, up to 50 agents and 50,000 events a month.",
     steps: [
       ["1. Connect this machine", "Shows a code and opens the browser; confirm it while signed in. Each machine gets its own token you can revoke in the settings.", CMD.login],
       ["2. Track Claude Code", "Adds hooks to ~/.claude/settings.json (a backup is written next to it, your own hooks stay). Use --project for .claude/settings.json in the current folder.", CMD.claude],
@@ -30,7 +30,7 @@ const COPY = {
   },
   de: {
     title: "Eigene Agents überwachen",
-    intro: "Die andere Seite von Agent-Traffic: was deine eigenen Claude-Code-Loops und Cron-Jobs gemacht haben, während du weg warst. Kostenlos während der Beta, bis 20 Agents und 50.000 Events im Monat.",
+    intro: "Die andere Seite von Agent-Traffic: was deine eigenen Claude-Code-Loops und Cron-Jobs gemacht haben, während du weg warst. Kostenlos während der Beta, bis 50 Agents und 50.000 Events im Monat.",
     steps: [
       ["1. Maschine verbinden", "Zeigt einen Code und öffnet den Browser; bestätige ihn, während du angemeldet bist. Jede Maschine bekommt ein eigenes Token, das du in den Einstellungen widerrufen kannst.", CMD.login],
       ["2. Claude Code tracken", "Trägt Hooks in ~/.claude/settings.json ein (daneben entsteht ein Backup, deine eigenen Hooks bleiben). Mit --project für .claude/settings.json im aktuellen Ordner.", CMD.claude],

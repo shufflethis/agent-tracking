@@ -34,6 +34,6 @@ export type AgentEvent = {
   tail?: string;
 };
 
-export const AGENT_LIMIT = 20;
+export const AGENT_LIMIT = 50;
 export const AGENT_EVENTS_PER_MONTH = 50_000;
 export const MAX_BATCH = 100;
