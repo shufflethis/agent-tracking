@@ -12,3 +12,5 @@ SPEC.md
 .playwright-mcp/
 !.env.example
 .data-test/
+cli/dist/
+cli/*.tgz

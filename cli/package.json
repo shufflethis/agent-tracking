@@ -1,0 +1,13 @@
+{
+  "name": "agenttracking",
+  "version": "0.1.0",
+  "description": "See what your AI agents and cron jobs did while you slept. Connects Claude Code and cron jobs to agenttracking.co. Sends run status only, never prompts or tool content.",
+  "license": "AGPL-3.0-only",
+  "homepage": "https://agenttracking.co",
+  "repository": { "type": "git", "url": "https://github.com/shufflethis/agent-tracking", "directory": "cli" },
+  "type": "module",
+  "bin": { "agenttracking": "dist/cli.js" },
+  "files": ["dist"],
+  "engines": { "node": ">=22.13" },
+  "scripts": { "build": "tsc -p .", "prepack": "npm run build" }
+}
