@@ -13,6 +13,24 @@ const en = {
     unknown: "This code is unknown. Check it against your terminal and run the login command again if needed.",
     toFleet: "Go to your agents",
   },
+  briefing: {
+    subject: (problems: number, quiet: number) =>
+      problems ? `${problems} problem${problems === 1 ? "" : "s"}, ${quiet} agent${quiet === 1 ? "" : "s"} quiet` : `All quiet: ${quiet} agent${quiet === 1 ? "" : "s"} ran fine`,
+    problemsHeading: "Needs a look",
+    quietHeading: "Ran fine",
+    failed: (time: string, exit: number | null) => `failed at ${time}${exit === null ? "" : `, exit ${exit}`}`,
+    hung: (time: string) => `stuck since ${time}`,
+    missed: (time: string) => `run missing (expected ${time})`,
+    runsOk: (n: number) => `${n}× ok`,
+    sessions: (n: number, tools: number) => `${n} session${n === 1 ? "" : "s"}, ${tools} tool call${tools === 1 ? "" : "s"}`,
+    slower: (ratio: number) => `took ${ratio.toFixed(1)}× its usual time`,
+    open: "Open your agents",
+    footer: "Run status only. No prompts, tool input or output are collected.",
+  },
+  alert: {
+    subject: (agent: string, what: string) => `${agent}: ${what}`,
+    andMore: (n: number) => `and ${n} more`,
+  },
 };
 type AgentCopy = typeof en;
 const de: AgentCopy = {
@@ -26,6 +44,24 @@ const de: AgentCopy = {
     expired: "Dieser Code ist abgelaufen oder wurde schon benutzt. Führe den Login-Befehl noch einmal aus.",
     unknown: "Dieser Code ist unbekannt. Vergleiche ihn mit deinem Terminal und starte den Login bei Bedarf neu.",
     toFleet: "Zu deinen Agents",
+  },
+  briefing: {
+    subject: (problems: number, quiet: number) =>
+      problems ? `${problems} Problem${problems === 1 ? "" : "e"}, ${quiet} Agent${quiet === 1 ? "" : "s"} unauffällig` : `Alles ruhig: ${quiet} Agent${quiet === 1 ? "" : "s"} unauffällig`,
+    problemsHeading: "Bitte ansehen",
+    quietHeading: "Lief normal",
+    failed: (time: string, exit: number | null) => `fehlgeschlagen um ${time}${exit === null ? "" : `, Exit ${exit}`}`,
+    hung: (time: string) => `hängt seit ${time}`,
+    missed: (time: string) => `Lauf fehlt (erwartet ${time})`,
+    runsOk: (n: number) => `${n}× ok`,
+    sessions: (n: number, tools: number) => `${n} Session${n === 1 ? "" : "s"}, ${tools} Tool-Call${tools === 1 ? "" : "s"}`,
+    slower: (ratio: number) => `brauchte ${ratio.toFixed(1).replace(".", ",")}× so lange wie üblich`,
+    open: "Deine Agents öffnen",
+    footer: "Nur Status von Läufen. Prompts, Tool-Eingaben und -Ausgaben werden nicht erfasst.",
+  },
+  alert: {
+    subject: (agent: string, what: string) => `${agent}: ${what}`,
+    andMore: (n: number) => `und ${n} weitere`,
   },
 };
 

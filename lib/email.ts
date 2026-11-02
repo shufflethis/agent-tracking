@@ -12,7 +12,7 @@ const ENDPOINT = "https://api.brevo.com/v3/smtp/email";
 
 export type Address = { email: string; name?: string };
 
-export type MailFamily = "login" | "manifest-alert" | "digest";
+export type MailFamily = "login" | "manifest-alert" | "digest" | "agent-briefing" | "agent-alert";
 
 /**
  * Which family of mail this is. Kept on the type so a send site names its
