@@ -2,6 +2,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { configDir, readConfig } from "./config.js";
+import { connectClaude, defaultCommand, disconnectClaude, installRuntime, settingsPathFor } from "./connect-claude.js";
 import { flush } from "./flush.js";
 import { runHook } from "./hook.js";
 import { spoolSize } from "./spool.js";
@@ -24,6 +25,23 @@ type Command = (args: string[]) => Promise<number>;
 const commands: Record<string, Command> = {
   async hook(args) { await runHook(args[0] ?? ""); return 0; },
   async flush() { await flush(); return 0; },
+  async connect(args) {
+    if (args[0] !== "claude") { console.log("Usage: agenttracking connect claude [--project]"); return 1; }
+    if (!readConfig()) { console.log("Not logged in yet. Run: agenttracking login"); return 1; }
+    const settingsPath = process.env.AGENTTRACKING_CLAUDE_SETTINGS ?? settingsPathFor(args.includes("--project") ? "project" : "user");
+    const result = connectClaude({ settingsPath, command: defaultCommand(installRuntime()) });
+    if (result === "invalid_json") { console.log(`${settingsPath} is not valid JSON. Nothing was changed. Fix the file and run this again.`); return 1; }
+    console.log(result === "already" ? `Already connected (${settingsPath}).` : `Connected. Claude Code sessions are tracked from the next session on (${settingsPath}; a backup is next to it).`);
+    return 0;
+  },
+  async disconnect(args) {
+    if (args[0] !== "claude") { console.log("Usage: agenttracking disconnect claude [--project]"); return 1; }
+    const settingsPath = process.env.AGENTTRACKING_CLAUDE_SETTINGS ?? settingsPathFor(args.includes("--project") ? "project" : "user");
+    const result = disconnectClaude({ settingsPath });
+    if (result === "invalid_json") { console.log(`${settingsPath} is not valid JSON. Nothing was changed.`); return 1; }
+    console.log(result === "disconnected" ? `Removed the agenttracking hooks from ${settingsPath}.` : `No agenttracking hooks in ${settingsPath}.`);
+    return 0;
+  },
   async status() {
     const c = readConfig();
     if (!c) { console.log("Not connected. Run: agenttracking login"); return 1; }
