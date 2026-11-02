@@ -6,6 +6,7 @@ import { connectClaude, defaultCommand, disconnectClaude, installRuntime, settin
 import { flush } from "./flush.js";
 import { runHook } from "./hook.js";
 import { spoolSize } from "./spool.js";
+import { wrap } from "./wrap.js";
 
 const HELP = `agenttracking: see what your agents did while you slept
 
@@ -25,6 +26,7 @@ type Command = (args: string[]) => Promise<number>;
 const commands: Record<string, Command> = {
   async hook(args) { await runHook(args[0] ?? ""); return 0; },
   async flush() { await flush(); return 0; },
+  wrap: (args) => wrap(args),
   async connect(args) {
     if (args[0] !== "claude") { console.log("Usage: agenttracking connect claude [--project]"); return 1; }
     if (!readConfig()) { console.log("Not logged in yet. Run: agenttracking login"); return 1; }
