@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { configDir, readConfig } from "./config.js";
 import { connectClaude, defaultCommand, disconnectClaude, installRuntime, settingsPathFor } from "./connect-claude.js";
 import { flush } from "./flush.js";
+import { login } from "./login.js";
 import { runHook } from "./hook.js";
 import { spoolSize } from "./spool.js";
 import { wrap } from "./wrap.js";
@@ -27,9 +28,13 @@ const commands: Record<string, Command> = {
   async hook(args) { await runHook(args[0] ?? ""); return 0; },
   async flush() { await flush(); return 0; },
   wrap: (args) => wrap(args),
+  async login(args) {
+    const value = (name: string) => { const i = args.indexOf(name); return i === -1 ? undefined : args[i + 1]; };
+    return (await login({ token: value("--token"), origin: value("--origin"), host: value("--host") })) === "ok" ? 0 : 1;
+  },
   async connect(args) {
     if (args[0] !== "claude") { console.log("Usage: agenttracking connect claude [--project]"); return 1; }
-    if (!readConfig()) { console.log("Not logged in yet. Run: agenttracking login"); return 1; }
+    if (!readConfig() && (await login()) !== "ok") return 1;
     const settingsPath = process.env.AGENTTRACKING_CLAUDE_SETTINGS ?? settingsPathFor(args.includes("--project") ? "project" : "user");
     const result = connectClaude({ settingsPath, command: defaultCommand(installRuntime()) });
     if (result === "invalid_json") { console.log(`${settingsPath} is not valid JSON. Nothing was changed. Fix the file and run this again.`); return 1; }
