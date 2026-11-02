@@ -1,3 +1,4 @@
+import MCPSetupGuide from "@/components/MCPSetupGuide";
 import WorkflowLinks from "@/components/WorkflowLinks";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -239,6 +240,8 @@ export default function Page() {
           Header setzen kann, übergibt das Token stattdessen im Argument <code>token</code> des Tools.
         </p>
       </section>
+
+      <MCPSetupGuide lang="de" />
 
       <section className="shell section" id="server-outcomes">
         <h2>Anfragen und Buchungen serverseitig bestätigen</h2>

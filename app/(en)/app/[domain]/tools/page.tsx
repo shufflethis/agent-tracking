@@ -1,3 +1,5 @@
+import MCPAnalyticsPanel from "@/components/MCPAnalyticsPanel";
+import { mcpMetrics, recentMCPInvocations } from "@/lib/tracking/mcp-analytics";
 import type { Metadata } from "next";
 import DashboardShell from "@/components/DashboardShell";
 import { requireSite } from "@/lib/tracking/auth";
@@ -8,10 +10,15 @@ import { clampDays } from "@/lib/tracking/stats-api";
 export const metadata: Metadata = { title: "Tools", robots: { index: false, follow: false } };
 export const runtime = "nodejs";
 
-export default async function Page({ params, searchParams }: { params: Promise<{ domain: string }>; searchParams: Promise<{ days?: string }> }) {
+export default async function Page({ params, searchParams }: { params: Promise<{ domain: string }>; searchParams: Promise<{ days?: string; environment?: string; tool?: string; before?: string; after?: string }> }) {
   const { domain } = await params;
   const { account, site } = await requireSite(decodeURIComponent(domain));
-  const days = clampDays((await searchParams).days, account);
+  const query = await searchParams;
+  const days = clampDays(query.days, account);
+  const environment = query.environment === "test" ? "test" : "production";
+  const now = Date.now();
+  const remote = mcpMetrics(site.domain, days, environment, now);
+  const recent = recentMCPInvocations(site.domain, days, environment, now);
   const c = dashCopy(dashLang(account.lang)).tools;
   const dash = loadDashboard(site.domain, days);
   const never = dash.tools.filter((t) => t.neverCalled);
@@ -20,6 +27,7 @@ export default async function Page({ params, searchParams }: { params: Promise<{
     <DashboardShell account={account} site={site} view="tools">
       <section className="shell section" style={{ paddingTop: 32 }}>
         <p className="dek" style={{ marginBottom: 20, maxWidth: "62ch" }}>{c.intro} · {days} {account.lang === "de" ? "Tage" : "days"}</p>
+        <MCPAnalyticsPanel domain={site.domain} days={days} environment={environment} rows={remote} recent={recent} lang={dashLang(account.lang)} tool={query.tool} before={query.before} after={query.after} />
         {never.length ? (
           <div className="callout hot" style={{ marginBottom: 24 }}>
             <span className="tag">{c.neverCalled}</span>

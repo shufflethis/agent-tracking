@@ -1,3 +1,4 @@
+import MCPSetupGuide from "@/components/MCPSetupGuide";
 import WorkflowLinks from "@/components/WorkflowLinks";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -237,6 +238,8 @@ export default function Page() {
           the token in the tool&apos;s <code>token</code> argument instead.
         </p>
       </section>
+
+      <MCPSetupGuide lang="en" />
 
       <section className="shell section" id="server-outcomes">
         <h2>Confirm inquiries and bookings from your server</h2>

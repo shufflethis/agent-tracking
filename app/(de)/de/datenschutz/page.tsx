@@ -90,6 +90,7 @@ export default function Page() {
           einem täglich neuen Zufallswert, der Site, einer groben Browserklasse und der Netzwerkadresse, gehasht; die Adresse selbst wird nicht gespeichert, kein Cookie gesetzt,
           nichts auf das Gerät geschrieben. Rohdaten werden nach {RAW_RETENTION_DAYS} Tagen gelöscht; Tagessummen bleiben, solange die Site im Konto ist.
         </p>
+        <p>Optionale MCP-Serverintegrationen senden Toolnamen, Zeitpunkt, Laufzeit, eine begrenzte Fehlerklasse, Plugin-Version, Test-/Produktionsumgebung und opake Aufruf- oder Ergebniskennungen. Ergebnisbelege können PDF-Erstellung und PDF-Auslieferung bestätigen. Der TypeScript-Wrapper sendet keine Argumente, Antworten, PDF-Adressen oder rohen ChatGPT-Kennungen. Wenn konfiguriert, wird eine Gesprächskennung vor der Übertragung mit einem Site-spezifischen Geheimnis per HMAC pseudonymisiert; sie zählt keine Personen.</p>
         <p>
           Site-Betreiber können außerdem ihr eigenes Origin-Server-Log hochladen. Unterstützte Bot-Namen werden soweit möglich gegen aktuelle veröffentlichte Adressbereiche
           geprüft; fehlende oder gescheiterte Verifikation bleibt sichtbar. Die Netzwerkadresse wird während der Verarbeitung genutzt und nicht in den Zählern gespeichert.

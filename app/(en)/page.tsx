@@ -79,6 +79,11 @@ export default function Page() {
         </p>
         <p className="formnote"><Link href="/guides/ai-agent-traffic-website-measurement-guide">Read the complete AI traffic measurement guide</Link>.</p>
       </section>
+      <section className="shell section" id="mcp-outcomes">
+        <h2>What do your ChatGPT tool calls actually produce?</h2>
+        <p className="dek">Connect your MCP server to AgentTracking. See calls, errors and duration by plugin version, alongside server-confirmed PDF creation, PDF delivery, inquiries and bookings. Test runs and production have separate views.</p>
+        <p><Link href="/docs#mcp-analytics">Integrate ChatGPT & MCP →</Link></p>
+      </section>
 
       <Positioning lang="en" />
 

@@ -380,6 +380,15 @@ function migrate(instance: DatabaseSync): void {
     }
     instance.prepare("insert into schema_migrations (version, applied_at) values (17, ?)").run(Date.now());
   }
+  if ((current.version ?? 0) < 18) {
+    for (const table of ["server_tool_calls", "server_outcomes"]) {
+      instance.exec(`alter table ${table} add column environment text not null default 'production'`);
+    }
+    instance.exec("alter table server_tool_calls add column duration_ms integer");
+    instance.exec("alter table server_tool_calls add column plugin_version text");
+    instance.exec("alter table server_tool_calls add column error_class text");
+    instance.prepare("insert into schema_migrations (version, applied_at) values (18, ?)").run(Date.now());
+  }
   instance.exec("commit");
   } catch (err) {
     instance.exec("rollback");
@@ -911,19 +920,19 @@ export function reconcileOutcomeLinks(domain: string, taskId: string | null, inv
   if (!taskId && !invocationId) return;
   const d = db();
   const key = domain.toLowerCase();
-  const outcomes = d.prepare("select receipt_id as receiptId, task_id as taskId, invocation_id as invocationId from server_outcomes where domain = ? and ((task_id is not null and task_id = ?) or (invocation_id is not null and invocation_id = ?))")
-    .all(key, taskId, invocationId) as { receiptId: string; taskId: string | null; invocationId: string | null }[];
+  const outcomes = d.prepare("select receipt_id as receiptId, environment, task_id as taskId, invocation_id as invocationId from server_outcomes where domain = ? and ((task_id is not null and task_id = ?) or (invocation_id is not null and invocation_id = ?))")
+    .all(key, taskId, invocationId) as { receiptId: string; environment: string; taskId: string | null; invocationId: string | null }[];
   const browser = d.prepare(`select id from events where domain = ? and simulated = 0 and transport = 'browser'
     and kind in ('goal_attempt', 'form_attempt', 'tool_call')
     and ((? is not null and task_id = ?) or (? is not null and invocation_id = ?))
     order by case kind when 'goal_attempt' then 0 when 'form_attempt' then 1 else 2 end, t limit 1`);
-  const server = d.prepare(`select invocation_id as invocationId, actor_kind as actorKind from server_tool_calls where domain = ?
+  const server = d.prepare(`select invocation_id as invocationId, actor_kind as actorKind from server_tool_calls where domain = ? and environment = ?
     and ((? is not null and task_id = ?) or (? is not null and invocation_id = ?))
     order by case actor_kind when 'agent' then 0 else 1 end, received_at limit 1`);
   const update = d.prepare("update server_outcomes set observed_event_id = coalesce(observed_event_id, ?), server_invocation_id = coalesce(server_invocation_id, ?), actor_evidence = case when ? = 'agent' then 'site_server_reported_agent' else actor_evidence end where domain = ? and receipt_id = ?");
   for (const o of outcomes) {
-    const observed = browser.get(key, o.taskId, o.taskId, o.invocationId, o.invocationId) as { id: number } | undefined;
-    const attested = server.get(key, o.taskId, o.taskId, o.invocationId, o.invocationId) as { invocationId: string; actorKind: string } | undefined;
+    const observed = o.environment === "test" ? undefined : browser.get(key, o.taskId, o.taskId, o.invocationId, o.invocationId) as { id: number } | undefined;
+    const attested = server.get(key, o.environment, o.taskId, o.taskId, o.invocationId, o.invocationId) as { invocationId: string; actorKind: string } | undefined;
     update.run(observed?.id ?? null, attested?.invocationId ?? null, attested?.actorKind ?? "unknown", key, o.receiptId);
   }
 }
@@ -942,6 +951,9 @@ export function pruneRaw(now = Date.now()): number {
   d.prepare("update content_captures set html_snapshot='' where captured_at < ? and html_snapshot <> ''").run(cutoff);
   d.prepare("delete from event_receipts where received_at < ?").run(cutoff);
   d.prepare("delete from tool_session_receipts where day < ?").run(dayKey(cutoff));
+  // Server-reported calls and receipts are raw data too: they have no daily aggregate and expire with the rest.
+  d.prepare("delete from server_tool_calls where received_at < ?").run(cutoff);
+  d.prepare("delete from server_outcomes where received_at < ?").run(cutoff);
   const result = d.prepare("delete from events where t < ?").run(cutoff);
   return Number(result.changes);
 }

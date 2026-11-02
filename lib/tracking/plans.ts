@@ -31,6 +31,9 @@ export const PLANS: Record<PlanId, Plan> = {
 /** Raw events are kept this long whatever the plan; aggregates are kept forever. */
 export const RAW_RETENTION_DAYS = 90;
 
+/** Server-reported calls and receipts have no aggregate, so their views never reach past raw retention. */
+export const serverWindowDays = (days: number) => Math.min(days, RAW_RETENTION_DAYS);
+
 export function planFor(id: string | null | undefined): Plan {
   return PLANS[(id as PlanId) in PLANS ? (id as PlanId) : "free"];
 }

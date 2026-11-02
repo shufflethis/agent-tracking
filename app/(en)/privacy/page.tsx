@@ -92,6 +92,7 @@ export default function Page() {
           site, a coarse browser class and the network address, hashed; the address itself is not stored, no cookie is set and nothing is written to the device. Raw records are
           deleted after {RAW_RETENTION_DAYS} days; daily totals remain as long as the site is in the account.
         </p>
+        <p>Optional MCP server integrations send tool names, time, duration, a limited error class, plugin version, test/production environment and opaque invocation or outcome identifiers. Outcome receipts can confirm PDF creation and delivery. The TypeScript wrapper sends no arguments, responses, PDF addresses or raw ChatGPT identifiers. When configured, a conversation identifier is HMAC-pseudonymized with a site-specific secret before transmission; it does not count people.</p>
         <p>
           Site owners may also upload their own origin server log. Supported bot claims are checked against current published address ranges when available; missing or failed
           verification remains visible. The network address is used during processing and is not retained in the resulting counters.

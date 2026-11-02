@@ -182,3 +182,7 @@ npm run dev
 Agent Tracking began as a feature of [webmcp-tool.com](https://webmcp-tool.com), the Agent Readiness Score, and was split out in September 2026 so it can be open source and run anywhere. Sites that installed the snippet from the old host stay verified.
 
 AGPL-3.0-only. Copyright (c) 2026 FINAL MASTER LLC and contributors. Running a modified version as a network service means offering its source to its users; the full text is in [LICENSE](LICENSE). The hosted service at agenttracking.co is governed by its [terms](https://agenttracking.co/terms).
+
+## ChatGPT and MCP outcome analytics
+
+Track remote MCP calls from the server with the TypeScript wrapper in [`sdk/mcp.ts`](sdk/mcp.ts). The private Tools dashboard separates test and production calls, groups plugin versions, and links calls to backend-confirmed PDF creation, PDF delivery, inquiries and bookings. No tool arguments, responses or raw ChatGPT identifiers are sent. See the [integration guide](docs/mcp-analytics.md) and [quote plugin example](examples/quote-plugin/example.ts).
