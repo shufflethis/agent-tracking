@@ -10,7 +10,7 @@ import { usageThisMonth } from "@/lib/tracking/db";
  * Four views and settings, no more, as the plan says. Language comes from
  * the account (lib/tracking/copy.ts), not from the URL.
  */
-export default function DashboardShell({ account, site, view, children }: { account: Account; site?: Site; view?: string; children: React.ReactNode }) {
+export default function DashboardShell({ account, site, view, title, children }: { account: Account; site?: Site; view?: string; title?: string; children: React.ReactNode }) {
   const lang = dashLang(account.lang);
   const c = dashCopy(lang);
   const plan = planFor(account.plan);
@@ -37,7 +37,7 @@ export default function DashboardShell({ account, site, view, children }: { acco
               </Link>
               {site ? <span style={{ color: "var(--muted)" }}> / </span> : null}
             </p>
-            <h1 style={{ fontSize: "clamp(24px,3.6vw,36px)", margin: 0, wordBreak: "break-word" }}>{site ? site.domain : c.shell.yourSites}</h1>
+            <h1 style={{ fontSize: "clamp(24px,3.6vw,36px)", margin: 0, wordBreak: "break-word" }}>{site ? site.domain : title ?? c.shell.yourSites}</h1>
             {site && !site.verified_at ? (
               <p style={{ margin: "8px 0 0", fontSize: 14, color: "var(--warn)" }}>
                 {c.shell.notVerified} <Link href={`${base}/settings`}>{c.shell.installAndCheck}</Link>.
