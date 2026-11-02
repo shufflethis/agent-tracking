@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import TwoSides from "@/components/TwoSides";
 import HeroArt from "@/components/HeroArt";
 import Positioning from "@/components/Positioning";
 import { heroFor } from "@/lib/hero";
@@ -79,6 +80,7 @@ export default function Page() {
         </p>
         <p className="formnote"><Link href="/guides/ai-agent-traffic-website-measurement-guide">Read the complete AI traffic measurement guide</Link>.</p>
       </section>
+      <TwoSides lang="en" />
       <section className="shell section" id="mcp-outcomes">
         <h2>What do your ChatGPT tool calls actually produce?</h2>
         <p className="dek">Connect your MCP server to AgentTracking. See calls, errors and duration by plugin version, alongside server-confirmed PDF creation, PDF delivery, inquiries and bookings. Test runs and production have separate views.</p>

@@ -120,6 +120,17 @@ export default function Page() {
           gespeichert; wir können es nicht erneut anzeigen.
         </p>
 
+        <h2 id="agent-monitoring">Überwachung eigener Agents</h2>
+        <p>
+          Wenn du eine Maschine mit dem Kommandozeilen-Tool agenttracking verbindest, sendet es den Status deiner Claude-Code-Sessions und umschlossenen Cron-Jobs: Event-Typ,
+          Zeit, Tool-Name und Erfolg, den letzten Teil des Projektordner-Namens, ein von dir gewähltes Host-Label, eine auf deiner Maschine gehashte Session-ID (mit einem
+          Geheimnis, das dort bleibt) und bei Cron-Jobs Exit-Code und Dauer. Nur mit --tail werden die letzten Zeilen der Fehlerausgabe gesendet, nachdem Tokens und
+          Passwörter maskiert wurden. Prompts, Antworten, Tool-Eingaben und -Ausgaben, Dateiinhalte und volle Pfade werden nie gesendet. Zweck: dir deine Läufe zeigen, das
+          Briefing und die von dir eingestellten Meldungen senden (Art. 6 Abs. 1 lit. b DSGVO). Events werden nach 30 Tagen gelöscht, Läufe nach 90 Tagen, Zeilen der
+          Fehlerausgabe nach 7 Tagen; Tageszähler bleiben. Maschinen-Tokens werden als Hash gespeichert und sind jederzeit widerrufbar. Wenn du einen Webhook einträgst,
+          gehen Meldungen an den gewählten Dienst (zum Beispiel Telegram, Slack oder Discord) zu dessen Bedingungen.
+        </p>
+
         <h2 id="payment">Zahlung</h2>
         <p>
           Bezahlte Pläne werden, sobald sie geöffnet sind, über Stripe, Inc. (354 Oyster Point Boulevard, South San Francisco, CA 94080, USA) abgerechnet. Stripe erhält Ihre

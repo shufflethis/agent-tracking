@@ -44,6 +44,23 @@ The [live public stats for agenttracking.co](https://agenttracking.co/stats/agen
 
 The authenticated Stats API, CSV export and read-only MCP tool expose site summaries. A reader can access only explicitly shared sites. For details, see [API documentation](https://agenttracking.co/docs#api), [measurement contract](docs/measurement.md), [source classification](docs/source-classification.md), [task tests](docs/task-tests.md) and [agency workflow](docs/agency-workflow.md).
 
+## Monitor your own agents
+
+The other side: what your own Claude Code loops and cron jobs did while you were away.
+The `agenttracking` CLI (in `cli/`) connects a machine with a device login, installs Claude Code
+hooks and wraps cron commands. It sends run status only (event type, tool name and success,
+project folder name, a locally hashed session id, exit code and duration); never prompts, tool
+input or output, file contents or full paths. The server (`lib/agents/`) marks runs as stuck or
+missing by rule, sends one morning briefing and immediate alerts (email, Telegram, Slack, Discord
+or a webhook). Every quarter hour: `scripts/agents-cron.sh`. Design:
+`docs/superpowers/specs/2026-11-02-agent-monitoring-design.md`.
+
+```bash
+npx agenttracking login
+npx agenttracking connect claude
+npx agenttracking wrap --name backup --every 24h --tail 20 -- ./backup.sh
+```
+
 ## Scope and limits
 
 A missing or stale crawler range stays unverified. Legacy fetch counts are not silently upgraded. Fetch bursts mean at least three distinct relevant paths in one import batch; they reveal no prompt or intent. Browser-only traffic cannot identify every agent. The product does not record full referrer URLs, tool arguments or form values in its event schema. Deployment, additional scripts and legal requirements still need an individual privacy review.

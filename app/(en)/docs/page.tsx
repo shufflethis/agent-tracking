@@ -2,6 +2,7 @@ import MCPSetupGuide from "@/components/MCPSetupGuide";
 import WorkflowLinks from "@/components/WorkflowLinks";
 import type { Metadata } from "next";
 import Link from "next/link";
+import AgentMonitoringDocs from "@/components/AgentMonitoringDocs";
 import CopyButton from "@/components/CopyButton";
 import { alternatesFor } from "@/lib/i18n";
 import { SOURCES_VERSION } from "@/lib/tracking/classify";
@@ -248,6 +249,8 @@ export default function Page() {
         <p className="dek">Use a new receipt ID per actual inquiry and retry the same ID after network failure. A repeated receipt returns <code>duplicate</code>; a changed payload for the same ID returns 409. Do not send contact, payment or order content. Optional task and invocation IDs link observations without proving the actor.</p>
         <p className="dek">For external MCP servers, send a separate credential to <code>/api/server-tools/example.com</code> with an invocation ID, optional task ID, tool name, time, technical outcome and actor kind. An agent actor is reported by your server, not independently verified. The browser snippet does not observe every remote MCP call. The runnable TypeScript example is in <code>examples/inquiry-app</code> in the repository.</p>
       </section>
+
+      <AgentMonitoringDocs lang="en" />
 
       <section className="shell section" id="private-workflow">
         <h2>Private task checks, fixes and client reports</h2>

@@ -2,6 +2,7 @@ import MCPSetupGuide from "@/components/MCPSetupGuide";
 import WorkflowLinks from "@/components/WorkflowLinks";
 import type { Metadata } from "next";
 import Link from "next/link";
+import AgentMonitoringDocs from "@/components/AgentMonitoringDocs";
 import CopyButton from "@/components/CopyButton";
 import { alternatesForLocale } from "@/lib/i18n";
 import { SOURCES_VERSION } from "@/lib/tracking/classify";
@@ -250,6 +251,8 @@ export default function Page() {
         <p className="dek">Vergib pro echter Anfrage eine neue Beleg-ID und wiederhole bei Netzfehlern dieselbe ID. Wiederholungen liefern <code>duplicate</code>, geänderte Nutzdaten zur selben ID HTTP 409. Sende keine Kontakt-, Zahlungs- oder Bestellinhalte. Task- und Invocation-ID verknüpfen Beobachtungen, belegen aber keinen Akteur.</p>
         <p className="dek">Für externe MCP-Server nutze den separaten Zugang und <code>/api/server-tools/example.com</code> mit Invocation-ID, optionaler Task-ID, Toolname, Zeitpunkt, technischem Ausgang und Akteurstyp. Ein Agentenakteur ist eine Aussage deines Servers, keine unabhängige Verifikation. Das Browser-Snippet sieht nicht jeden externen MCP-Aufruf. Das ausführbare TypeScript-Beispiel liegt im Repository unter <code>examples/inquiry-app</code>.</p>
       </section>
+
+      <AgentMonitoringDocs lang="de" />
 
       <section className="shell section" id="private-workflow">
         <h2>Private Aufgabentests, Korrekturen und Kundenberichte</h2>
