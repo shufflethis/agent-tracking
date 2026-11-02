@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { agentCopy } from "@/lib/agents/copy";
 import { LangSwitch, SignOut } from "@/components/SiteActions";
 import { dashCopy, dashLang, numberLocale, type DashLang } from "@/lib/tracking/copy";
 import type { Account, Site } from "@/lib/tracking/db";
@@ -10,8 +11,9 @@ import { usageThisMonth } from "@/lib/tracking/db";
  * Four views and settings, no more, as the plan says. Language comes from
  * the account (lib/tracking/copy.ts), not from the URL.
  */
-export default function DashboardShell({ account, site, view, title, children }: { account: Account; site?: Site; view?: string; title?: string; children: React.ReactNode }) {
+export default function DashboardShell({ account, site, view, title, area, children }: { account: Account; site?: Site; view?: string; title?: string; area?: "sites" | "fleet"; children: React.ReactNode }) {
   const lang = dashLang(account.lang);
+  const fleetNav = agentCopy(lang).fleet;
   const c = dashCopy(lang);
   const plan = planFor(account.plan);
   const used = usageThisMonth(account.email);
@@ -54,6 +56,15 @@ export default function DashboardShell({ account, site, view, title, children }:
             </p>
           </div>
         </div>
+        {!site && area ? (
+          <nav aria-label="Dashboard areas" style={{ display: "flex", gap: 4, marginTop: 24, borderBottom: "1px solid var(--rule)", overflowX: "auto" }}>
+            {([["sites", "/app", fleetNav.navSites], ["fleet", "/app/fleet", fleetNav.navAgents]] as const).map(([key, href, label]) => (
+              <Link key={key} href={href} style={{ padding: "10px 14px", fontSize: 14, fontWeight: 600, color: area === key ? "var(--ink)" : "var(--muted)", borderBottom: area === key ? "2px solid var(--cyan)" : "2px solid transparent", textDecoration: "none", whiteSpace: "nowrap" }}>
+                {label}
+              </Link>
+            ))}
+          </nav>
+        ) : null}
         {site ? (
           <nav aria-label="Dashboard views" style={{ display: "flex", gap: 4, marginTop: 24, borderBottom: "1px solid var(--rule)", overflowX: "auto" }}>
             {views.map((v) => {

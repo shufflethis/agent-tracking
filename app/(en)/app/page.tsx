@@ -24,7 +24,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ a
   const canAdd = ownedSites.length < plan.domains;
 
   return (
-    <DashboardShell account={account}>
+    <DashboardShell account={account} area="sites">
       <section className="shell section" style={{ paddingTop: 32 }}>
         {sites.length ? (
           <div className="tablewrap" style={{ marginBottom: 28 }}>
