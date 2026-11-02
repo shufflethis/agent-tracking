@@ -1,7 +1,8 @@
 import { spawn } from "node:child_process";
 import { createHmac, randomUUID } from "node:crypto";
 import { readFileSync, writeFileSync } from "node:fs";
-import { basename, join } from "node:path";
+import { basename, dirname, join } from "node:path";
+import { tmpdir } from "node:os";
 import { configDir, readConfig, type Config } from "./config.js";
 import { label, type AgentEvent, type AgentEventType } from "./event.js";
 import { appendEvent } from "./spool.js";
@@ -23,6 +24,18 @@ export const HOOK_EVENTS = Object.keys(MAP);
 const STDIN_WAIT_MS = 50;
 const FLUSH_EVERY_MS = 5000;
 
+/**
+ * The agent is named after its working folder. A throwaway temp folder (mkdtemp style,
+ * "tool-k4tvbmnm" directly in the temp dir) loses its random suffix, so one tool's
+ * many runs count as one agent instead of filling the agent limit.
+ */
+export function agentName(cwd: string): string {
+  const base = basename(cwd);
+  const parent = dirname(cwd);
+  if (parent !== tmpdir() && parent !== "/tmp") return base;
+  return base.replace(/-(?=[A-Za-z0-9]*\d)[A-Za-z0-9]{6,8}$/, "") || base;
+}
+
 export function eventFromHook(hookEvent: string, input: unknown, cfg: Config, now: number): AgentEvent | null {
   const type = MAP[hookEvent];
   if (!type || !input || typeof input !== "object") return null;
@@ -30,7 +43,7 @@ export function eventFromHook(hookEvent: string, input: unknown, cfg: Config, no
   const session = typeof i.session_id === "string" && i.session_id ? i.session_id : "unknown-session";
   const event: AgentEvent = {
     v: 1, id: randomUUID(), type, at: now,
-    agent: { kind: "claude", name: label(typeof i.cwd === "string" ? basename(i.cwd) : ""), host: label(cfg.host) },
+    agent: { kind: "claude", name: label(typeof i.cwd === "string" ? agentName(i.cwd) : ""), host: label(cfg.host) },
     run: createHmac("sha256", cfg.secret).update(session).digest("hex"),
   };
   if (type === "tool_start" || type === "tool_end") {

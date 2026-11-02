@@ -73,3 +73,12 @@ test("runHook is silent and exits 0 on garbage stdin and unreachable server", ()
   }
   assert.equal(existsSync(join(home, "spool.jsonl")), false, "without a config nothing is spooled");
 });
+
+test("throwaway temp folders of one tool count as one agent", () => {
+  const name = (cwd: string) => eventFromHook("Stop", { session_id: "s", cwd }, cfg, NOW)?.agent.name;
+  assert.equal(name(join(tmpdir(), "remember-summarizer-cwd-k4tvbmnm")), "remember-summarizer-cwd");
+  assert.equal(name(join(tmpdir(), "remember-summarizer-cwd-Ab12Cd")), "remember-summarizer-cwd");
+  assert.equal(name("/tmp/tool-x7Kq2p/sub"), "tool-x7Kq2p/sub".split("/").pop());
+  assert.equal(name("/root/my-project-2026"), "my-project-2026");
+  assert.equal(name("/root/agent-tracking"), "agent-tracking");
+});
