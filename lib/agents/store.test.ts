@@ -67,3 +67,12 @@ test("webhook must be https and telegram needs a bot token", () => withDb(() => 
   assert.equal(s.webhook?.chatId, "-1001");
   assert.equal(saveNotifySettings(o, { briefingHour: 24, alertsEmail: true, webhook: null }), "invalid_hour");
 }));
+
+test("slack and discord webhooks must point at their own hosts, generic not at other ports", () => withDb(() => {
+  const o = owner();
+  const save = (kind: "slack" | "discord" | "generic", url: string) => saveNotifySettings(o, { briefingHour: 7, alertsEmail: true, webhook: { kind, url } });
+  assert.equal(save("slack", "https://internal.example/hooks.slack.com"), "invalid_url");
+  assert.equal(save("discord", "https://discord.com.evil.example/api/webhooks/1"), "invalid_url");
+  assert.equal(save("generic", "https://localhost:3200/api/admin/x"), "invalid_url");
+  assert.equal(save("slack", "https://hooks.slack.com/services/T/B/x"), "ok");
+}));

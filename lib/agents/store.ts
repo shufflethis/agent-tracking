@@ -1,4 +1,5 @@
 import { db } from "../tracking/db";
+import { webhookHostAllowed } from "./safe-url";
 import type { RunRow } from "./status";
 import type { AgentKind, RunStatus } from "./types";
 
@@ -100,10 +101,8 @@ export function getNotifySettings(owner: string): NotifySettings {
 export function validWebhook(w: NonNullable<NotifySettings["webhook"]>): boolean {
   if (!WEBHOOK_KINDS.includes(w.kind)) return false;
   if (w.kind === "telegram") return /^\d+:[\w-]{30,}$/.test(w.url) && typeof w.chatId === "string" && /^-?\d{1,20}$|^@\w{5,32}$/.test(w.chatId);
-  try {
-    const u = new URL(w.url);
-    return u.protocol === "https:" && w.url.length <= 500;
-  } catch { return false; }
+  if (w.url.length > 500) return false;
+  try { return webhookHostAllowed(w.kind, new URL(w.url)); } catch { return false; }
 }
 
 export function saveNotifySettings(owner: string, s: NotifySettings): "ok" | "invalid_url" | "invalid_hour" {

@@ -5,6 +5,7 @@ import { dashLang, type DashLang } from "../tracking/copy";
 import { dayKey, db } from "../tracking/db";
 import { clock } from "./briefing";
 import { agentCopy } from "./copy";
+import { postJsonPinned } from "./safe-url";
 import { getNotifySettings, type NotifySettings } from "./store";
 
 /**
@@ -35,24 +36,19 @@ export function webhookRequest(w: NonNullable<NotifySettings["webhook"]>, a: Ale
   }
 }
 
-async function postWebhook(req: { url: string; body: string }): Promise<boolean> {
-  try {
-    const res = await fetch(req.url, { method: "POST", headers: { "content-type": "application/json" }, body: req.body, signal: AbortSignal.timeout(5000), redirect: "error" });
-    return res.ok;
-  } catch {
-    return false;
-  }
-}
+/** Sends a prepared webhook request. Only checked public https targets are contacted, pinned to the checked address (lib/agents/safe-url.ts). */
+export type WebhookPost = (req: { url: string; body: string }) => Promise<boolean>;
+export const postWebhook: WebhookPost = (req) => postJsonPinned(req.url, req.body);
 
 /** Sends one test message so the settings page can show whether the webhook works. */
-export async function sendTestWebhook(w: NonNullable<NotifySettings["webhook"]>, lang: DashLang): Promise<boolean> {
+export async function sendTestWebhook(w: NonNullable<NotifySettings["webhook"]>, lang: DashLang, post: WebhookPost = postWebhook): Promise<boolean> {
   const text = lang === "de" ? "agenttracking: Testnachricht. Webhook funktioniert." : "agenttracking: test message. Your webhook works.";
-  return postWebhook(webhookRequest(w, { agent: "test", host: "agenttracking", status: "failed", at: Date.now(), detail: "", url: `${SITE_ORIGIN}/app/fleet` }, lang, text));
+  return post(webhookRequest(w, { agent: "test", host: "agenttracking", status: "failed", at: Date.now(), detail: "", url: `${SITE_ORIGIN}/app/fleet` }, lang, text));
 }
 
 type PendingRow = { id: string; owner: string; lang: string | null; agent_id: string; name: string; host: string; status: Alert["status"]; started_at: number; last_event_at: number; exit_code: number | null };
 
-export async function sendAlerts(now = Date.now()): Promise<number> {
+export async function sendAlerts(now = Date.now(), post: WebhookPost = postWebhook): Promise<number> {
   const d = db();
   const rows = d.prepare(
     `select r.id, a.owner, acc.lang, a.id as agent_id, a.name, a.host, r.status, r.started_at, r.last_event_at, r.exit_code
@@ -82,11 +78,11 @@ export async function sendAlerts(now = Date.now()): Promise<number> {
       });
     }
     if (settings.webhook) {
-      for (const a of alerts.slice(0, MAX_WEBHOOK_ALERTS)) await postWebhook(webhookRequest(settings.webhook, a, lang));
+      for (const a of alerts.slice(0, MAX_WEBHOOK_ALERTS)) await post(webhookRequest(settings.webhook, a, lang));
       if (alerts.length > MAX_WEBHOOK_ALERTS) {
         const rest = alerts.slice(MAX_WEBHOOK_ALERTS);
         const text = `${agentCopy(lang).alert.andMore(rest.length)}: ${rest.map((a) => a.agent).join(", ")}\n${SITE_ORIGIN}/app/fleet`;
-        await postWebhook(webhookRequest(settings.webhook, rest[0], lang, text));
+        await post(webhookRequest(settings.webhook, rest[0], lang, text));
       }
     }
     for (const r of list) mark.run(now, r.id);

@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { db } from "../tracking/db";
 import { recordAgentEvents } from "./ingest";
-import { dueBriefingOwners, markBriefed, sendAlerts, webhookRequest, type Alert } from "./notify";
+import { dueBriefingOwners, markBriefed, sendAlerts, sendTestWebhook, webhookRequest, type Alert } from "./notify";
 import { saveNotifySettings } from "./store";
 import type { AgentEvent } from "./types";
 import { owner, withDb } from "./test-db";
@@ -33,6 +33,8 @@ const failing = (name: string): AgentEvent[] => {
   return [{ v: 1, id: `x${n}-xxxxxxxx`, type: "cron_end", at: T, agent, run, exitCode: 1 }];
 };
 
+const recorder = (calls: { url: string; body: string }[]) => async (req: { url: string; body: string }) => { calls.push(req); return true; };
+
 async function withFetch<T>(fn: (calls: { url: string; body: string }[]) => Promise<T>): Promise<T> {
   const original = globalThis.fetch;
   const calls: { url: string; body: string }[] = [];
@@ -46,10 +48,10 @@ test("alerts are sent once", () => withDb(() => withFetch(async (calls) => {
   const o = owner();
   saveNotifySettings(o, { briefingHour: 7, alertsEmail: true, webhook: { kind: "slack", url: "https://hooks.slack.com/x" } });
   recordAgentEvents(o, failing("backup"), T);
-  assert.equal(await sendAlerts(T + 60_000), 1);
+  assert.equal(await sendAlerts(T + 60_000, recorder(calls)), 1);
   assert.equal(calls.filter((c) => c.url.includes("slack")).length, 1);
   assert.equal(calls.filter((c) => c.url.includes("brevo")).length, 1);
-  assert.equal(await sendAlerts(T + 120_000), 0);
+  assert.equal(await sendAlerts(T + 120_000, recorder(calls)), 0);
   assert.equal(calls.length, 2);
 })));
 
@@ -57,7 +59,7 @@ test("more than 10 alerts are summarized", () => withDb(() => withFetch(async (c
   const o = owner();
   saveNotifySettings(o, { briefingHour: 7, alertsEmail: false, webhook: { kind: "generic", url: "https://example.com/h" } });
   for (let i = 0; i < 13; i++) recordAgentEvents(o, failing(`job${i}`), T);
-  await sendAlerts(T + 60_000);
+  await sendAlerts(T + 60_000, recorder(calls));
   assert.equal(calls.length, 11);
   assert.match(JSON.parse(calls[10].body).text, /and 3 more/);
   assert.equal((db().prepare("select count(*) as n from agent_runs where alerted_at is null").get() as { n: number }).n, 0);
@@ -78,3 +80,14 @@ test("accounts without agents get no briefing", () => withDb(() => {
   owner("empty@example.com");
   assert.deepEqual(dueBriefingOwners(Date.UTC(2026, 10, 2, 10)), []);
 }));
+
+test("webhooks to internal addresses are never sent", async () => {
+  const original = globalThis.fetch;
+  let called = 0;
+  globalThis.fetch = (async () => { called++; return Response.json({ ok: true }); }) as typeof fetch;
+  try {
+    assert.equal(await sendTestWebhook({ kind: "generic", url: "https://127.0.0.1/api/admin/x" }, "en"), false);
+    assert.equal(await sendTestWebhook({ kind: "generic", url: "https://[::1]/x" }, "en"), false);
+    assert.equal(called, 0);
+  } finally { globalThis.fetch = original; }
+});
