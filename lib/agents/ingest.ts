@@ -31,7 +31,9 @@ function parseEvent(raw: unknown, now: number): AgentEvent | null {
   if (typeof agent.name !== "string" || !LABEL.test(agent.name) || typeof agent.host !== "string" || !LABEL.test(agent.host)) return null;
   if (typeof r.run !== "string" || !RUN.test(r.run)) return null;
   const type = r.type as AgentEventType;
-  const at = typeof r.at === "number" && Number.isFinite(r.at) && r.at >= now - PAST_MS && r.at <= now + FUTURE_MS ? Math.round(r.at) : now;
+  // Outside the window the time is unknown; a made-up "now" would create false hung runs. Drop instead.
+  if (typeof r.at !== "number" || !Number.isFinite(r.at) || r.at < now - PAST_MS || r.at > now + FUTURE_MS) return null;
+  const at = Math.round(r.at);
   const event: AgentEvent = { v: 1, id: r.id, type, at, agent: { kind: agent.kind as AgentKind, name: agent.name, host: agent.host }, run: r.run };
   if (type === "tool_start" || type === "tool_end") {
     if (typeof r.tool !== "string" || !TOOL.test(r.tool)) return null;
@@ -64,14 +66,19 @@ export function parseAgentBatch(body: unknown, now = Date.now()): { events: Agen
   return { events, dropped: list.length - events.length };
 }
 
-type RunState = { id: string; status: string; ended_at: number | null; last_event_at: number };
+type RunState = { id: string; run_key: string; status: string; ended_at: number | null; last_event_at: number };
 
 export function recordAgentEvents(owner: string, events: AgentEvent[], now = Date.now()): { accepted: number; duplicates: number; rejected: "agent_limit" | "quota" | null } {
   const d = db();
   const month = monthKey(now);
   const used = (d.prepare("select count from agent_usage where owner = ? and month = ?").get(owner, month) as { count: number } | undefined)?.count ?? 0;
   const exists = d.prepare("select 1 from agent_events where owner = ? and id = ?");
-  const fresh = events.filter((e) => !exists.get(owner, e.id));
+  const seen = new Set<string>();
+  const fresh = events.filter((e) => {
+    if (seen.has(e.id) || exists.get(owner, e.id)) return false;
+    seen.add(e.id);
+    return true;
+  });
   const duplicates = events.length - fresh.length;
   if (fresh.length && used + fresh.length > AGENT_EVENTS_PER_MONTH) return { accepted: 0, duplicates, rejected: "quota" };
 
@@ -80,7 +87,9 @@ export function recordAgentEvents(owner: string, events: AgentEvent[], now = Dat
   const insertAgent = d.prepare("insert into agents (id, owner, kind, name, host, first_seen, last_seen) values (?, ?, ?, ?, ?, ?, ?)");
   const touchAgent = d.prepare("update agents set last_seen = max(last_seen, ?) where id = ?");
   const setEvery = d.prepare("update agents set expect_every_ms = ? where id = ?");
-  const findRun = d.prepare("select id, status, ended_at, last_event_at from agent_runs where agent_id = ? and run_key = ?");
+  // A resumed session keeps its id, so its run key gets a suffix per restart: key, key:2, key:3 ...
+  const findRun = d.prepare("select id, run_key, status, ended_at, last_event_at from agent_runs where agent_id = ? and (run_key = ? or run_key like ? || ':%') order by started_at desc, rowid desc limit 1");
+  const countRuns = d.prepare("select count(*) as n from agent_runs where agent_id = ? and (run_key = ? or run_key like ? || ':%')");
   const insertRun = d.prepare("insert into agent_runs (id, agent_id, run_key, started_at, status, last_event_at, last_event_type) values (?, ?, ?, ?, 'running', ?, ?)");
   const insertEvent = d.prepare("insert into agent_events (id, owner, run_id, at, received_at, type, tool, ok) values (?, ?, ?, ?, ?, ?, ?, ?)");
   const bumpDaily = d.prepare(
@@ -102,12 +111,14 @@ export function recordAgentEvents(owner: string, events: AgentEvent[], now = Dat
       touchAgent.run(e.at, agentId);
       if (e.type === "cron_start" && e.expectEveryMs) setEvery.run(e.expectEveryMs, agentId);
 
-      let run = findRun.get(agentId, e.run) as RunState | undefined;
-      if (!run) {
+      let run = findRun.get(agentId, e.run, e.run) as RunState | undefined;
+      const restart = run && run.ended_at !== null && e.type === "session_start" && e.at >= run.ended_at;
+      if (!run || restart) {
         const id = randomUUID();
-        insertRun.run(id, agentId, e.run, e.at, e.at, e.type);
+        const key = run ? `${e.run}:${(countRuns.get(agentId, e.run, e.run) as { n: number }).n + 1}` : e.run;
+        insertRun.run(id, agentId, key, e.at, e.at, e.type);
         bumpDaily.run(agentId, dayKey(e.at), 1, 0, 0);
-        run = { id, status: "running", ended_at: null, last_event_at: e.at };
+        run = { id, run_key: key, status: "running", ended_at: null, last_event_at: e.at };
       } else if (e.at >= run.last_event_at) {
         update("last_event_at = ?, last_event_type = ?", e.at, e.type, run.id);
       }

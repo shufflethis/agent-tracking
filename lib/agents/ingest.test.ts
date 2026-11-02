@@ -32,9 +32,28 @@ test("invalid events are dropped one by one", () => withDb(() => {
   assert.equal(parsed.dropped, 3);
 }));
 
-test("timestamps outside the window are clamped to now", () => withDb(() => {
-  const parsed = parseAgentBatch({ events: [ev("session_start", { at: NOW + 3_600_000 }), ev("turn_end", { at: NOW - 8 * 86_400_000 })] }, NOW);
-  assert.deepEqual(parsed?.events.map((e) => e.at), [NOW, NOW]);
+test("events outside the time window are dropped, not restamped", () => withDb(() => {
+  const parsed = parseAgentBatch({ events: [ev("session_start", { at: NOW + 3_600_000 }), ev("turn_end", { at: NOW - 8 * 86_400_000 }), ev("turn_end", { at: NOW - 1000 })] }, NOW);
+  assert.deepEqual(parsed?.events.map((e) => e.at), [NOW - 1000]);
+  assert.equal(parsed?.dropped, 2);
+}));
+
+test("a duplicate id inside one batch is ignored, not a 500", () => withDb(() => {
+  const o = owner();
+  const e = ev("session_start");
+  const r = recordAgentEvents(o, [e, e, ev("turn_end")], NOW);
+  assert.equal(r.accepted, 2);
+  assert.equal(r.duplicates, 1);
+}));
+
+test("a resumed session after its end starts a new run", () => withDb(() => {
+  const o = owner();
+  recordAgentEvents(o, [ev("session_start"), ev("turn_end"), ev("session_end")], NOW);
+  recordAgentEvents(o, [ev("session_start"), ev("tool_start", { tool: "Bash" })], NOW);
+  const runs = db().prepare("select status, open_tools, ended_at from agent_runs order by started_at, rowid").all() as { status: string; open_tools: number; ended_at: number | null }[];
+  assert.equal(runs.length, 2);
+  assert.equal(runs[0].status, "ok");
+  assert.deepEqual([runs[1].status, runs[1].open_tools, runs[1].ended_at], ["running", 1, null]);
 }));
 
 test("duplicate ids are ignored", () => withDb(() => {

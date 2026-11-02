@@ -62,3 +62,20 @@ test("flush stops on 401 and leaves an auth marker", async () => {
   assert.deepEqual(await withFetch(401, () => flush(home)), { sent: 0, kept: 1 });
   assert.match(readFileSync(join(home, "auth-error"), "utf8"), /401/);
 });
+
+test("batches stay under the server body limit", () => {
+  const home = mkdtempSync(join(tmpdir(), "at-spool-"));
+  for (let i = 0; i < 100; i++) appendEvent({ ...ev(i), type: "cron_end", exitCode: 1, tail: "x".repeat(1000) }, home);
+  const first = takeBatch(100, home);
+  assert.ok(first.events.length < 100 && first.events.length > 0);
+  assert.ok(Buffer.byteLength(JSON.stringify({ events: first.events })) <= 48 * 1024);
+});
+
+test("a permanent 4xx or 413 never jams the queue", async () => {
+  for (const status of [413, 400, 404]) {
+    const home = mkdtempSync(join(tmpdir(), "at-flush-"));
+    writeConfig({ origin: "https://agenttracking.example", token: "atk_x", secret: "s".repeat(64), host: "h" }, home);
+    for (let i = 0; i < 3; i++) appendEvent(ev(i), home);
+    assert.deepEqual(await withFetch(status, () => flush(home)), { sent: 0, kept: 0 }, String(status));
+  }
+});

@@ -71,6 +71,15 @@ export function runsBetween(owner: string, from: number, to: number): BriefingRu
   ).all(owner, from, to, from, to) as BriefingRun[];
 }
 
+/** Turns and tool calls of an agent whose events fall in [from, to). */
+export function eventCountsBetween(agentId: string, from: number, to: number): { turns: number; toolCalls: number } {
+  const row = db().prepare(
+    `select sum(e.type = 'turn_end') as turns, sum(e.type = 'tool_end') as toolCalls
+     from agent_events e join agent_runs r on r.id = e.run_id where r.agent_id = ? and e.at >= ? and e.at < ?`,
+  ).get(agentId, from, to) as { turns: number | null; toolCalls: number | null };
+  return { turns: row.turns ?? 0, toolCalls: row.toolCalls ?? 0 };
+}
+
 export function medianDurationMs(agentId: string, days: number, now = Date.now()): number | null {
   const values = (db().prepare("select duration_ms as v from agent_runs where agent_id = ? and started_at >= ? and ended_at is not null and duration_ms is not null order by duration_ms")
     .all(agentId, now - days * 86_400_000) as { v: number }[]).map((r) => r.v);

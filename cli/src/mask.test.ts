@@ -12,6 +12,10 @@ const cases: [string, string][] = [
   ["API_KEY: s3cr3tvalue", "s3cr3tvalue"],
   ["X-Admin-Key: 0123456789abcdef0123456789abcdef", "0123456789abcdef0123456789abcdef"],
   ["blob 0123456789abcdef0123456789abcdef0123", "0123456789abcdef0123456789abcdef0123"],
+  ["db postgres://admin:S3cretPass@db.internal:5432/app", "S3cretPass"],
+  ['json {"api_key":"abcdef123"}', "abcdef123"],
+  ["Authorization: Basic YWRtaW46aHVudGVyMg==", "YWRtaW46aHVudGVyMg=="],
+  ["mysql -u root -pHunter2xyz", "Hunter2xyz"],
   ["b64 QUJDREVGR0hJSktMTU5PUFFSU1RVVldYWVphYmNkZWZnaGlqa2xtbm9w", "QUJDREVGR0hJSktMTU5PUFFSU1RVVldYWVphYmNkZWZnaGlqa2xtbm9w"],
 ];
 

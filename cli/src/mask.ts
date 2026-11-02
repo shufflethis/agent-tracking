@@ -3,7 +3,10 @@
  * It is a safety net for `wrap --tail`, not a guarantee; the tail is opt-in.
  */
 const RULES: [RegExp, string][] = [
-  [/Bearer\s+\S+/gi, "Bearer [masked]"],
+  [/\b(Bearer|Basic|Digest)\s+\S+/gi, "$1 [masked]"],
+  [/(\w+:\/\/[^/\s:@]+:)[^@\s]+@/g, "$1[masked]@"],
+  [/("[\w-]*(?:key|token|secret|password|passwd|auth)[\w-]*"\s*:\s*")[^"]*"/gi, '$1[masked]"'],
+  [/(\s-p)(?=\S{4,})\S+/g, "$1[masked]"],
   [/\b(?:sk|ghp|gho|ghs|ghu|github_pat|atk|wmt|xox[abprs])[-_][A-Za-z0-9_-]{8,}/g, "[masked]"],
   [/\b([\w-]*(?:key|token|secret|password|passwd|auth)[\w-]*)(\s*[=:]\s*)(["']?)[^\s"']+/gi, "$1$2$3[masked]"],
   [/\b[0-9a-fA-F]{32,}\b/g, "[masked]"],

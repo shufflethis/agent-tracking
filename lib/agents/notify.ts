@@ -67,24 +67,29 @@ export async function sendAlerts(now = Date.now(), post: WebhookPost = postWebho
       agent: r.name, host: r.host, status: r.status, at: r.status === "hung" ? r.last_event_at : r.started_at,
       detail: r.status === "failed" && r.exit_code !== null ? `exit ${r.exit_code}` : "", url: `${SITE_ORIGIN}/app/fleet/${r.agent_id}`,
     }));
+    // Marked as sent only when at least one configured channel delivered; otherwise retried until ALERT_WINDOW_MS passes.
+    const channels = Number(settings.alertsEmail) + Number(Boolean(settings.webhook));
+    let delivered = false;
     if (settings.alertsEmail) {
       const c = agentCopy(lang);
       const subject = alerts.length === 1 ? c.alert.subject(alerts[0].agent, alertText(alerts[0], lang).split("\n")[0].split(": ").slice(1).join(": ")) : c.briefing.subject(alerts.length, 0);
       const lines = alerts.map((a) => alertText(a, lang).split("\n")[0]);
-      await sendMail({
+      const mail = await sendMail({
         to: [{ email: owner }], subject, text: `${lines.join("\n")}\n\n${SITE_ORIGIN}/app/fleet`,
         html: layout({ title: subject, body: paragraph(lines.map(escapeHtml).join("<br>")) + button(`${SITE_ORIGIN}/app/fleet`, c.briefing.open) }),
         ledger: { family: "agent-alert" },
       });
+      delivered ||= mail.ok;
     }
     if (settings.webhook) {
-      for (const a of alerts.slice(0, MAX_WEBHOOK_ALERTS)) await post(webhookRequest(settings.webhook, a, lang));
+      for (const a of alerts.slice(0, MAX_WEBHOOK_ALERTS)) delivered = (await post(webhookRequest(settings.webhook, a, lang))) || delivered;
       if (alerts.length > MAX_WEBHOOK_ALERTS) {
         const rest = alerts.slice(MAX_WEBHOOK_ALERTS);
         const text = `${agentCopy(lang).alert.andMore(rest.length)}: ${rest.map((a) => a.agent).join(", ")}\n${SITE_ORIGIN}/app/fleet`;
-        await post(webhookRequest(settings.webhook, rest[0], lang, text));
+        delivered = (await post(webhookRequest(settings.webhook, rest[0], lang, text))) || delivered;
       }
     }
+    if (channels > 0 && !delivered) continue;
     for (const r of list) mark.run(now, r.id);
     sent += list.length;
   }

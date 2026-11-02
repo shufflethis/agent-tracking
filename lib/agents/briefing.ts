@@ -2,7 +2,7 @@ import { escapeHtml } from "../email";
 import { button, heading, layout, paragraph } from "../email-layout";
 import type { DashLang } from "../tracking/copy";
 import { agentCopy } from "./copy";
-import { medianDurationMs, runsBetween, type BriefingRun } from "./store";
+import { eventCountsBetween, medianDurationMs, runsBetween, type BriefingRun } from "./store";
 import type { AgentKind, RunStatus } from "./types";
 
 /**
@@ -41,7 +41,8 @@ export function buildBriefing(owner: string, since: number, now: number): Briefi
     const agent: BriefingAgent = {
       name: first.agentName, host: first.host, kind: first.agentKind,
       runs: runs.filter((r) => r.status !== "missed").length, ok: count("ok"), failed: count("failed"), hung: count("hung"), missed: count("missed"),
-      turns: runs.reduce((n, r) => n + r.turns, 0), toolCalls: runs.reduce((n, r) => n + r.toolCalls, 0),
+      // Counted from events inside the window, so a loop running for days is not reported with its lifetime totals.
+      ...eventCountsBetween(agentId, since, now),
       lastProblem: problem ? { status: problem.status, at: problem.status === "hung" ? problem.lastEventAt : problem.startedAt, exitCode: problem.exitCode, tail: problem.tail } : null,
       durationVsMedian: median && last?.durationMs ? last.durationMs / median : null,
     };

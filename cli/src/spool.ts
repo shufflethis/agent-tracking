@@ -16,6 +16,8 @@ import type { AgentEvent } from "./event.js";
 const MAX_LINES = 5000;
 const MAX_BYTES = 2 * 1024 * 1024;
 const CHECK_FROM_BYTES = 512 * 1024;
+/** The server accepts 64 KB per request; stay well below it. */
+export const MAX_BATCH_BYTES = 48 * 1024;
 
 const spoolFile = (home?: string) => join(ensureDir(home), "spool.jsonl");
 const inflightFile = (home?: string) => join(ensureDir(home), "inflight.jsonl");
@@ -43,7 +45,14 @@ export function takeBatch(max = 100, home?: string): { events: AgentEvent[]; com
   if (!existsSync(inflight) && existsSync(spool)) renameSync(spool, inflight);
   if (!existsSync(inflight)) return { events: [], commit() {} };
   const all = parseLines(readFileSync(inflight, "utf8"));
-  const events = all.slice(0, max);
+  const events: AgentEvent[] = [];
+  let bytes = 16; // {"events":[]}
+  for (const e of all) {
+    const size = Buffer.byteLength(JSON.stringify(e)) + 1;
+    if (events.length >= max || (events.length > 0 && bytes + size > MAX_BATCH_BYTES)) break;
+    events.push(e);
+    bytes += size;
+  }
   return {
     events,
     commit() {

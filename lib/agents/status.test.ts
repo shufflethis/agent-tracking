@@ -16,6 +16,11 @@ test("waiting loop never hangs", () => {
   assert.equal(evaluateRun(claude("turn_end"), T + 13 * H), "close_ok");
 });
 
+test("a freshly opened session waits for input and never hangs", () => {
+  assert.equal(evaluateRun(claude("session_start"), T + 5 * H), null);
+  assert.equal(evaluateRun(claude("session_start"), T + 13 * H), "close_ok");
+});
+
 test("idle session hangs after 30 minutes", () => {
   assert.equal(evaluateRun(claude("tool_end"), T + 29 * MIN), null);
   assert.equal(evaluateRun(claude("tool_end"), T + 31 * MIN), "hung");

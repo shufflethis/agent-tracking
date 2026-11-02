@@ -53,3 +53,17 @@ test("no agents, no briefing", () => withDb(() => {
   recordAgentEvents(o, cron("y", 0), T);
   assert.equal(briefingWorthSending(buildBriefing(o, T - 3_600_000, T + 3_600_000)), true);
 }));
+
+test("long loops count turns and tool calls inside the window only", () => withDb(() => {
+  const o = owner();
+  const agent = { kind: "claude" as const, name: "loop", host: "server1" };
+  const run = "f".repeat(64);
+  const DAY = 86_400_000;
+  const e = (id: string, type: AgentEvent["type"], at: number, extra: Partial<AgentEvent> = {}): AgentEvent => ({ v: 1, id: `${id}-xxxxxxxx`, type, at, agent, run, ...extra });
+  recordAgentEvents(o, [e("a", "session_start", T - 2 * DAY), e("b", "turn_end", T - 2 * DAY + 1), e("c", "tool_end", T - 2 * DAY + 2, { tool: "Bash", ok: true })], T - 2 * DAY + 3);
+  recordAgentEvents(o, [e("d", "turn_end", T - 1000), e("f", "tool_end", T - 900, { tool: "Edit", ok: true }), e("g", "tool_end", T - 800, { tool: "Edit", ok: true })], T);
+  const b = buildBriefing(o, T - DAY / 2, T + 1);
+  const loop = [...b.problems, ...b.quiet].find((a) => a.name === "loop")!;
+  assert.equal(loop.turns, 1);
+  assert.equal(loop.toolCalls, 2);
+}));

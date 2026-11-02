@@ -20,7 +20,9 @@ const MIN_GRACE_MS = 15 * 60_000;
 export type RunRow = { id: string; agentKind: AgentKind; status: RunStatus; endedAt: number | null; lastEventAt: number; lastEventType: AgentEventType; openTools: number };
 export type AgentRow = { id: string; kind: AgentKind; expectEveryMs: number | null; lastRunStartedAt: number | null; lastMissedAt: number | null };
 
-const WAITING: AgentEventType[] = ["turn_end", "notification"];
+// Waiting for the person: after a turn, a notification, or a fresh/cleared session that has not been prompted yet.
+// Known gap: Esc during a tool fires neither Stop nor PostToolUse; such a session is reported after HUNG_OPEN_TOOL_MS.
+const WAITING: AgentEventType[] = ["turn_end", "notification", "session_start"];
 
 export function evaluateRun(run: RunRow, now: number): RunStatus | "close_ok" | null {
   if (run.status !== "running" || run.endedAt !== null) return null;

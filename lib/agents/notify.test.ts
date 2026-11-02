@@ -91,3 +91,18 @@ test("webhooks to internal addresses are never sent", async () => {
     assert.equal(called, 0);
   } finally { globalThis.fetch = original; }
 });
+
+test("an alert that could not be delivered is retried, not marked sent", () => withDb(async () => {
+  const o = owner();
+  recordAgentEvents(o, failing("flaky"), T);
+  const original = globalThis.fetch;
+  const key = process.env.BREVO_API_KEY;
+  process.env.BREVO_API_KEY = "test";
+  globalThis.fetch = (async () => new Response("down", { status: 503 })) as typeof fetch;
+  try {
+    assert.equal(await sendAlerts(T + 60_000, async () => false), 0);
+    assert.equal((db().prepare("select count(*) as n from agent_runs where alerted_at is null").get() as { n: number }).n, 1);
+    globalThis.fetch = (async () => Response.json({ messageId: "m" })) as typeof fetch;
+    assert.equal(await sendAlerts(T + 120_000, async () => false), 1);
+  } finally { globalThis.fetch = original; if (key === undefined) delete process.env.BREVO_API_KEY; else process.env.BREVO_API_KEY = key; }
+}));

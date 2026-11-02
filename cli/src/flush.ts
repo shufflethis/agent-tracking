@@ -4,7 +4,7 @@ import { ensureDir, readConfig } from "./config.js";
 import { takeBatch } from "./spool.js";
 
 /**
- * Send spooled events. 2xx: done. 422: the server will never accept them, drop.
+ * Send spooled events. 2xx: done. Other 4xx except 401/408/429: the server will never accept them, drop.
  * 401: stop and leave an auth-error marker for `agenttracking status`.
  * Anything else (offline, 5xx, 429): keep and try on the next flush.
  */
@@ -45,7 +45,8 @@ export async function flush(home?: string): Promise<{ sent: number; kept: number
         status = 0;
       }
       if (status >= 200 && status < 300) { batch.commit(); sent += batch.events.length; continue; }
-      if (status === 422) { batch.commit(); continue; }
+      // Permanent refusals (bad request, too large, not found, unprocessable) would repeat forever: drop them.
+      if (status >= 400 && status < 500 && ![401, 408, 429].includes(status)) { batch.commit(); continue; }
       if (status === 401) writeFileSync(join(ensureDir(home), "auth-error"), `401 at ${new Date().toISOString()}\n`, { mode: 0o600 });
       return { sent, kept: remaining(home) };
     }
