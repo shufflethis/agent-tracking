@@ -448,6 +448,25 @@ function migrate(instance: DatabaseSync): void {
     `);
     instance.prepare("insert into schema_migrations (version, applied_at) values (20, ?)").run(Date.now());
   }
+  if ((current.version ?? 0) < 21) {
+    for (const [table, additions] of [
+      ["agent_events", [["metadata", "text"]]],
+      ["agent_runs", [["config_json", "text"], ["config_at", "integer"]]],
+    ] as const) {
+      const columns = new Set((instance.prepare(`pragma table_info(${table})`).all() as { name: string }[]).map(c => c.name));
+      for (const [name, definition] of additions) if (!columns.has(name)) instance.exec(`alter table ${table} add column ${name} ${definition}`);
+    }
+    instance.exec(`create table if not exists agent_spans (
+      owner text not null, id text not null, trace_id text not null, parent_id text,
+      service text not null, version text, operation text not null, tool text, model text,
+      started_at integer not null, ended_at integer not null, status integer not null,
+      input_tokens integer, output_tokens integer, received_at integer not null,
+      primary key (owner, id)
+    );
+    create index if not exists agent_spans_trace on agent_spans(owner, trace_id, started_at);
+    create index if not exists agent_spans_received on agent_spans(received_at);`);
+    instance.prepare("insert into schema_migrations (version, applied_at) values (21, ?)").run(Date.now());
+  }
   instance.exec("commit");
   } catch (err) {
     instance.exec("rollback");
@@ -1014,6 +1033,7 @@ export function pruneRaw(now = Date.now()): number {
   d.prepare("delete from server_tool_calls where received_at < ?").run(cutoff);
   d.prepare("delete from server_outcomes where received_at < ?").run(cutoff);
   // Agent monitoring keeps less: events 30 days, runs 90, stderr tails 7. Daily aggregates stay.
+  d.prepare("delete from agent_spans where received_at < ?").run(now - AGENT_EVENT_RETENTION_DAYS * 86_400_000);
   d.prepare("delete from agent_events where received_at < ?").run(now - AGENT_EVENT_RETENTION_DAYS * 86_400_000);
   d.prepare("delete from agent_runs where ended_at is not null and started_at < ?").run(cutoff);
   d.prepare("update agent_runs set tail = null, tail_at = null where tail is not null and tail_at < ?").run(now - AGENT_TAIL_RETENTION_DAYS * 86_400_000);

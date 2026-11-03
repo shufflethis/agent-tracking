@@ -46,9 +46,16 @@ export function spoolSize(home?: string): number {
 export function takeBatch(max = 100, home?: string): { events: AgentEvent[]; commit(): void } {
   const inflight = inflightFile(home);
   const spool = spoolFile(home);
+  if (existsSync(inflight) && statSync(inflight).size === 0) unlinkSync(inflight);
   if (!existsSync(inflight) && existsSync(spool)) renameSync(spool, inflight);
   if (!existsSync(inflight)) return { events: [], commit() {} };
-  const all = parseLines(readFileSync(inflight, "utf8"));
+  const raw = readFileSync(inflight, "utf8");
+  const all = parseLines(raw);
+  if (!all.length) {
+    if (raw.trim()) writeFileSync(join(ensureDir(home), "telemetry-loss"), `Unreadable queue records at ${new Date().toISOString()}\n`, { mode: 0o600 });
+    unlinkSync(inflight);
+    return takeBatch(max, home);
+  }
   const events: AgentEvent[] = [];
   let bytes = 16; // {"events":[]}
   for (const e of all) {

@@ -17,6 +17,7 @@ export function checkLabel(run: Pick<RunDetail, "checkPassed">, lang: DashLang) 
 }
 export function eventLabel(type: string, lang: DashLang) {
   const names: Record<string, [string, string]> = {
+    config_snapshot: ["Configuration captured", "Konfiguration erfasst"], kernel_event: ["Linux system event", "Linux-Systemereignis"],
     session_start: ["Session started", "Session gestartet"], session_end: ["Session ended", "Session beendet"],
     turn_start: ["Turn started", "Durchlauf gestartet"], turn_end: ["Response finished", "Antwort beendet"], turn_error: ["Turn failed", "Durchlauf fehlgeschlagen"],
     tool_start: ["Tool started", "Tool gestartet"], tool_end: ["Tool finished", "Tool beendet"],

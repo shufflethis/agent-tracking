@@ -23,6 +23,6 @@ export function every(ms: number): string {
 export const HEALTH_CHIP: Record<string, string> = { problem: "chip fail", running: "chip accent", ok: "chip pass", idle: "chip na" };
 export const STATUS_CHIP: Record<string, string> = { failed: "chip fail", hung: "chip fail", missed: "chip fail", running: "chip accent", ok: "chip pass" };
 
-export const CLI_COMMAND = "npx --yes https://agenttracking.co/downloads/agenttracking-0.2.0.tgz";
+export const CLI_COMMAND = "npx --yes https://agenttracking.co/downloads/agenttracking-0.3.0.tgz";
 export const CONNECT_CLAUDE = `${CLI_COMMAND} connect claude`;
 export const WRAP_EXAMPLE = `${CLI_COMMAND} wrap --name backup --every 24h --tail 20 -- ./backup.sh`;

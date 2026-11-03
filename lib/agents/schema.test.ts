@@ -49,7 +49,7 @@ test("migration 20 upgrades a populated version 19 database and is repeatable", 
     d.exec("drop index agent_events_call; drop index agent_events_run_time;");
     for (const c of ["call_id", "child_id"]) d.exec(`alter table agent_events drop column ${c}`);
     for (const c of ["data_loss", "end_reason", "check_name", "check_version", "check_passed"]) d.exec(`alter table agent_runs drop column ${c}`);
-    d.exec("delete from schema_migrations where version = 20");
+    d.exec("delete from schema_migrations where version >= 20");
     closeDb();
     const upgraded = db().prepare("select status, check_passed, data_loss from agent_runs where id = 'run'").get();
     assert.deepEqual({ ...(upgraded as Record<string, unknown>) }, { status: "ok", check_passed: null, data_loss: 0 });

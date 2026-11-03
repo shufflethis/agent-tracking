@@ -5,6 +5,7 @@ import { basename, dirname, join } from "node:path";
 import { tmpdir } from "node:os";
 import { configDir, readConfig, type Config } from "./config.js";
 import { label, type AgentEvent, type AgentEventType } from "./event.js";
+import { captureSnapshot } from "./snapshot.js";
 import { appendEvent } from "./spool.js";
 
 /**
@@ -17,6 +18,7 @@ import { appendEvent } from "./spool.js";
  */
 
 const MAP: Record<string, AgentEventType> = {
+  ConfigChange: "config_snapshot",
   UserPromptSubmit: "turn_start", StopFailure: "turn_error", SubagentStart: "subagent_start", PostToolUseFailure: "tool_end",
   SessionStart: "session_start", PreToolUse: "tool_start", PostToolUse: "tool_end", Stop: "turn_end",
   SubagentStop: "subagent_end", Notification: "notification", SessionEnd: "session_end",
@@ -91,6 +93,10 @@ export async function runHook(hookEvent: string, stdin: NodeJS.ReadableStream = 
     const now = Date.now();
     const event = eventFromHook(hookEvent, input, cfg, now);
     if (!event) return;
+    if (event.type === "session_start" || event.type === "config_snapshot") {
+      const cwd = (input as { cwd?: unknown }).cwd;
+      event.snapshot = captureSnapshot(cfg, typeof cwd === "string" ? cwd : "");
+    }
     appendEvent(event, opts.home);
     if (opts.spawnFlush !== false && shouldFlush(opts.home, event.type, now)) {
       spawn(process.execPath, [...process.execArgv, process.argv[1], "flush"], { detached: true, stdio: "ignore", env: process.env }).unref();

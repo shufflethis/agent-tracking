@@ -56,9 +56,9 @@ or a webhook). Every quarter hour: `scripts/agents-cron.sh`. Design:
 `docs/superpowers/specs/2026-11-02-agent-monitoring-design.md`.
 
 ```bash
-npx --yes https://agenttracking.co/downloads/agenttracking-0.2.0.tgz login
-npx --yes https://agenttracking.co/downloads/agenttracking-0.2.0.tgz connect claude
-npx --yes https://agenttracking.co/downloads/agenttracking-0.2.0.tgz wrap --name backup --every 24h --tail 20 -- ./backup.sh
+npx --yes https://agenttracking.co/downloads/agenttracking-0.3.0.tgz login
+npx --yes https://agenttracking.co/downloads/agenttracking-0.3.0.tgz connect claude
+npx --yes https://agenttracking.co/downloads/agenttracking-0.3.0.tgz wrap --name backup --every 24h --tail 20 -- ./backup.sh
 ```
 
 Session timelines, execution states, named task checks and the upgrade procedure are described in [agent observability](docs/agent-observability.md).

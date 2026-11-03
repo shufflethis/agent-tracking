@@ -1,6 +1,6 @@
 {
   "name": "agenttracking",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "See what your AI agents and cron jobs did while you slept. Connects Claude Code and cron jobs to agenttracking.co. Sends run status only, never prompts or tool content.",
   "license": "AGPL-3.0-only",
   "homepage": "https://agenttracking.co",

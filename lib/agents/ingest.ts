@@ -1,3 +1,4 @@
+import { parseSnapshot } from "./snapshot";
 import { randomUUID } from "node:crypto";
 import { dayKey, db, monthKey } from "../tracking/db";
 import { AGENT_EVENT_TYPES, AGENT_EVENTS_PER_MONTH, AGENT_KINDS, AGENT_LIMIT, MAX_BATCH, type AgentEvent, type AgentEventType, type AgentKind } from "./types";
@@ -35,6 +36,14 @@ function parseEvent(raw: unknown, now: number): AgentEvent | null {
   if (typeof r.at !== "number" || !Number.isFinite(r.at) || r.at < now - PAST_MS || r.at > now + FUTURE_MS) return null;
   const at = Math.round(r.at);
   const event: AgentEvent = { v: 1, id: r.id, type, at, agent: { kind: agent.kind as AgentKind, name: agent.name, host: agent.host }, run: r.run };
+  if ((type === "session_start" || type === "config_snapshot") && r.snapshot !== undefined) {
+    const snapshot = parseSnapshot(r.snapshot); if (!snapshot) return null; event.snapshot = snapshot;
+  }
+  if (type === "kernel_event") {
+    const k = r.kernel as Record<string, unknown> | undefined;
+    if (!k || !["process_exec", "file_open", "network_connect"].includes(String(k.operation)) || typeof k.processId !== "string" || !/^[0-9a-f]{64}$/.test(k.processId)) return null;
+    event.kernel = { operation: k.operation as NonNullable<AgentEvent["kernel"]>["operation"], processId: k.processId };
+  }
   if (r.dataLoss === true) event.dataLoss = true;
   if ((type === "tool_start" || type === "tool_end") && typeof r.callId === "string" && /^[0-9a-f]{64}$/.test(r.callId)) event.callId = r.callId;
   if ((type === "subagent_start" || type === "subagent_end") && typeof r.childId === "string" && /^[0-9a-f]{64}$/.test(r.childId)) event.childId = r.childId;
@@ -97,7 +106,7 @@ export function recordAgentEvents(owner: string, events: AgentEvent[], now = Dat
   const findRun = d.prepare("select id, run_key, status, ended_at, last_event_at from agent_runs where agent_id = ? and (run_key = ? or run_key like ? || ':%') order by started_at desc, rowid desc limit 1");
   const countRuns = d.prepare("select count(*) as n from agent_runs where agent_id = ? and (run_key = ? or run_key like ? || ':%')");
   const insertRun = d.prepare("insert into agent_runs (id, agent_id, run_key, started_at, status, last_event_at, last_event_type) values (?, ?, ?, ?, 'running', ?, ?)");
-  const insertEvent = d.prepare("insert or ignore into agent_events (id, owner, run_id, at, received_at, type, tool, ok, call_id, child_id) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+  const insertEvent = d.prepare("insert or ignore into agent_events (id, owner, run_id, at, received_at, type, tool, ok, call_id, child_id, metadata) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
   const bumpDaily = d.prepare(
     "insert into agent_daily (agent_id, day, runs, failed, tool_calls) values (?, ?, ?, ?, ?) on conflict(agent_id, day) do update set runs = runs + excluded.runs, failed = failed + excluded.failed, tool_calls = tool_calls + excluded.tool_calls",
   );
@@ -127,9 +136,10 @@ export function recordAgentEvents(owner: string, events: AgentEvent[], now = Dat
         run = { id, run_key: key, status: "running", ended_at: null, last_event_at: e.at };
       }
       if (e.dataLoss) update("data_loss = 1", run.id);
-      if (!Number(insertEvent.run(e.id, owner, run.id, e.at, now, e.type, e.tool ?? null, e.ok === undefined ? null : e.ok ? 1 : 0, e.callId ?? null, e.childId ?? null).changes)) { duplicates++; continue; }
+      if (!Number(insertEvent.run(e.id, owner, run.id, e.at, now, e.type, e.tool ?? null, e.ok === undefined ? null : e.ok ? 1 : 0, e.callId ?? null, e.childId ?? null, e.snapshot ? JSON.stringify({ snapshot: e.snapshot }) : e.kernel ? JSON.stringify({ kernel: e.kernel }) : null).changes)) { duplicates++; continue; }
       accepted++;
-      if (run.ended_at === null && e.at >= run.last_event_at) update("last_event_at = ?, last_event_type = ?", e.at, e.type, run.id);
+      if (e.snapshot) d.prepare("update agent_runs set config_json = ?, config_at = ? where id = ? and (config_at is null or config_at <= ?)").run(JSON.stringify(e.snapshot), e.at, run.id, e.at);
+      if (e.type !== "config_snapshot" && run.ended_at === null && e.at >= run.last_event_at) update("last_event_at = ?, last_event_type = ?", e.at, e.type, run.id);
       update("started_at = min(started_at, ?)", e.at, run.id);
       // Late tool completions still contribute evidence without reopening a closed run.
       if (run.ended_at !== null && e.type === "tool_end") {

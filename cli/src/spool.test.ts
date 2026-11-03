@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtempSync, readFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
@@ -80,4 +80,14 @@ test("a permanent 4xx or 413 never jams the queue", async () => {
     for (let i = 0; i < 3; i++) appendEvent(ev(i), home);
     assert.deepEqual(await withFetch(status, () => flush(home)), { sent: 0, kept: 0 }, String(status));
   }
+});
+
+
+test("an empty or truncated inflight file cannot strand the remaining queue", async () => {
+ for (const leftover of ["", "not valid JSON\n"]) {
+  const home=mkdtempSync(join(tmpdir(),"at-recovery-"));
+  writeConfig({origin:"https://agenttracking.example",token:"atk_x",secret:"s".repeat(64),host:"h"},home);
+  appendEvent(ev(1),home);writeFileSync(join(home,"inflight.jsonl"),leftover);
+  assert.deepEqual(await withFetch(200,()=>flush(home)),{sent:1,kept:0});
+ }
 });

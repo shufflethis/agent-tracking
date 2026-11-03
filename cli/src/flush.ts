@@ -1,7 +1,7 @@
 import { closeSync, existsSync, openSync, statSync, unlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { ensureDir, readConfig } from "./config.js";
-import { takeBatch } from "./spool.js";
+import { takeBatch, spoolSize } from "./spool.js";
 
 /**
  * Send spooled events. 2xx: done. Other 4xx except 401/408/429: the server will never accept them, drop.
@@ -25,7 +25,7 @@ function lock(home?: string): (() => void) | null {
 export async function flush(home?: string): Promise<{ sent: number; kept: number }> {
   const config = readConfig(home);
   const release = lock(home);
-  if (!config || !release) { release?.(); return { sent: 0, kept: 0 }; }
+  if (!config || !release) { release?.(); return { sent: 0, kept: spoolSize(home) }; }
   let sent = 0;
   try {
     for (;;) {

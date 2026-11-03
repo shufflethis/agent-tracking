@@ -23,7 +23,7 @@ export default async function Page() {
       <section className="shell section" style={{ paddingTop: 32 }}>
         <div style={{ display: "flex", justifyContent: "space-between", gap: 16, flexWrap: "wrap", alignItems: "baseline", marginBottom: 20 }}>
           <p className="dek" style={{ margin: 0, maxWidth: 640 }}>{c.intro}</p>
-          <Link href="/app/fleet/settings">{c.settings}</Link>
+          <div style={{ display: "flex", gap: 20 }}><Link href="/app/fleet/telemetry">OpenTelemetry</Link><Link href="/app/fleet/settings">{c.settings}</Link></div>
         </div>
         {agents.length ? (
           <div className="tablewrap" style={{ marginBottom: 28 }}>

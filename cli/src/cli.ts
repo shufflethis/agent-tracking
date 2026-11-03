@@ -7,6 +7,8 @@ import { flush } from "./flush.js";
 import { login } from "./login.js";
 import { runHook } from "./hook.js";
 import { spoolSize } from "./spool.js";
+import { observe } from "./observe.js";
+import { captureSnapshot } from "./snapshot.js";
 import { wrap } from "./wrap.js";
 
 const HELP = `agenttracking: see what your agents did while you slept
@@ -18,17 +20,23 @@ const HELP = `agenttracking: see what your agents did while you slept
                                       run a cron command and report start, end, exit code
   agenttracking wrap --name eval --check booking --version v1 -- ./check.sh
                                       record a named task check, using its exit code
+  agenttracking snapshot              preview sanitized configuration metadata
+  agenttracking observe --pid <PID> --name <agent> [--seconds 60]
+                                      optional Linux eBPF observation (requires bpftrace)
   agenttracking status                show this machine's connection
   agenttracking flush                 send queued events now
 
-Only run status is sent: start, end, exit code, tool names. Never prompts,
-tool input or output, or file contents. https://agenttracking.co/docs
+Lifecycle status, hashed IDs and configuration fingerprints/counts are sent.
+Optional Linux observation sends operation types only. No prompts, tool payloads
+or file contents. Cron --tail explicitly adds masked stderr. https://agenttracking.co/docs
 `;
 
 type Command = (args: string[]) => Promise<number>;
 const commands: Record<string, Command> = {
   async hook(args) { await runHook(args[0] ?? ""); return 0; },
   async flush() { await flush(); return 0; },
+  observe,
+  async snapshot() { const cfg = readConfig(); if (!cfg) throw new Error("Connect this machine first"); console.log(JSON.stringify(captureSnapshot(cfg, process.cwd()), null, 2)); return 0; },
   wrap: (args) => wrap(args),
   async login(args) {
     const value = (name: string) => { const i = args.indexOf(name); return i === -1 ? undefined : args[i + 1]; };

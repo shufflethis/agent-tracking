@@ -40,13 +40,14 @@ export function listAgents(owner: string, now = Date.now()): AgentSummary[] {
 }
 
 export type RunDetail = RunRow & {
+  configJson: string | null;
   dataLoss: number; endReason: string | null; checkName: string | null; checkVersion: string | null; checkPassed: number | null;
   startedAt: number; exitCode: number | null; durationMs: number | null; toolCalls: number; toolErrors: number; turns: number; tail: string | null;
 };
 
 const RUN_COLUMNS = `r.id, a.kind as agentKind, r.status, r.ended_at as endedAt, r.last_event_at as lastEventAt, r.last_event_type as lastEventType,
   r.open_tools as openTools, r.started_at as startedAt, r.exit_code as exitCode, r.duration_ms as durationMs, r.tool_calls as toolCalls,
-  r.tool_errors as toolErrors, r.turns, r.tail, r.data_loss as dataLoss, r.end_reason as endReason, r.check_name as checkName, r.check_version as checkVersion, r.check_passed as checkPassed`;
+  r.tool_errors as toolErrors, r.turns, r.tail, r.data_loss as dataLoss, r.end_reason as endReason, r.check_name as checkName, r.check_version as checkVersion, r.check_passed as checkPassed, r.config_json as configJson`;
 
 export function agentById(owner: string, agentId: string): { id: string; kind: AgentKind; name: string; host: string; expectEveryMs: number | null } | null {
   const row = db().prepare("select id, kind, name, host, expect_every_ms from agents where id = ? and owner = ?").get(agentId, owner) as
@@ -125,14 +126,14 @@ export function saveNotifySettings(owner: string, s: NotifySettings): "ok" | "in
 }
 
 
-export type TimelineEvent = { id: string; at: number; type: string; tool: string | null; ok: number | null; callId: string | null; childId: string | null; durationMs: number | null };
+export type TimelineEvent = { id: string; at: number; type: string; tool: string | null; ok: number | null; callId: string | null; childId: string | null; durationMs: number | null; metadata: string | null };
 
 /** Ownership is checked before returning any session evidence. Timeline is bounded and paginated. */
 export function runTimeline(owner: string, agentId: string, runId: string, offset = 0) {
   const run = db().prepare(`select ${RUN_COLUMNS} from agent_runs r join agents a on a.id = r.agent_id where a.owner = ? and a.id = ? and r.id = ?`).get(owner, agentId, runId) as RunDetail | undefined;
   if (!run) return null;
   const total = (db().prepare("select count(*) as n from agent_events where run_id = ?").get(runId) as { n: number }).n;
-  const events = db().prepare(`select e.id, e.at, e.type, e.tool, e.ok, e.call_id as callId, e.child_id as childId,
+  const events = db().prepare(`select e.id, e.at, e.type, e.tool, e.ok, e.metadata, e.call_id as callId, e.child_id as childId,
     case when e.type = 'tool_end' and e.call_id is not null then
       (select e.at - s.at from agent_events s where s.run_id = e.run_id and s.call_id = e.call_id and s.type = 'tool_start' and s.at <= e.at)
     end as durationMs
@@ -152,4 +153,10 @@ export function checkComparisons(owner: string, agentId: string, now = Date.now(
 
 export function agentUsage(owner: string, now = Date.now()): number {
   return (db().prepare("select count from agent_usage where owner = ? and month = ?").get(owner, monthKey(now)) as { count: number } | undefined)?.count ?? 0;
+}
+
+export function previousConfiguration(owner: string, agentId: string, startedAt: number) {
+  const row = db().prepare(`select r.config_json as json from agent_runs r join agents a on a.id = r.agent_id
+    where a.owner = ? and a.id = ? and r.started_at < ? and r.config_json is not null order by r.started_at desc limit 1`).get(owner, agentId, startedAt) as { json: string } | undefined;
+  return row?.json ?? null;
 }

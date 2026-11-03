@@ -160,3 +160,12 @@ test("model errors remain failures until a new turn starts", () => withDb(() => 
   recordAgentEvents(o, [ev("turn_start")], NOW); assert.equal(run().status, "running");
   recordAgentEvents(o, [ev("turn_error"), ev("session_end")], NOW); assert.equal(run().status, "failed");
 }));
+
+test("configuration changes persist only sanitized metadata without disturbing waiting state", () => withDb(() => {
+ const o=owner();
+ const snapshot={fingerprint:"a".repeat(64),cliVersion:"0.3.0",nodeVersion:"22.0.0",files:[],mcpServers:1,plugins:0,allowRules:2,askRules:0,denyRules:1};
+ const parsed=parseAgentBatch({events:[ev("session_start",{snapshot}),ev("turn_end"),{...ev("config_snapshot",{snapshot:{...snapshot,fingerprint:"b".repeat(64)}}),prompt:"private",extra:{token:"secret"}}]},NOW)!;
+ recordAgentEvents(o,parsed.events,NOW);
+ assert.equal(run().last_event_type,"turn_end");assert.equal(JSON.parse(String(run().config_json)).fingerprint,"b".repeat(64));
+ assert.doesNotMatch(JSON.stringify(db().prepare("select metadata from agent_events").all()),/private|secret|prompt/);
+}));
