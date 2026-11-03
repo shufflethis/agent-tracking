@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   },
   description:
     "Recognized assistant referrals and supported browser WebMCP observations, with optional crawler logs and server-confirmed outcome receipts. Evidence limits stay visible. Open source.",
-  openGraph: { type: "website", siteName: SITE_NAME, locale: "en_GB" },
+  openGraph: { type: "website", siteName: SITE_NAME, locale: "en_US" },
 };
 
 /** English tree. The route group keeps these pages at the root URLs. */

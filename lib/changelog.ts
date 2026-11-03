@@ -29,6 +29,20 @@ const SNIPPET_PROMPT: L = {
 
 export const ENTRIES: Entry[] = [
   {
+    date: "2026-11-04",
+    tag: "platform",
+    title: { en: "A home page about your own agents, and a changelog that tells you how", de: "Eine Startseite für deine eigenen Agents, und ein Changelog, das dir sagt, wie" },
+    body: {
+      en: "The home page now leads with agent monitoring: why agents fail without crashing, how that compares to checking by hand, exit codes and LLM tracing, and one command to connect. Website analytics moved to their own page. Every changelog entry ends with a command or a Claude Code prompt.",
+      de: "Die Startseite stellt jetzt das Agent-Monitoring nach vorn: warum Agents scheitern, ohne abzustürzen, wie das im Vergleich zu Nachsehen von Hand, Exit-Codes und LLM-Tracing aussieht, und ein Befehl zum Verbinden. Website-Analytics haben eine eigene Seite. Jeder Changelog-Eintrag endet mit einem Befehl oder Claude-Code-Prompt.",
+    },
+    points: {
+      en: ["Website analytics: /websites", "Markdown versions for agents: send Accept: text/markdown to / or /websites", "llms.txt and llms-full.txt describe both sides"],
+      de: ["Website-Analytics: /de/websites", "Markdown-Versionen für Agents: Accept: text/markdown an / oder /websites senden", "llms.txt und llms-full.txt beschreiben beide Seiten"],
+    },
+    how: { terminal: CONNECT_CLAUDE, claude: { en: claudeSetupPrompt("en"), de: claudeSetupPrompt("de") } },
+  },
+  {
     date: "2026-11-03",
     tag: "agents",
     title: { en: "CLI 0.3.0: session timelines, task checks, configuration snapshots, OpenTelemetry and Linux observation", de: "CLI 0.3.0: Session-Timelines, Task-Checks, Konfigurations-Snapshots, OpenTelemetry und Linux-Beobachtung" },
@@ -143,6 +157,11 @@ cp .env.example .env && docker compose up -d` },
 ];
 
 export const PLANNED: Planned[] = [
+  {
+    title: { en: "Your time zone", de: "Deine Zeitzone" },
+    body: { en: "Briefing hour and dashboard times in your own time zone, including US time zones.", de: "Briefing-Stunde und Zeiten im Dashboard in deiner eigenen Zeitzone, auch US-Zeitzonen." },
+    today: { en: "Today: times are Central European Time. Pick the briefing hour in the settings accordingly; 13:00 CET is 7 AM Eastern.", de: "Heute: Zeiten sind mitteleuropäische Zeit. Wähl die Briefing-Stunde in den Einstellungen entsprechend." },
+  },
   {
     title: { en: "OpenAI Codex", de: "OpenAI Codex" },
     body: { en: "Sessions and tool calls from the Codex CLI, the same way as Claude Code.", de: "Sessions und Tool-Aufrufe aus der Codex CLI, genauso wie bei Claude Code." },

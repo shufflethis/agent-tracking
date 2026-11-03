@@ -12,7 +12,7 @@ const TAG = {
 export default function Changelog({ lang }: { lang: "en" | "de" }) {
   const de = lang === "de";
   const L = (p: string) => (de ? `/de${p}` : p);
-  const date = (iso: string) => new Date(`${iso}T12:00:00Z`).toLocaleDateString(de ? "de-DE" : "en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
+  const date = (iso: string) => new Date(`${iso}T12:00:00Z`).toLocaleDateString(de ? "de-DE" : "en-US", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
 
   return (
     <>
@@ -29,7 +29,7 @@ export default function Changelog({ lang }: { lang: "en" | "de" }) {
       <section className="shell section" id="next" style={{ paddingTop: 24 }}>
         <h2>{de ? "Als Nächstes" : "Next up"}</h2>
         <p className="dek">{de ? "Geplant, noch nicht gebaut. Ohne Termin, bis es läuft." : "Planned, not built yet. No date until it works."}</p>
-        <div className="grid3" style={{ gap: 18, marginTop: 18 }}>
+        <div className="grid2" style={{ gap: 18, marginTop: 18 }}>
           {PLANNED.map((p) => (
             <article key={p.title.en} className="card" style={{ padding: 24, display: "flex", flexDirection: "column", minWidth: 0 }}>
               <p className="smallcaps">{de ? "Geplant" : "Planned"}</p>
