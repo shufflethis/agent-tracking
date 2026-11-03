@@ -31,7 +31,11 @@ export function appendEvent(e: AgentEvent, home?: string): void {
   const size = statSync(file).size;
   if (size < CHECK_FROM_BYTES) return;
   const lines = readFileSync(file, "utf8").split("\n").filter(Boolean);
-  if (lines.length > MAX_LINES || size > MAX_BYTES) writeFileSync(file, lines.slice(Math.floor(lines.length / 2)).join("\n") + "\n", { mode: 0o600 });
+  if (lines.length > MAX_LINES || size > MAX_BYTES) {
+    const kept = parseLines(lines.slice(Math.floor(lines.length / 2)).join("\n")).map((event) => ({ ...event, dataLoss: true }));
+    writeFileSync(file, kept.map((event) => JSON.stringify(event)).join("\n") + "\n", { mode: 0o600 });
+    writeFileSync(join(ensureDir(home), "telemetry-loss"), `Queue overflow at ${new Date().toISOString()}\n`, { mode: 0o600 });
+  }
 }
 
 export function spoolSize(home?: string): number {

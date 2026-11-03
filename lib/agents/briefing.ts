@@ -16,7 +16,7 @@ const TAIL_LINES = 5;
 export type BriefingAgent = {
   name: string; host: string; kind: AgentKind;
   runs: number; ok: number; failed: number; hung: number; missed: number; turns: number; toolCalls: number;
-  lastProblem: { status: RunStatus; at: number; exitCode: number | null; tail: string | null } | null;
+  lastProblem: { status: RunStatus; at: number; exitCode: number | null; tail: string | null; reason?: "tool_errors" | "data_loss" } | null;
   durationVsMedian: number | null;
 };
 export type Briefing = { problems: BriefingAgent[]; quiet: BriefingAgent[] };
@@ -35,7 +35,7 @@ export function buildBriefing(owner: string, since: number, now: number): Briefi
   for (const [agentId, { runs }] of byAgent) {
     const first = runs[0];
     const count = (s: RunStatus) => runs.filter((r) => r.status === s).length;
-    const problem = [...runs].reverse().find((r) => r.status === "failed" || r.status === "hung" || r.status === "missed");
+    const problem = [...runs].reverse().find((r) => r.status === "failed" || r.status === "hung" || r.status === "missed") ?? [...runs].reverse().find((r) => r.toolErrors > 0 || r.dataLoss > 0);
     const last = [...runs].reverse().find((r) => r.durationMs !== null);
     const median = first.agentKind === "cron" ? medianDurationMs(agentId, 14, now) : null;
     const agent: BriefingAgent = {
@@ -43,7 +43,7 @@ export function buildBriefing(owner: string, since: number, now: number): Briefi
       runs: runs.filter((r) => r.status !== "missed").length, ok: count("ok"), failed: count("failed"), hung: count("hung"), missed: count("missed"),
       // Counted from events inside the window, so a loop running for days is not reported with its lifetime totals.
       ...eventCountsBetween(agentId, since, now),
-      lastProblem: problem ? { status: problem.status, at: problem.status === "hung" ? problem.lastEventAt : problem.startedAt, exitCode: problem.exitCode, tail: problem.tail } : null,
+      lastProblem: problem ? { status: problem.status, at: problem.status === "hung" ? problem.lastEventAt : problem.startedAt, exitCode: problem.exitCode, tail: problem.tail, ...(!["failed", "hung", "missed"].includes(problem.status) ? { reason: problem.dataLoss ? "data_loss" as const : "tool_errors" as const } : {}) } : null,
       durationVsMedian: median && last?.durationMs ? last.durationMs / median : null,
     };
     (agent.lastProblem ? problems : quiet).push(agent);
@@ -59,7 +59,7 @@ const lastLines = (tail: string) => tail.split("\n").filter((l) => l.trim()).sli
 export function problemLine(a: BriefingAgent, lang: DashLang): string {
   const c = agentCopy(lang).briefing;
   const p = a.lastProblem!;
-  const what = p.status === "hung" ? c.hung(clock(p.at)) : p.status === "missed" ? c.missed(clock(p.at)) : c.failed(clock(p.at), p.exitCode);
+  const what = p.reason === "data_loss" ? (lang === "de" ? "Datenlücke gemeldet" : "data loss reported") : p.reason === "tool_errors" ? (lang === "de" ? "Toolfehler beobachtet" : "tool errors observed") : p.status === "hung" ? c.hung(clock(p.at)) : p.status === "missed" ? c.missed(clock(p.at)) : c.failed(clock(p.at), p.exitCode);
   return `${label(a)}: ${what}`;
 }
 

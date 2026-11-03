@@ -34,7 +34,7 @@ test("all quiet subject", () => withDb(() => {
   recordAgentEvents(o, cron("only", 0), T);
   const b = buildBriefing(o, T - 3_600_000, T + 3_600_000);
   assert.equal(renderBriefingMail(b, "de", "u").subject, "Alles ruhig: 1 Agent unauffällig");
-  assert.equal(renderBriefingMail(b, "en", "u").subject, "All quiet: 1 agent ran fine");
+  assert.equal(renderBriefingMail(b, "en", "u").subject, "All quiet: 1 agent had no run alerts");
 }));
 
 test("tail is escaped and trimmed to 5 lines", () => withDb(() => {
@@ -66,4 +66,15 @@ test("long loops count turns and tool calls inside the window only", () => withD
   const loop = [...b.problems, ...b.quiet].find((a) => a.name === "loop")!;
   assert.equal(loop.turns, 1);
   assert.equal(loop.toolCalls, 2);
+}));
+
+test("completed sessions with tool errors do not appear in the quiet briefing", () => withDb(() => {
+  const o = owner(); const agent = { kind: "claude" as const, name: "errors", host: "h" };
+  recordAgentEvents(o, [
+    { v: 1, id: "failure-0001", run: "e".repeat(64), at: T, agent, type: "tool_end", tool: "Bash", ok: false },
+    { v: 1, id: "failure-0002", run: "e".repeat(64), at: T + 1, agent, type: "session_end" },
+  ], T);
+  const b = buildBriefing(o, T - 1, T + 2);
+  assert.equal(b.problems.length, 1); assert.equal(b.quiet.length, 0);
+  assert.match(renderBriefingMail(b, "de", "https://x").text, /Toolfehler beobachtet/);
 }));

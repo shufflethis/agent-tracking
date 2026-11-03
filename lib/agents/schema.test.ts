@@ -34,3 +34,27 @@ test("pruneRaw expires agent data on its own clock", () => withDb(() => {
   assert.equal(runs[1].tail, "fresh tail");
   assert.deepEqual((d.prepare("select id from agent_events").all() as { id: string }[]).map((r) => r.id), ["e29"]);
 }));
+
+test("migration 20 upgrades a populated version 19 database and is repeatable", async () => {
+  const { mkdtempSync } = await import("node:fs");
+  const { tmpdir } = await import("node:os");
+  const { join } = await import("node:path");
+  const { closeDb } = await import("../tracking/db");
+  const previous = process.env.TRACKING_DB;
+  closeDb(); process.env.TRACKING_DB = join(mkdtempSync(join(tmpdir(), "agent-upgrade-")), "test.sqlite");
+  try {
+    const d = db(); const o = owner();
+    d.prepare("insert into agents (id, owner, kind, name, host, first_seen, last_seen) values ('legacy', ?, 'claude', 'legacy', 'host', 1, 1)").run(o);
+    d.exec("insert into agent_runs (id, agent_id, run_key, started_at, status, last_event_at, last_event_type) values ('run', 'legacy', 'key', 1, 'ok', 2, 'session_end')");
+    d.exec("drop index agent_events_call; drop index agent_events_run_time;");
+    for (const c of ["call_id", "child_id"]) d.exec(`alter table agent_events drop column ${c}`);
+    for (const c of ["data_loss", "end_reason", "check_name", "check_version", "check_passed"]) d.exec(`alter table agent_runs drop column ${c}`);
+    d.exec("delete from schema_migrations where version = 20");
+    closeDb();
+    const upgraded = db().prepare("select status, check_passed, data_loss from agent_runs where id = 'run'").get();
+    assert.deepEqual({ ...(upgraded as Record<string, unknown>) }, { status: "ok", check_passed: null, data_loss: 0 });
+    closeDb(); assert.ok(db().prepare("select id from agent_runs where id = 'run'").get());
+  } finally {
+    closeDb(); if (previous === undefined) delete process.env.TRACKING_DB; else process.env.TRACKING_DB = previous;
+  }
+});

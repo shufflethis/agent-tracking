@@ -35,6 +35,9 @@ function parseEvent(raw: unknown, now: number): AgentEvent | null {
   if (typeof r.at !== "number" || !Number.isFinite(r.at) || r.at < now - PAST_MS || r.at > now + FUTURE_MS) return null;
   const at = Math.round(r.at);
   const event: AgentEvent = { v: 1, id: r.id, type, at, agent: { kind: agent.kind as AgentKind, name: agent.name, host: agent.host }, run: r.run };
+  if (r.dataLoss === true) event.dataLoss = true;
+  if ((type === "tool_start" || type === "tool_end") && typeof r.callId === "string" && /^[0-9a-f]{64}$/.test(r.callId)) event.callId = r.callId;
+  if ((type === "subagent_start" || type === "subagent_end") && typeof r.childId === "string" && /^[0-9a-f]{64}$/.test(r.childId)) event.childId = r.childId;
   if (type === "tool_start" || type === "tool_end") {
     if (typeof r.tool !== "string" || !TOOL.test(r.tool)) return null;
     event.tool = r.tool;
@@ -48,6 +51,9 @@ function parseEvent(raw: unknown, now: number): AgentEvent | null {
     const exitCode = int(r.exitCode, 0, 255);
     if (exitCode === undefined) return null;
     event.exitCode = exitCode;
+    if (typeof r.checkName === "string" && /^[A-Za-z0-9_.:-]{1,64}$/.test(r.checkName) && typeof r.checkVersion === "string" && /^[A-Za-z0-9_.:-]{1,64}$/.test(r.checkVersion)) {
+      event.checkName = r.checkName; event.checkVersion = r.checkVersion;
+    }
     const duration = int(r.durationMs, 0, PAST_MS);
     if (duration !== undefined) event.durationMs = duration;
     if (typeof r.tail === "string" && r.tail.length) event.tail = r.tail.slice(-4000);
@@ -79,7 +85,7 @@ export function recordAgentEvents(owner: string, events: AgentEvent[], now = Dat
     seen.add(e.id);
     return true;
   });
-  const duplicates = events.length - fresh.length;
+  let duplicates = events.length - fresh.length;
   if (fresh.length && used + fresh.length > AGENT_EVENTS_PER_MONTH) return { accepted: 0, duplicates, rejected: "quota" };
 
   const findAgent = d.prepare("select id from agents where owner = ? and kind = ? and host = ? and name = ?");
@@ -91,7 +97,7 @@ export function recordAgentEvents(owner: string, events: AgentEvent[], now = Dat
   const findRun = d.prepare("select id, run_key, status, ended_at, last_event_at from agent_runs where agent_id = ? and (run_key = ? or run_key like ? || ':%') order by started_at desc, rowid desc limit 1");
   const countRuns = d.prepare("select count(*) as n from agent_runs where agent_id = ? and (run_key = ? or run_key like ? || ':%')");
   const insertRun = d.prepare("insert into agent_runs (id, agent_id, run_key, started_at, status, last_event_at, last_event_type) values (?, ?, ?, ?, 'running', ?, ?)");
-  const insertEvent = d.prepare("insert into agent_events (id, owner, run_id, at, received_at, type, tool, ok) values (?, ?, ?, ?, ?, ?, ?, ?)");
+  const insertEvent = d.prepare("insert or ignore into agent_events (id, owner, run_id, at, received_at, type, tool, ok, call_id, child_id) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
   const bumpDaily = d.prepare(
     "insert into agent_daily (agent_id, day, runs, failed, tool_calls) values (?, ?, ?, ?, ?) on conflict(agent_id, day) do update set runs = runs + excluded.runs, failed = failed + excluded.failed, tool_calls = tool_calls + excluded.tool_calls",
   );
@@ -112,32 +118,42 @@ export function recordAgentEvents(owner: string, events: AgentEvent[], now = Dat
       if (e.type === "cron_start" && e.expectEveryMs) setEvery.run(e.expectEveryMs, agentId);
 
       let run = findRun.get(agentId, e.run, e.run) as RunState | undefined;
-      const restart = run && run.ended_at !== null && e.type === "session_start" && e.at >= run.ended_at;
+      const restart = run && run.ended_at !== null && (e.type === "session_start" || e.type === "turn_start") && e.at >= run.ended_at;
       if (!run || restart) {
         const id = randomUUID();
         const key = run ? `${e.run}:${(countRuns.get(agentId, e.run, e.run) as { n: number }).n + 1}` : e.run;
         insertRun.run(id, agentId, key, e.at, e.at, e.type);
         bumpDaily.run(agentId, dayKey(e.at), 1, 0, 0);
         run = { id, run_key: key, status: "running", ended_at: null, last_event_at: e.at };
-      } else if (e.at >= run.last_event_at) {
-        update("last_event_at = ?, last_event_type = ?", e.at, e.type, run.id);
       }
-      insertEvent.run(e.id, owner, run.id, e.at, now, e.type, e.tool ?? null, e.ok === undefined ? null : e.ok ? 1 : 0);
+      if (e.dataLoss) update("data_loss = 1", run.id);
+      if (!Number(insertEvent.run(e.id, owner, run.id, e.at, now, e.type, e.tool ?? null, e.ok === undefined ? null : e.ok ? 1 : 0, e.callId ?? null, e.childId ?? null).changes)) { duplicates++; continue; }
       accepted++;
+      if (run.ended_at === null && e.at >= run.last_event_at) update("last_event_at = ?, last_event_type = ?", e.at, e.type, run.id);
+      update("started_at = min(started_at, ?)", e.at, run.id);
+      // Late tool completions still contribute evidence without reopening a closed run.
+      if (run.ended_at !== null && e.type === "tool_end") {
+        update("tool_calls = tool_calls + 1, tool_errors = tool_errors + ?", e.ok === false ? 1 : 0, run.id);
+        bumpDaily.run(agentId, dayKey(e.at), 0, 0, 1);
+      }
 
       if (run.ended_at !== null) continue; // a finished run is never reopened
-      if (run.status === "hung") update("status = 'running', alerted_at = null", run.id);
+      if ((run.status === "hung" || (run.status === "failed" && e.type === "turn_start")) && e.at >= run.last_event_at) update("status = 'running', alerted_at = null", run.id);
       switch (e.type) {
-        case "tool_start": update("open_tools = open_tools + 1", run.id); break;
+        case "tool_start":
+          if (!e.callId || !d.prepare("select 1 from agent_events where run_id = ? and call_id = ? and type = 'tool_end'").get(run.id, e.callId)) update("open_tools = open_tools + 1", run.id);
+          break;
         case "tool_end":
-          update("open_tools = max(0, open_tools - 1), tool_calls = tool_calls + 1, tool_errors = tool_errors + ?", e.ok === false ? 1 : 0, run.id);
+          update("open_tools = max(0, open_tools - ?), tool_calls = tool_calls + 1, tool_errors = tool_errors + ?", !e.callId || d.prepare("select 1 from agent_events where run_id = ? and call_id = ? and type = 'tool_start'").get(run.id, e.callId) ? 1 : 0, e.ok === false ? 1 : 0, run.id);
           bumpDaily.run(agentId, dayKey(e.at), 0, 0, 1);
           break;
         case "turn_end": update("turns = turns + 1", run.id); break;
-        case "session_end": update("ended_at = ?, open_tools = 0, status = case when status = 'failed' then 'failed' else 'ok' end", e.at, run.id); break;
+        case "turn_error": if (e.at >= run.last_event_at) update("status = 'failed'", run.id); break;
+        case "session_end": update("end_reason = 'session_end', ended_at = ?, open_tools = 0, status = case when status = 'failed' then 'failed' else 'ok' end", e.at, run.id); break;
         case "cron_end": {
           const failed = e.exitCode !== 0;
           update("ended_at = ?, exit_code = ?, duration_ms = ?, status = ?, tail = ?, tail_at = ?", e.at, e.exitCode ?? null, e.durationMs ?? null, failed ? "failed" : "ok", e.tail ?? null, e.tail ? now : null, run.id);
+          if (e.checkName && e.checkVersion) update("check_name = ?, check_version = ?, check_passed = ?", e.checkName, e.checkVersion, failed ? 0 : 1, run.id);
           if (failed) bumpDaily.run(agentId, dayKey(e.at), 0, 1, 0);
           break;
         }

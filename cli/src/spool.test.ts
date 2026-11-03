@@ -15,6 +15,8 @@ test("spool is bounded", () => {
   const home = mkdtempSync(join(tmpdir(), "at-spool-"));
   for (let i = 0; i < 6000; i++) appendEvent(ev(i), home);
   const kept = lines(home);
+  assert.ok(kept.some(line => JSON.parse(line).dataLoss === true));
+  assert.match(readFileSync(join(home, "telemetry-loss"), "utf8"), /Queue overflow/);
   assert.ok(kept.length <= 5000, `kept ${kept.length}`);
   assert.equal(JSON.parse(kept.at(-1)!).id, ev(5999).id);
 });

@@ -23,7 +23,7 @@ export function parseEvery(value: string): number | null {
 }
 
 type Options = { home?: string; flushTimeoutMs?: number; quiet?: boolean };
-const USAGE = "Usage: agenttracking wrap --name <name> [--every 30m|2h|24h|7d] [--tail 1-50] -- <command> [args...]";
+const USAGE = "Usage: agenttracking wrap --name <name> [--every 30m|2h|24h|7d] [--tail 1-50] [--check <task> --version <version>] -- <command> [args...]";
 
 export async function wrap(argv: string[], opts: Options = {}): Promise<number> {
   const sep = argv.indexOf("--");
@@ -31,6 +31,9 @@ export async function wrap(argv: string[], opts: Options = {}): Promise<number> 
   const command = sep === -1 ? [] : argv.slice(sep + 1);
   const flag = (name: string) => { const i = flags.indexOf(name); return i === -1 ? undefined : flags[i + 1]; };
   const name = flag("--name");
+  const checkName = flag("--check");
+  const checkVersion = flag("--version");
+  if ((checkName || checkVersion) && (!checkName || !checkVersion || !/^[A-Za-z0-9_.:-]{1,64}$/.test(checkName) || !/^[A-Za-z0-9_.:-]{1,64}$/.test(checkVersion))) { if (!opts.quiet) console.error(USAGE); return 2; }
   const every = flag("--every");
   const tailLines = Math.max(0, Math.min(50, Number(flag("--tail") ?? 0) || 0));
   if (!name || !command.length) { if (!opts.quiet) console.error(USAGE); return 2; }
@@ -67,7 +70,7 @@ export async function wrap(argv: string[], opts: Options = {}): Promise<number> 
   if (partial) { recent.push(partial); if (recent.length > tailLines) recent.shift(); }
 
   const tail = tailLines && recent.length ? maskSecrets(recent.join("\n")).slice(-4000) : undefined;
-  report({ type: "cron_end", at: Date.now(), exitCode: Math.min(255, exitCode), durationMs: Date.now() - started, ...(tail ? { tail } : {}) });
+  report({ type: "cron_end", at: Date.now(), exitCode: Math.min(255, exitCode), durationMs: Date.now() - started, ...(tail ? { tail } : {}), ...(checkName && checkVersion ? { checkName, checkVersion } : {}) });
   if (base) await Promise.race([flush(opts.home).catch(() => undefined), new Promise((r) => setTimeout(r, opts.flushTimeoutMs ?? 3000).unref())]);
   return exitCode;
 }

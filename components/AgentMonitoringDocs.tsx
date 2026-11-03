@@ -1,15 +1,16 @@
+import { CLI_COMMAND } from "@/lib/agents/format";
 import { AGENT_EVENT_RETENTION_DAYS, AGENT_TAIL_RETENTION_DAYS, RAW_RETENTION_DAYS } from "@/lib/tracking/plans";
 
 /** Docs section "Monitor your own agents", EN and DE. Field list matches lib/agents/ingest.ts. */
 
 const CMD = {
-  login: "npx agenttracking login",
-  claude: "npx agenttracking connect claude",
+  login: `${CLI_COMMAND} login`,
+  claude: `${CLI_COMMAND} connect claude`,
   wrap: `# crontab: before
 0 7 * * * /opt/backup.sh
 # after
-0 7 * * * npx agenttracking wrap --name backup --every 24h --tail 20 -- /opt/backup.sh`,
-  off: "npx agenttracking disconnect claude",
+0 7 * * * ${CLI_COMMAND} wrap --name backup --every 24h --tail 20 -- /opt/backup.sh`,
+  off: `${CLI_COMMAND} disconnect claude`,
 };
 
 const COPY = {

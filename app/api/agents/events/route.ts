@@ -24,6 +24,6 @@ export async function POST(request: Request) {
   if (!parsed) return problem("Send {events: [...]} with at most 100 documented events.", 422);
   const result = recordAgentEvents(credential.owner, parsed.events);
   if (result.rejected === "quota") return problem("Monthly agent event limit reached (50,000 during beta).", 429);
-  if (result.rejected === "agent_limit" && result.accepted === 0) return problem("Agent limit reached (20 during beta).", 429);
+  if (result.rejected === "agent_limit" && result.accepted === 0) return problem("Agent limit reached (50 during beta).", 429);
   return Response.json({ ok: true, accepted: result.accepted, duplicates: result.duplicates, dropped: parsed.dropped, agentLimit: result.rejected === "agent_limit" });
 }

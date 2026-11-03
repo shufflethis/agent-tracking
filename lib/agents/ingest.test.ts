@@ -130,3 +130,33 @@ test("parseAgentBatch rejects more than 100 events and non-arrays", () => {
   assert.equal(parseAgentBatch({ events: "x" }, NOW), null);
   assert.equal(parseAgentBatch(null, NOW), null);
 });
+
+test("correlated parallel calls survive reverse delivery and repeated hook IDs", () => withDb(() => {
+  const o = owner(); const callId = "f".repeat(64); const other = "e".repeat(64);
+  recordAgentEvents(o, [ev("tool_start", { tool: "Read", callId: other, at: NOW })], NOW);
+  recordAgentEvents(o, [ev("tool_end", { tool: "Bash", callId, ok: false, at: NOW + 20 })], NOW);
+  assert.equal(run().open_tools, 1, "unmatched completion cannot close a different tool");
+  recordAgentEvents(o, [ev("tool_start", { tool: "Bash", callId, at: NOW + 10 })], NOW);
+  assert.equal(run().open_tools, 1, "late start of a finished call is not reopened");
+  assert.equal(recordAgentEvents(o, [ev("tool_end", { tool: "Bash", callId, ok: false, at: NOW + 20 })], NOW).duplicates, 1);
+  assert.equal(run().tool_errors, 1);
+  recordAgentEvents(o, [ev("tool_end", { tool: "Read", callId: other, ok: true, at: NOW + 30 }), ev("session_end", { at: NOW + 40 })], NOW);
+  assert.equal(run().open_tools, 0); assert.equal(run().tool_calls, 2);
+}));
+
+test("late failure evidence updates a closed session without claiming task success", () => withDb(() => {
+  const o = owner();
+  recordAgentEvents(o, [ev("session_start", { at: NOW }), ev("session_end", { at: NOW + 100 })], NOW);
+  recordAgentEvents(o, [ev("tool_end", { at: NOW + 50, tool: "Bash", ok: false, dataLoss: true })], NOW);
+  assert.equal(run().tool_errors, 1); assert.equal(run().ended_at, NOW + 100);
+  assert.equal(run().last_event_type, "session_end"); assert.equal(run().data_loss, 1);
+  assert.equal(run().check_passed, null);
+}));
+
+test("model errors remain failures until a new turn starts", () => withDb(() => {
+  const o = owner();
+  recordAgentEvents(o, [ev("turn_start"), ev("turn_error")], NOW);
+  assert.equal(run().status, "failed");
+  recordAgentEvents(o, [ev("turn_start")], NOW); assert.equal(run().status, "running");
+  recordAgentEvents(o, [ev("turn_error"), ev("session_end")], NOW); assert.equal(run().status, "failed");
+}));

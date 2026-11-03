@@ -17,7 +17,7 @@ test("merge keeps foreign hooks", () => {
   assert.match(after.hooks.PostToolUse[1].hooks[0].command, /agenttracking.*hook PostToolUse$/);
   assert.equal(after.hooks.PostToolUse[1].matcher, "*");
   assert.equal(after.hooks.Stop[0].matcher, undefined);
-  assert.deepEqual(Object.keys(after.hooks).sort(), ["Notification", "PostToolUse", "PreToolUse", "SessionEnd", "SessionStart", "Stop", "SubagentStop"]);
+  assert.deepEqual(Object.keys(after.hooks).sort(), ["Notification", "PostToolUse", "PostToolUseFailure", "PreToolUse", "SessionEnd", "SessionStart", "Stop", "StopFailure", "SubagentStart", "SubagentStop", "UserPromptSubmit"]);
 });
 
 test("merge is idempotent and replaces an older runtime path", () => {

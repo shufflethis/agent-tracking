@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { agentUsage } from "@/lib/agents/store";
+import { AGENT_EVENTS_PER_MONTH } from "@/lib/agents/types";
 import { agentCopy } from "@/lib/agents/copy";
 import { LangSwitch, SignOut } from "@/components/SiteActions";
 import { dashCopy, dashLang, numberLocale, type DashLang } from "@/lib/tracking/copy";
@@ -16,7 +18,8 @@ export default function DashboardShell({ account, site, view, title, area, child
   const fleetNav = agentCopy(lang).fleet;
   const c = dashCopy(lang);
   const plan = planFor(account.plan);
-  const used = usageThisMonth(account.email);
+  const used = area === "fleet" ? agentUsage(account.email) : usageThisMonth(account.email);
+  const allowance = area === "fleet" ? AGENT_EVENTS_PER_MONTH : plan.eventsPerMonth;
   const base = site ? `/app/${encodeURIComponent(site.domain)}` : "/app";
   const views = [
     { slug: "", label: c.shell.views.overview },
@@ -48,7 +51,7 @@ export default function DashboardShell({ account, site, view, title, area, child
           </div>
           <div style={{ textAlign: "right", fontSize: 13, color: "var(--muted)" }}>
             <p style={{ margin: "0 0 8px" }}>
-              {account.email} · {c.shell.planLine(plan.name, used.toLocaleString(numberLocale(lang)), plan.eventsPerMonth.toLocaleString(numberLocale(lang)))}
+              {account.email} · {c.shell.planLine(plan.name, used.toLocaleString(numberLocale(lang)), allowance.toLocaleString(numberLocale(lang)))}
             </p>
             <p style={{ margin: 0, display: "flex", gap: 10, justifyContent: "flex-end", alignItems: "center" }}>
               <LangSwitch lang={lang} labelEn={c.actions.langEn} labelDe={c.actions.langDe} />

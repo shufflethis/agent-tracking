@@ -15,7 +15,7 @@ import { HOOK_EVENTS } from "./hook.js";
 
 type Json = Record<string, unknown>;
 type HookEntry = { matcher?: string; hooks?: { type?: string; command?: string; timeout?: number }[] };
-const TOOL_EVENTS = new Set(["PreToolUse", "PostToolUse"]);
+const TOOL_EVENTS = new Set(["PreToolUse", "PostToolUse", "PostToolUseFailure"]);
 
 const MARKER = "--from=agenttracking";
 const isOurs = (entry: HookEntry) => (entry.hooks ?? []).some((h) => typeof h.command === "string" &&

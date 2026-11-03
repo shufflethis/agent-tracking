@@ -4,6 +4,7 @@ import CopyButton from "@/components/CopyButton";
 import DashboardShell from "@/components/DashboardShell";
 import { agentCopy } from "@/lib/agents/copy";
 import { CONNECT_CLAUDE, HEALTH_CHIP, WRAP_EXAMPLE, when } from "@/lib/agents/format";
+import { runLabel } from "@/lib/agents/run-display";
 import { listAgents } from "@/lib/agents/store";
 import { requireAccount } from "@/lib/tracking/auth";
 import { dashLang } from "@/lib/tracking/copy";
@@ -37,8 +38,8 @@ export default async function Page() {
                     <td>{a.host}</td>
                     <td>{c.kinds[a.kind]}</td>
                     <td>
-                      <span className={HEALTH_CHIP[a.health]}>{c.health[a.health]}</span>
-                      {a.lastRun && a.health === "problem" ? <span style={{ marginLeft: 8, fontSize: 13, color: "var(--muted)" }}>{c.status[a.lastRun.status]}</span> : null}
+                      <span className={HEALTH_CHIP[a.health]}>{a.lastRun && a.health === "running" ? runLabel(a.lastRun, lang) : c.health[a.health]}</span>
+                      {a.lastRun && a.health === "problem" ? <span style={{ marginLeft: 8, fontSize: 13, color: "var(--muted)" }}>{runLabel(a.lastRun, lang)}</span> : null}
                     </td>
                     <td>{a.lastRun ? when(a.lastRun.startedAt, lang) : c.never}</td>
                   </tr>

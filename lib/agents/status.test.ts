@@ -12,7 +12,7 @@ const claude = (lastEventType: RunRow["lastEventType"], openTools = 0): RunRow =
 
 test("waiting loop never hangs", () => {
   assert.equal(evaluateRun(claude("turn_end"), T + 11 * H), null);
-  assert.equal(evaluateRun(claude("notification"), T + 11 * H), null);
+  assert.equal(evaluateRun(claude("waiting"), T + 11 * H), null);
   assert.equal(evaluateRun(claude("turn_end"), T + 13 * H), "close_ok");
 });
 

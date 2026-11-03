@@ -16,6 +16,8 @@ const HELP = `agenttracking: see what your agents did while you slept
   agenttracking disconnect claude     remove the hooks again
   agenttracking wrap --name <n> [--every 24h] [--tail 20] -- <command...>
                                       run a cron command and report start, end, exit code
+  agenttracking wrap --name eval --check booking --version v1 -- ./check.sh
+                                      record a named task check, using its exit code
   agenttracking status                show this machine's connection
   agenttracking flush                 send queued events now
 
@@ -54,6 +56,8 @@ const commands: Record<string, Command> = {
     if (!c) { console.log("Not connected. Run: agenttracking login"); return 1; }
     console.log(`Connected as host "${c.host}" to ${c.origin}`);
     console.log(`Queued events: ${spoolSize()}`);
+    const loss = join(configDir(), "telemetry-loss");
+    if (existsSync(loss)) console.log(`Telemetry warning: ${readFileSync(loss, "utf8").trim()}`);
     const auth = join(configDir(), "auth-error");
     if (existsSync(auth)) console.log(`Last send was refused (${readFileSync(auth, "utf8").trim()}). Run: agenttracking login`);
     return 0;

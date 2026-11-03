@@ -17,6 +17,7 @@ import { appendEvent } from "./spool.js";
  */
 
 const MAP: Record<string, AgentEventType> = {
+  UserPromptSubmit: "turn_start", StopFailure: "turn_error", SubagentStart: "subagent_start", PostToolUseFailure: "tool_end",
   SessionStart: "session_start", PreToolUse: "tool_start", PostToolUse: "tool_end", Stop: "turn_end",
   SubagentStop: "subagent_end", Notification: "notification", SessionEnd: "session_end",
 };
@@ -37,20 +38,24 @@ export function agentName(cwd: string): string {
 }
 
 export function eventFromHook(hookEvent: string, input: unknown, cfg: Config, now: number): AgentEvent | null {
-  const type = MAP[hookEvent];
+  let type = MAP[hookEvent];
   if (!type || !input || typeof input !== "object") return null;
   const i = input as Record<string, unknown>;
+  if (hookEvent === "Notification" && ["permission_prompt", "idle_prompt", "elicitation_dialog"].includes(String(i.notification_type))) type = "waiting";
   const session = typeof i.session_id === "string" && i.session_id ? i.session_id : "unknown-session";
   const event: AgentEvent = {
     v: 1, id: randomUUID(), type, at: now,
     agent: { kind: "claude", name: label(typeof i.cwd === "string" ? agentName(i.cwd) : ""), host: label(cfg.host) },
     run: createHmac("sha256", cfg.secret).update(session).digest("hex"),
   };
+  const hash = (value: string) => createHmac("sha256", cfg.secret).update(session + ":" + value).digest("hex");
+  if (typeof i.tool_use_id === "string" && i.tool_use_id) event.callId = hash(i.tool_use_id);
+  if ((type === "subagent_start" || type === "subagent_end") && typeof i.agent_id === "string") event.childId = hash(i.agent_id);
   if (type === "tool_start" || type === "tool_end") {
     event.tool = (typeof i.tool_name === "string" ? i.tool_name : "unknown").replace(/[^A-Za-z0-9_.:-]/g, "_").slice(0, 128) || "unknown";
     if (type === "tool_end") {
       const r = i.tool_response as Record<string, unknown> | undefined;
-      event.ok = !(r && typeof r === "object" && (r.is_error === true || r.success === false));
+      event.ok = hookEvent !== "PostToolUseFailure" && !(r && typeof r === "object" && (r.is_error === true || r.success === false));
     }
   }
   return event;

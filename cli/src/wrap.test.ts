@@ -73,3 +73,11 @@ test("parseEvery", () => {
   assert.equal(parseEvery("7d"), 604_800_000);
   assert.equal(parseEvery("soon"), null);
 });
+
+test("named checks preserve their version and actual command result", async () => {
+  const home = setup();
+  assert.equal(await wrap(["--name", "eval", "--check", "booking", "--version", "v2", "--", "sh", "-c", "exit 1"], opts(home)), 1);
+  const end = spooled(home)[1];
+  assert.equal(end.checkName, "booking"); assert.equal(end.checkVersion, "v2"); assert.equal(end.exitCode, 1);
+  assert.equal(await wrap(["--name", "eval", "--check", "booking", "--", "true"], opts(home)), 2);
+});

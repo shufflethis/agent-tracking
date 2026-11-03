@@ -31,7 +31,7 @@ test("the server accepts what the hook builds", () => {
   const events = types.map((t) => eventFromHook(t, { session_id: "abc", cwd: "/x/proj", tool_name: "mcp__github__create_issue", tool_response: {} }, cfg, NOW)!);
   assert.deepEqual(events.map((e) => e.type), ["session_start", "tool_start", "tool_end", "turn_end", "subagent_end", "notification", "session_end"]);
   assert.equal(parseAgentBatch({ events }, NOW)?.events.length, 7);
-  assert.equal(eventFromHook("UserPromptSubmit", { session_id: "abc" }, cfg, NOW), null);
+  assert.equal(eventFromHook("UnknownEvent", { session_id: "abc" }, cfg, NOW), null);
   assert.equal(eventFromHook("SessionStart", "not an object", cfg, NOW), null);
 });
 
@@ -81,4 +81,27 @@ test("throwaway temp folders of one tool count as one agent", () => {
   assert.equal(name("/tmp/tool-x7Kq2p/sub"), "tool-x7Kq2p/sub".split("/").pop());
   assert.equal(name("/root/my-project-2026"), "my-project-2026");
   assert.equal(name("/root/agent-tracking"), "agent-tracking");
+});
+
+test("failure hooks close the same hashed call without sending error contents", () => {
+  const input = { session_id: "s", tool_use_id: "raw-call", tool_name: "Bash", error: "password=secret" };
+  const start = eventFromHook("PreToolUse", input, cfg, NOW)!;
+  const end = eventFromHook("PostToolUseFailure", input, cfg, NOW + 20)!;
+  assert.equal(end.type, "tool_end"); assert.equal(end.ok, false);
+  assert.equal(start.callId, end.callId);
+  assert.match(end.callId!, /^[0-9a-f]{64}$/);
+  assert.doesNotMatch(JSON.stringify(end), /raw-call|password|secret/);
+  assert.equal(parseAgentBatch({ events: [start, end] }, NOW)?.events.length, 2);
+});
+
+test("only actionable notifications indicate waiting; turn and child lifecycle is observable", () => {
+  assert.equal(eventFromHook("Notification", { notification_type: "permission_prompt" }, cfg, NOW)?.type, "waiting");
+  assert.equal(eventFromHook("Notification", { notification_type: "auth_success" }, cfg, NOW)?.type, "notification");
+  assert.equal(eventFromHook("UserPromptSubmit", { prompt: "private" }, cfg, NOW)?.type, "turn_start");
+  assert.equal(eventFromHook("StopFailure", {}, cfg, NOW)?.type, "turn_error");
+  const input = { session_id: "s", agent_id: "raw-child" };
+  const start = eventFromHook("SubagentStart", input, cfg, NOW)!;
+  const end = eventFromHook("SubagentStop", input, cfg, NOW)!;
+  assert.equal(start.childId, end.childId);
+  assert.doesNotMatch(JSON.stringify(start), /raw-child/);
 });

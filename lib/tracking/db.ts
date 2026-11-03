@@ -434,6 +434,20 @@ function migrate(instance: DatabaseSync): void {
     ]) if (!accountColumns.has(name)) instance.exec(`alter table accounts add column ${name} ${definition}`);
     instance.prepare("insert into schema_migrations (version, applied_at) values (19, ?)").run(Date.now());
   }
+  if ((current.version ?? 0) < 20) {
+    for (const [table, additions] of [
+      ["agent_events", [["call_id", "text"], ["child_id", "text"]]],
+      ["agent_runs", [["data_loss", "integer not null default 0"], ["end_reason", "text"], ["check_name", "text"], ["check_version", "text"], ["check_passed", "integer"]]],
+    ] as const) {
+      const columns = new Set((instance.prepare(`pragma table_info(${table})`).all() as { name: string }[]).map(c => c.name));
+      for (const [name, definition] of additions) if (!columns.has(name)) instance.exec(`alter table ${table} add column ${name} ${definition}`);
+    }
+    instance.exec(`
+      create index if not exists agent_events_run_time on agent_events(run_id, at);
+      create unique index if not exists agent_events_call on agent_events(run_id, call_id, type) where call_id is not null;
+    `);
+    instance.prepare("insert into schema_migrations (version, applied_at) values (20, ?)").run(Date.now());
+  }
   instance.exec("commit");
   } catch (err) {
     instance.exec("rollback");

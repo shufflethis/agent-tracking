@@ -2,8 +2,10 @@
 export type AgentKind = "claude" | "cron" | "custom";
 export type AgentEventType =
   | "session_start" | "tool_start" | "tool_end" | "turn_end" | "subagent_end" | "notification" | "session_end"
-  | "cron_start" | "cron_end";
+  | "cron_start" | "cron_end" | "turn_start" | "turn_error" | "waiting" | "subagent_start";
 export type AgentEvent = {
+  callId?: string; childId?: string; dataLoss?: boolean;
+  checkName?: string; checkVersion?: string;
   v: 1; id: string; type: AgentEventType; at: number;
   agent: { kind: AgentKind; name: string; host: string };
   run: string; tool?: string; ok?: boolean; exitCode?: number; durationMs?: number; expectEveryMs?: number; tail?: string;

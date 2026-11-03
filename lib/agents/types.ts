@@ -5,14 +5,16 @@ export const AGENT_KINDS: readonly AgentKind[] = ["claude", "cron", "custom"];
 
 export type AgentEventType =
   | "session_start" | "tool_start" | "tool_end" | "turn_end" | "subagent_end" | "notification" | "session_end"
-  | "cron_start" | "cron_end";
+  | "cron_start" | "cron_end" | "turn_start" | "turn_error" | "waiting" | "subagent_start";
 export const AGENT_EVENT_TYPES: readonly AgentEventType[] = [
-  "session_start", "tool_start", "tool_end", "turn_end", "subagent_end", "notification", "session_end", "cron_start", "cron_end",
+  "session_start", "tool_start", "tool_end", "turn_end", "subagent_end", "notification", "session_end", "cron_start", "cron_end", "turn_start", "turn_error", "waiting", "subagent_start",
 ];
 
 export type RunStatus = "running" | "ok" | "failed" | "hung" | "missed";
 
 export type AgentEvent = {
+  callId?: string; childId?: string; dataLoss?: boolean;
+  checkName?: string; checkVersion?: string;
   v: 1;
   id: string;
   type: AgentEventType;

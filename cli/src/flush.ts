@@ -25,7 +25,7 @@ function lock(home?: string): (() => void) | null {
 export async function flush(home?: string): Promise<{ sent: number; kept: number }> {
   const config = readConfig(home);
   const release = lock(home);
-  if (!config || !release) return { sent: 0, kept: 0 };
+  if (!config || !release) { release?.(); return { sent: 0, kept: 0 }; }
   let sent = 0;
   try {
     for (;;) {
@@ -41,12 +41,18 @@ export async function flush(home?: string): Promise<{ sent: number; kept: number
           redirect: "error",
         });
         status = res.status;
+        if (status >= 200 && status < 300) {
+          const receipt = await res.json().catch(() => null) as { dropped?: number; agentLimit?: boolean } | null;
+          if (receipt?.dropped || receipt?.agentLimit) writeFileSync(join(ensureDir(home), "telemetry-loss"), `Server rejected some events at ${new Date().toISOString()}\n`, { mode: 0o600 });
+          // Retry partial agent-limit batches; accepted IDs are idempotent on the server.
+          if (receipt?.agentLimit) return { sent, kept: remaining(home) };
+        }
       } catch {
         status = 0;
       }
       if (status >= 200 && status < 300) { batch.commit(); sent += batch.events.length; continue; }
       // Permanent refusals (bad request, too large, not found, unprocessable) would repeat forever: drop them.
-      if (status >= 400 && status < 500 && ![401, 408, 429].includes(status)) { batch.commit(); continue; }
+      if (status >= 400 && status < 500 && ![401, 408, 429].includes(status)) { writeFileSync(join(ensureDir(home), "telemetry-loss"), `Server refused events (${status}) at ${new Date().toISOString()}\n`, { mode: 0o600 }); batch.commit(); continue; }
       if (status === 401) writeFileSync(join(ensureDir(home), "auth-error"), `401 at ${new Date().toISOString()}\n`, { mode: 0o600 });
       return { sent, kept: remaining(home) };
     }
