@@ -49,6 +49,8 @@ export const HTML_LANG: Record<Locale, string> = { en: "en", de: "de" };
 export const PATH_LOCALES: Record<string, readonly Locale[]> = {
   "/": ["en", "de"],
   "/docs": ["en", "de"],
+  "/websites": ["en", "de"],
+  "/changelog": ["en", "de"],
   "/guides": ["en", "de"],
   "/imprint": ["en", "de"],
   "/privacy": ["en", "de"],
@@ -87,11 +89,13 @@ export function alternatesForLocale(path: string, locale: Locale) {
 }
 
 type Dict = {
-  nav: { docs: string; guides: string; demo: string; live: string; pricing: string; login: string; dashboard: string };
+  nav: { docs: string; guides: string; demo: string; live: string; pricing: string; login: string; dashboard: string; websites: string; changelog: string };
   menu: string;
   langLabel: string;
   foot: {
     product: string;
+    websites: string;
+    changelog: string;
     docs: string;
     demo: string;
     pricing: string;
@@ -113,11 +117,13 @@ type Dict = {
 
 export const DICT: Record<Locale, Dict> = {
   en: {
-    nav: { docs: "Docs", guides: "Guides", demo: "Demo", live: "Live stats", pricing: "Pricing", login: "Sign in", dashboard: "Dashboard" },
+    nav: { docs: "Docs", guides: "Guides", demo: "Demo", live: "Live stats", pricing: "Pricing", login: "Sign in", dashboard: "Dashboard", websites: "Websites", changelog: "Changelog" },
     menu: "Menu",
     langLabel: "Language",
     foot: {
       product: "Product",
+      websites: "AI agents on your website",
+      changelog: "Changelog",
       docs: "Documentation",
       demo: "Demo page",
       pricing: "Plans",
@@ -137,11 +143,13 @@ export const DICT: Record<Locale, Dict> = {
     },
   },
   de: {
-    nav: { docs: "Doku", guides: "Guides", demo: "Demo", live: "Live-Stats", pricing: "Preise", login: "Anmelden", dashboard: "Dashboard" },
+    nav: { docs: "Doku", guides: "Guides", demo: "Demo", live: "Live-Stats", pricing: "Preise", login: "Anmelden", dashboard: "Dashboard", websites: "Websites", changelog: "Changelog" },
     menu: "Menü",
     langLabel: "Sprache",
     foot: {
       product: "Produkt",
+      websites: "KI-Agenten auf deiner Website",
+      changelog: "Changelog",
       docs: "Dokumentation",
       demo: "Demo-Seite",
       pricing: "Pläne",

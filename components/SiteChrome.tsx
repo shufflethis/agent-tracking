@@ -18,9 +18,9 @@ export default function SiteChrome({ locale, children }: { locale: Locale; child
 
   const NAV = [
     { href: L("/docs"), label: d.nav.docs },
+    { href: L("/changelog"), label: d.nav.changelog },
+    { href: L("/websites"), label: d.nav.websites },
     { href: L("/guides"), label: d.nav.guides },
-    { href: `/stats/${SITE_HOST}`, label: d.nav.live },
-    { href: "/demo", label: d.nav.demo },
   ];
 
   return (
@@ -85,6 +85,12 @@ export default function SiteChrome({ locale, children }: { locale: Locale; child
               <ul>
                 <li>
                   <Link href={L("/docs")}>{d.foot.docs}</Link>
+                </li>
+                <li>
+                  <Link href={L("/changelog")}>{d.foot.changelog}</Link>
+                </li>
+                <li>
+                  <Link href={L("/websites")}>{d.foot.websites}</Link>
                 </li>
                 <li>
                   <Link href="/demo">{d.foot.demo}</Link>

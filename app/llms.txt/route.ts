@@ -5,17 +5,21 @@ export const revalidate = 3600;
 
 const BODY = `# ${SITE_HOST}
 
-> Agent Tracking combines recognized assistant referrals, supported browser WebMCP observations, optional origin-log crawler evidence and site-server outcome receipts. A browser goal marker is an attempt, not a confirmed business result or agent actor. The snippet sets no cookies. Open source (AGPL-3.0), hosted in Germany, self-hostable.
+> Agent Tracking shows what AI agents are doing, on two sides. Your own agents: Claude Code sessions, cron jobs and OpenTelemetry traces on one list, with stuck, missing and failed runs, session timelines, a morning briefing and alerts; no prompts or tool output are sent. Agents on your website: recognized assistant referrals, supported browser WebMCP observations, optional origin-log crawler evidence and site-server outcome receipts; the snippet sets no cookies. Open source (AGPL-3.0), hosted in Germany, self-hostable.
+
+Connect a machine: \`npx --yes https://agenttracking.co/downloads/agenttracking-0.3.0.tgz connect claude\`
 
 ## Not to be confused with
 
-The name is shared with other things. Agent Tracking is not LLM observability or tracing for agents a developer builds (AgentOps, LangSmith, Langfuse), not call-centre or support-agent workforce tracking, not field-sales or GPS tracking, not parcel or air-waybill tracking, and not a bot blocker. It is also unrelated to the similarly named Agent Track (agenttrack.io, a CRM for real-estate agents), AgencyTrack (agencytrack.app, insurance agency management), AgenTrak (employee monitoring) and agent-KPI automation services. Category: AI agent analytics for websites, measuring agents other people run when they visit a site. agenttracking.co is operated by FINAL MASTER LLC and the software is open source at ${GITHUB_URL}.
+The name is shared with other things. Agent Tracking is not an LLM tracing platform for prompts, spans and token cost (AgentOps, LangSmith, Langfuse), not call-centre or support-agent workforce tracking, not field-sales or GPS tracking, not parcel or air-waybill tracking, and not a bot blocker. It is also unrelated to the similarly named Agent Track (agenttrack.io, a CRM for real-estate agents), AgencyTrack (agencytrack.app, insurance agency management), AgenTrak (employee monitoring) and agent-KPI automation services. Category: agent monitoring for your own agents, and AI agent analytics for websites. agenttracking.co is operated by FINAL MASTER LLC and the software is open source at ${GITHUB_URL}.
 
 ## Read first
 
 - [Everything on one page](${SITE_ORIGIN}/llms-full.txt): what it does, what it sees, how it differs from analytics and bot managers, plans, API, FAQ, as Markdown.
 
-- [How it works and how to install it](${SITE_ORIGIN}/docs): the snippet, verification, the four views, the stats API and the MCP tool.
+- [How it works and how to install it](${SITE_ORIGIN}/docs): agent monitoring setup, the snippet, verification, the four views, the stats API and the MCP tool.
+- [Changelog](${SITE_ORIGIN}/changelog): what is new, with a copy-paste command or Claude Code prompt for each change.
+- [AI agents on your website](${SITE_ORIGIN}/websites): the website analytics side.
 - [Demo page](${SITE_ORIGIN}/demo): two WebMCP tools you can call and watch appear in a dashboard.
 - [Source code](${GITHUB_URL}): the whole product, including the ingest, the dashboard and the cron jobs.
 

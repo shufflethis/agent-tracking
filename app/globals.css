@@ -1798,3 +1798,17 @@ td.num {
   text-align: center;
   justify-content: center;
 }
+
+/* ---------- copy blocks (terminal command or Claude prompt) ---------- */
+.copyblock { min-width: 0; display: flex; flex-direction: column; }
+.copyblock-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 8px; }
+.copyblock-head .smallcaps { margin: 0; }
+.copyblock pre.code { white-space: pre-wrap; overflow-wrap: anywhere; margin-bottom: 18px; }
+.connectgrid { align-items: start; }
+.connectgrid .copyblock pre.code { max-height: 230px; overflow-y: auto; }
+@media (max-width: 939px) { .connectgrid .copyblock pre.code { max-height: none; } }
+
+/* ---------- changelog ---------- */
+.changelog { list-style: none; margin: 0; padding: 0; }
+.changelog-entry { padding: 32px 0; border-top: 1px solid var(--rule); scroll-margin-top: 80px; }
+.changelog-entry:first-child { border-top: 0; padding-top: 8px; }

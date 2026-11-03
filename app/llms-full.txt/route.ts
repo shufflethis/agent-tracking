@@ -1,4 +1,6 @@
 import { homeContent } from "@/lib/home-content";
+import { CONNECT_CLAUDE } from "@/lib/agents/format";
+import { claudeSetupPrompt, WRAP_CRON } from "@/lib/agents/setup";
 import { GITHUB_URL, SITE_HOST, SITE_ORIGIN } from "@/lib/site";
 import { snippetFor } from "@/lib/tracking/snippet";
 import { PLANS, RAW_RETENTION_DAYS } from "@/lib/tracking/plans";
@@ -12,13 +14,37 @@ export function GET() {
   const rows = (r: { k: string; t: string; d: string }[]) => r.map((x) => `- **${x.k}: ${x.t}.** ${x.d}`).join("\n");
   const body = `# Agent Tracking (${SITE_HOST})
 
-Category: ${c.category}.
+Category: agent monitoring for your own agents, and ${c.category.charAt(0).toLowerCase() + c.category.slice(1)}.
 
 > ${c.definition}
 
 ${c.definitionMore}
 
 Site: ${SITE_ORIGIN} · Docs: ${SITE_ORIGIN}/docs · Demo: ${SITE_ORIGIN}/demo · Source: ${GITHUB_URL} (AGPL-3.0) · German: ${SITE_ORIGIN}/de
+
+## Monitor your own agents
+
+Claude Code sessions, cron jobs and your own agents on one list: stuck, missing and failed runs, session timelines, a morning briefing and alerts by email, Telegram, Slack, Discord or webhook. Only lifecycle events, tool names and success or failure are sent; no prompts, answers, tool input or output, file contents or full paths. Free during the beta. Full instructions: ${SITE_ORIGIN}/docs#agent-monitoring · Changelog: ${SITE_ORIGIN}/changelog
+
+Connect a machine (shows a code to confirm in the browser):
+
+\`\`\`sh
+${CONNECT_CLAUDE}
+\`\`\`
+
+Wrap a cron job:
+
+\`\`\`sh
+${WRAP_CRON}
+\`\`\`
+
+Or paste this into Claude Code:
+
+\`\`\`text
+${claudeSetupPrompt("en")}
+\`\`\`
+
+# Agents on your website
 
 ## ${c.seesTitle}
 

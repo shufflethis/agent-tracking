@@ -185,7 +185,7 @@ export default function Page() {
         <h2>Plans</h2>
         <p className="dek" style={{ maxWidth: "62ch" }}>
           During the pilot every account is on Free, and paid plans are not open yet. Need more while the pilot runs? Write to {CONTACT_EMAIL} and we switch your account by
-          hand. The <Link href="/#plans">plans section</Link> has the terms of the pilot. Or run the whole thing yourself: the <a href={GITHUB_URL} rel="noopener">source is on GitHub</a> under AGPL-3.0, with a docker compose file.
+          hand. The <Link href="/websites#plans">plans section</Link> has the terms of the pilot. Or run the whole thing yourself: the <a href={GITHUB_URL} rel="noopener">source is on GitHub</a> under AGPL-3.0, with a docker compose file.
         </p>
         <div className="tablewrap">
           <table>

@@ -188,7 +188,7 @@ export default function Page() {
         <h2>Pläne</h2>
         <p className="dek" style={{ maxWidth: "62ch" }}>
           In der Pilotphase ist jedes Konto auf Free, bezahlte Pläne sind noch nicht offen. Brauchst du während der Pilotphase mehr? Schreib an {CONTACT_EMAIL}, wir stellen dein
-          Konto von Hand um. Die <Link href="/de#plans">Produktseite</Link> hat die Bedingungen der Pilotphase.
+          Konto von Hand um. Die <Link href="/de/websites#plans">Website-Seite</Link> hat die Bedingungen der Pilotphase.
         </p>
         <div className="tablewrap">
           <table>

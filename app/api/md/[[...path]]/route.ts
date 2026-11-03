@@ -1,5 +1,7 @@
 import { guideBySlug, guides } from "@/lib/guides";
 import { homeContent } from "@/lib/home-content";
+import { CONNECT_CLAUDE } from "@/lib/agents/format";
+import { claudeSetupPrompt } from "@/lib/agents/setup";
 import { GITHUB_URL, SITE_HOST, SITE_ORIGIN } from "@/lib/site";
 import type { DashLang } from "@/lib/tracking/copy";
 import { snippetFor } from "@/lib/tracking/snippet";
@@ -10,9 +12,33 @@ const HEADERS = { "content-type": "text/markdown; charset=utf-8", vary: "Accept"
 
 const rows = (r: { k: string; t: string; d: string }[]) => r.map((x) => `- **${x.k}: ${x.t}.** ${x.d}`).join("\n");
 
+/** The home page: monitoring your own agents. */
 function home(lang: DashLang): string {
+  const de = lang === "de";
+  const base = de ? "/de" : "";
+  return [
+    `# ${de ? "Agent Tracking: Was macht dein Agent gerade?" : "Agent Tracking: what's your agent doing right now?"}`,
+    "",
+    de
+      ? "> Claude-Code-Sessions, Cron-Jobs und eigene Agents in einer Liste: hängende, fehlende und gescheiterte Läufe, Session-Timelines, Morgen-Briefing und Meldungen. Keine Prompts, keine Tool-Ausgaben. Kostenlos in der Beta, Open Source."
+      : "> Claude Code sessions, cron jobs and your own agents on one list: stuck, missing and failed runs, session timelines, a morning briefing and alerts. No prompts, no tool output. Free during the beta, open source.",
+    "",
+    `## ${de ? "Verbinden" : "Connect"}`,
+    "",
+    "```sh", CONNECT_CLAUDE, "```",
+    "",
+    de ? "Oder diesen Prompt in Claude Code einfügen:" : "Or paste this prompt into Claude Code:",
+    "",
+    "```text", claudeSetupPrompt(lang), "```",
+    "",
+    `${de ? "KI-Agenten auf deiner Website" : "AI agents on your website"}: ${SITE_ORIGIN}${base}/websites · Changelog: ${SITE_ORIGIN}${base}/changelog · ${de ? "Doku" : "Docs"}: ${SITE_ORIGIN}${base}/docs#agent-monitoring · Code: ${GITHUB_URL}`,
+    "",
+  ].join("\n");
+}
+
+function websites(lang: DashLang): string {
   const c = homeContent(lang);
-  const base = lang === "de" ? "/de" : "";
+  const base = lang === "de" ? "/de/websites" : "/websites";
   return [
     `# ${lang === "de" ? "Agent Tracking: KI-Agenten-Analytics für Websites" : "Agent Tracking: AI agent analytics for websites"}`,
     "",
@@ -20,7 +46,7 @@ function home(lang: DashLang): string {
     "",
     c.definitionMore,
     "",
-    `Source: ${SITE_ORIGIN}${base || "/"} · ${lang === "de" ? "Doku" : "Docs"}: ${SITE_ORIGIN}${base}/docs · Guides: ${SITE_ORIGIN}${base}/guides · Code: ${GITHUB_URL}`,
+    `Source: ${SITE_ORIGIN}${base} · ${lang === "de" ? "Doku" : "Docs"}: ${SITE_ORIGIN}${lang === "de" ? "/de" : ""}/docs · Guides: ${SITE_ORIGIN}${lang === "de" ? "/de" : ""}/guides · Code: ${GITHUB_URL}`,
     "",
     `## ${c.notTitle}`, "", c.notDek, "", rows(c.not), "",
     `## ${c.seesTitle}`, "", rows(c.sees), "", c.seesScore, "",
@@ -81,6 +107,8 @@ export async function GET(_request: Request, { params }: { params: Promise<{ pat
   let body: string | null = null;
   if (path === "/home") body = home("en");
   else if (path === "/de") body = home("de");
+  else if (path === "/websites") body = websites("en");
+  else if (path === "/de/websites") body = websites("de");
   else if (path === "/docs") body = docs("en");
   else if (path === "/de/docs") body = docs("de");
   else if (path === "/guides") body = guideIndex("en");
