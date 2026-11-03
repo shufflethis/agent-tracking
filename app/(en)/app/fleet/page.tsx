@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import CopyButton from "@/components/CopyButton";
 import DashboardShell from "@/components/DashboardShell";
+import AgentConnectionScope from "@/components/AgentConnectionScope";
 import { agentCopy } from "@/lib/agents/copy";
 import { CONNECT_CLAUDE, HEALTH_CHIP, WRAP_EXAMPLE, when } from "@/lib/agents/format";
 import { runLabel } from "@/lib/agents/run-display";
@@ -61,6 +62,7 @@ export default async function Page() {
             </div>
           ))}
         </div>
+        <AgentConnectionScope lang={lang} />
       </section>
     </DashboardShell>
   );

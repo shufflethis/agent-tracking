@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import DashboardShell from "@/components/DashboardShell";
+import AgentConnectionScope from "@/components/AgentConnectionScope";
 import { agentCopy } from "@/lib/agents/copy";
 import { when } from "@/lib/agents/format";
 import { getNotifySettings } from "@/lib/agents/store";
@@ -64,6 +65,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ s
           </form>
         ) : null}
         <h2 style={{ fontSize: 20 }}>{c.machines}</h2>
+        <AgentConnectionScope lang={lang} />
         {machines.length ? (
           <div className="tablewrap">
             <table>

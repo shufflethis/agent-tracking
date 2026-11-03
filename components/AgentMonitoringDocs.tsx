@@ -1,4 +1,5 @@
 import { CLI_COMMAND } from "@/lib/agents/format";
+import AgentConnectionScope from "@/components/AgentConnectionScope";
 import { AGENT_EVENT_RETENTION_DAYS, AGENT_TAIL_RETENTION_DAYS, RAW_RETENTION_DAYS } from "@/lib/tracking/plans";
 
 /** Docs section "Monitor your own agents", EN and DE. Field list matches lib/agents/ingest.ts. */
@@ -25,7 +26,7 @@ const COPY = {
     after: "Every morning (07:00 Europe/Berlin by default) you get one briefing. Immediate alerts go out when a run fails, is stuck, or goes missing: by email, and optionally to Telegram, Slack, Discord or a webhook.",
     sentTitle: "What is sent, and what never is",
     sent: ["Event type: session start and end, tool start and end, turn end, cron start and end", "Tool name (for example Bash or mcp__github__create_issue) and whether it succeeded", "The project folder name (only the last part of the path) and a host label", "A session id, hashed on your machine with a secret that never leaves it", "For cron: exit code, duration, and only with --tail the masked last stderr lines"],
-    never: "Never sent: prompts, answers, tool input or output, file contents, full paths, transcripts.",
+    never: "The Claude Code integration does not send prompts, answers, tool input or output, file contents, full paths or transcripts. Cron --tail optionally sends error output; masking does not guarantee that all sensitive content is removed.",
     retention: `Kept for: events ${AGENT_EVENT_RETENTION_DAYS} days, runs ${RAW_RETENTION_DAYS} days, stderr lines ${AGENT_TAIL_RETENTION_DAYS} days. Daily counts stay.`,
     offTitle: "Switch it off",
   },
@@ -40,7 +41,7 @@ const COPY = {
     after: "Jeden Morgen (standardmäßig 07:00 Europe/Berlin) kommt ein Briefing. Sofort-Meldungen gibt es, wenn ein Lauf fehlschlägt, hängt oder fehlt: per Mail und optional an Telegram, Slack, Discord oder einen Webhook.",
     sentTitle: "Was gesendet wird, und was nie",
     sent: ["Event-Typ: Session-Start und -Ende, Tool-Start und -Ende, Turn-Ende, Cron-Start und -Ende", "Tool-Name (zum Beispiel Bash oder mcp__github__create_issue) und ob er erfolgreich war", "Der Projektordner-Name (nur der letzte Teil des Pfads) und ein Host-Label", "Eine Session-ID, auf deiner Maschine gehasht mit einem Geheimnis, das sie nie verlässt", "Bei Cron: Exit-Code, Dauer und nur mit --tail die maskierten letzten stderr-Zeilen"],
-    never: "Nie gesendet: Prompts, Antworten, Tool-Eingaben oder -Ausgaben, Dateiinhalte, volle Pfade, Transkripte.",
+    never: "Die Claude-Code-Anbindung sendet keine Prompts, Antworten, Tool-Eingaben oder -Ausgaben, Dateiinhalte, vollen Pfade oder Transkripte. Cron --tail sendet optional Fehlerausgaben; die Maskierung garantiert nicht, dass alle sensiblen Inhalte entfernt werden.",
     retention: `Aufbewahrt: Events ${AGENT_EVENT_RETENTION_DAYS} Tage, Läufe ${RAW_RETENTION_DAYS} Tage, stderr-Zeilen ${AGENT_TAIL_RETENTION_DAYS} Tage. Tageszähler bleiben.`,
     offTitle: "Abschalten",
   },
@@ -52,6 +53,7 @@ export default function AgentMonitoringDocs({ lang }: { lang: "en" | "de" }) {
     <section className="shell section" id="agent-monitoring">
       <h2>{c.title}</h2>
       <p className="dek">{c.intro}</p>
+      <AgentConnectionScope lang={lang} />
       {c.steps.map(([title, body, cmd]) => (
         <div key={title} style={{ marginTop: 18 }}>
           <h3 style={{ fontSize: 18, marginBottom: 6 }}>{title}</h3>
