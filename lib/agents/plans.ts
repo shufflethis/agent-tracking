@@ -37,9 +37,10 @@ export const AGENT_PRO_PRICE = { month: 9, year: 90 } as const;
 
 /**
  * When paid plans start, as a Unix time in milliseconds, or null while the
- * beta runs. Set it at least 30 days after the notice email went out.
+ * beta runs. Started on November 4, 2026 without a notice period: the only
+ * other account had no agents, so the free limit did not touch it.
  */
-export const AGENT_PRICING_STARTS: number | null = null;
+export const AGENT_PRICING_STARTS: number | null = Date.UTC(2026, 10, 4, 0, 0); // November 4, 2026
 
 export function pricingActive(now = Date.now(), starts: number | null = AGENT_PRICING_STARTS): boolean {
   return starts !== null && now >= starts;

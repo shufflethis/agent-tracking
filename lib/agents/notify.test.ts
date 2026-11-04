@@ -5,7 +5,7 @@ import { recordAgentEvents } from "./ingest";
 import { dueBriefingOwners, markBriefed, sendAlerts, sendTestWebhook, webhookRequest, type Alert } from "./notify";
 import { saveNotifySettings } from "./store";
 import type { AgentEvent } from "./types";
-import { owner, withDb } from "./test-db";
+import { owner, proOwner, withDb } from "./test-db";
 
 const alert: Alert = { agent: "backup", host: "server1", status: "failed", at: Date.UTC(2026, 10, 2, 2, 3), detail: "Exit 1", url: "https://agenttracking.co/app/fleet/x" };
 
@@ -45,7 +45,7 @@ async function withFetch<T>(fn: (calls: { url: string; body: string }[]) => Prom
 }
 
 test("alerts are sent once", () => withDb(() => withFetch(async (calls) => {
-  const o = owner();
+  const o = proOwner();
   saveNotifySettings(o, { briefingHour: 7, alertsEmail: true, webhook: { kind: "slack", url: "https://hooks.slack.com/x" } });
   recordAgentEvents(o, failing("backup"), T);
   assert.equal(await sendAlerts(T + 60_000, recorder(calls)), 1);
@@ -56,7 +56,7 @@ test("alerts are sent once", () => withDb(() => withFetch(async (calls) => {
 })));
 
 test("more than 10 alerts are summarized", () => withDb(() => withFetch(async (calls) => {
-  const o = owner();
+  const o = proOwner();
   saveNotifySettings(o, { briefingHour: 7, alertsEmail: false, webhook: { kind: "generic", url: "https://example.com/h" } });
   for (let i = 0; i < 13; i++) recordAgentEvents(o, failing(`job${i}`), T);
   await sendAlerts(T + 60_000, recorder(calls));

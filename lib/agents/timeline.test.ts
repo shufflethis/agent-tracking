@@ -4,12 +4,12 @@ import { db } from "../tracking/db";
 import { parseAgentBatch, recordAgentEvents } from "./ingest";
 import { runTimeline, checkComparisons } from "./store";
 import { checkLabel, runLabel } from "./run-display";
-import { owner, withDb } from "./test-db";
+import { owner, proOwner, withDb } from "./test-db";
 
 const now = Date.now();
 const agent = { kind: "cron" as const, name: "evaluation", host: "fixture" };
 test("version comparisons and timelines are owner-scoped and checks require explicit metadata", () => withDb(() => {
-  const o = owner();
+  const o = proOwner();
   for (const [i, version, exitCode] of [[1, "v1", 1], [2, "v2", 0], [3, null, 0]] as const) {
     const parsed = parseAgentBatch({ events: [{ v: 1, id: `event-000${i}`, type: "cron_end", at: now, agent, run: String(i).repeat(32), exitCode, durationMs: 10, checkName: version ? "booking" : undefined, checkVersion: version }] }, now)!;
     recordAgentEvents(o, parsed.events, now);

@@ -1,4 +1,4 @@
-import { closeDb, db, ensureAccount } from "../tracking/db";
+import { closeDb, db, ensureAccount, setAgentPlan } from "../tracking/db";
 
 /** Test utility: run `fn` against a fresh in-memory tracking store. */
 export async function withDb<T>(fn: () => T | Promise<T>): Promise<T> {
@@ -15,3 +15,6 @@ export async function withDb<T>(fn: () => T | Promise<T>): Promise<T> {
 }
 
 export const owner = (email = "owner@example.com") => ensureAccount(email).email;
+
+/** An account on agent monitoring Pro, for tests of Pro features (webhooks, OTLP, checks). */
+export const proOwner = (email = "owner@example.com") => { const o = owner(email); setAgentPlan(o, "pro"); return o; };
