@@ -14,3 +14,11 @@ test("a sign-in link posted from another website is refused (login CSRF)", async
   assert.equal((await post({ origin: "https://evil.example" })).status, 403);
   assert.equal((await post({ "sec-fetch-site": "cross-site" })).status, 403);
 });
+
+test("the connect page takes no code from the URL, so a sent link cannot preload an approval", async () => {
+  const { readFileSync } = await import("node:fs");
+  const page = readFileSync(new URL("../app/(en)/app/connect/page.tsx", import.meta.url), "utf8");
+  assert.doesNotMatch(page, /searchParams[^\n]*\b(code|typed)\b/, "no code-like search param is read");
+  assert.match(page, /<form method="post" action="\/api\/agents\/device\/approve">/);
+  assert.match(page, /name="code"[^>]*required|required[^>]*name="code"/s);
+});

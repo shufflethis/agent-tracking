@@ -51,10 +51,11 @@ export default function DashboardShell({ account, site, view, title, area, child
           </div>
           <div style={{ textAlign: "right", fontSize: 13, color: "var(--muted)" }}>
             <p style={{ margin: "0 0 8px" }}>
-              {account.email} · {c.shell.planLine(area === "fleet" ? (account.agent_plan === "pro" ? "Pro" : "Free") : plan.name, used.toLocaleString(numberLocale(lang)), allowance.toLocaleString(numberLocale(lang)))}
+              <Link href="/app/account" style={{ color: "inherit" }}>{account.email}</Link> · {c.shell.planLine(area === "fleet" ? (account.agent_plan === "pro" ? "Pro" : "Free") : plan.name, used.toLocaleString(numberLocale(lang)), allowance.toLocaleString(numberLocale(lang)))}
             </p>
             <p style={{ margin: 0, display: "flex", gap: 10, justifyContent: "flex-end", alignItems: "center" }}>
               <LangSwitch lang={lang} labelEn={c.actions.langEn} labelDe={c.actions.langDe} />
+              <Link href="/app/account" style={{ fontSize: 13 }}>{lang === "de" ? "Konto" : "Account"}</Link>
               <SignOut label={c.actions.signOut} />
             </p>
           </div>

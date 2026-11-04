@@ -74,26 +74,31 @@ export function startDeviceLogin(hostLabel: string, now = Date.now()): { deviceC
 }
 
 /** For the confirmation page: what the person is about to connect. */
-export function deviceLoginInfo(code: string, now = Date.now()): { userCode: string; hostLabel: string } | null {
+export function deviceLoginInfo(code: string, now = Date.now()): { userCode: string; hostLabel: string; createdAt: number } | null {
   const userCodeValue = normalizeUserCode(code);
   if (!userCodeValue) return null;
-  const row = db().prepare("select user_code, host_label from agent_device_codes where user_code = ? and expires_at >= ? and approved_by is null").get(userCodeValue, now) as
-    | { user_code: string; host_label: string }
+  const row = db().prepare("select user_code, host_label, created_at from agent_device_codes where user_code = ? and expires_at >= ? and approved_by is null").get(userCodeValue, now) as
+    | { user_code: string; host_label: string; created_at: number }
     | undefined;
-  return row ? { userCode: row.user_code, hostLabel: row.host_label } : null;
+  return row ? { userCode: row.user_code, hostLabel: row.host_label, createdAt: row.created_at } : null;
 }
 
 export function approveDeviceLogin(code: string, owner: string, now = Date.now()): "approved" | "expired" | "unknown" {
+  return approveDeviceLoginDetail(code, owner, now).result;
+}
+
+/** As approveDeviceLogin, plus the machine's name so the page can say which one was connected. */
+export function approveDeviceLoginDetail(code: string, owner: string, now = Date.now()): { result: "approved" | "expired" | "unknown"; host?: string } {
   const userCodeValue = normalizeUserCode(code);
-  if (!userCodeValue) return "unknown";
+  if (!userCodeValue) return { result: "unknown" };
   const row = db().prepare("select device_code_hash, host_label, expires_at, approved_by from agent_device_codes where user_code = ?").get(userCodeValue) as
     | { device_code_hash: string; host_label: string; expires_at: number; approved_by: string | null }
     | undefined;
-  if (!row) return "unknown";
-  if (row.expires_at < now || row.approved_by) return "expired";
+  if (!row) return { result: "unknown" };
+  if (row.expires_at < now || row.approved_by) return { result: "expired" };
   const { id, token } = mintAgentToken(owner, row.host_label, now);
   db().prepare("update agent_device_codes set approved_by = ?, token_id = ?, token_plain_once = ? where device_code_hash = ?").run(owner, id, token, row.device_code_hash);
-  return "approved";
+  return { result: "approved", host: row.host_label };
 }
 
 export function pollDeviceLogin(deviceCode: string, now = Date.now()): { status: "pending" } | { status: "expired" } | { status: "approved"; token: string } {

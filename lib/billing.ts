@@ -28,15 +28,15 @@ export function billingConfigured(): boolean {
   return Boolean(process.env.STRIPE_SECRET_KEY?.trim());
 }
 
-async function stripe(path: string, params: Record<string, string>): Promise<{ ok: true; data: Record<string, unknown> } | { ok: false; reason: string }> {
+async function stripe(path: string, params: Record<string, string>, method: "POST" | "DELETE" = "POST"): Promise<{ ok: true; data: Record<string, unknown>; status: number } | { ok: false; reason: string; status?: number; code?: string }> {
   const key = process.env.STRIPE_SECRET_KEY?.trim();
   if (!key) return { ok: false, reason: "Billing is not configured." };
   let res: Response;
   try {
     res = await fetch(`${API}${path}`, {
-      method: "POST",
+      method,
       headers: { authorization: `Bearer ${key}`, "content-type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams(params).toString(),
+      body: method === "POST" ? new URLSearchParams(params).toString() : undefined,
       signal: AbortSignal.timeout(15_000),
     });
   } catch (err) {
@@ -44,10 +44,21 @@ async function stripe(path: string, params: Record<string, string>): Promise<{ o
   }
   const data = (await res.json().catch(() => ({}))) as Record<string, unknown>;
   if (!res.ok) {
-    const error = data.error as { message?: string } | undefined;
-    return { ok: false, reason: error?.message ?? `Stripe ${res.status}` };
+    const error = data.error as { message?: string; code?: string } | undefined;
+    return { ok: false, reason: error?.message ?? `Stripe ${res.status}`, status: res.status, code: error?.code };
   }
-  return { ok: true, data };
+  return { ok: true, data, status: res.status };
+}
+
+/**
+ * Cancels a subscription immediately (account deletion). A subscription Stripe
+ * no longer knows, or one already canceled, counts as done.
+ */
+export async function cancelSubscriptionNow(id: string): Promise<{ ok: true } | { ok: false; reason: string }> {
+  const r = await stripe(`/subscriptions/${encodeURIComponent(id)}`, {}, "DELETE");
+  if (r.ok || (!r.ok && (r.code === "resource_missing" || r.status === 404))) return { ok: true };
+  if (/canceled/i.test(r.reason)) return { ok: true };
+  return { ok: false, reason: r.reason };
 }
 
 /** A Checkout Session for a plan; the customer's email is prefilled and carried in metadata for the webhook. */

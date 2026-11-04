@@ -1,5 +1,5 @@
 import { interpretEvent, verifyWebhook } from "@/lib/billing";
-import { ensureAccount, setAgentPlan, setPlan } from "@/lib/tracking/db";
+import { ensureAccount, getAccount, setAgentPlan, setPlan } from "@/lib/tracking/db";
 
 export const runtime = "nodejs";
 
@@ -20,7 +20,11 @@ export async function POST(request: Request) {
     return new Response("Bad payload.", { status: 400 });
   }
   const outcome = interpretEvent(event);
-  if (outcome) {
+  // A downgrade for an account that does not exist is the echo of an account deletion
+  // (it cancels the subscription first); creating the row again would bring the email back.
+  if (outcome && outcome.plan === "free" && !getAccount(outcome.email)) {
+    console.log(`[billing] ignored ${event.type} for a deleted account`);
+  } else if (outcome) {
     ensureAccount(outcome.email);
     const stripe = { customer: outcome.customer, subscription: outcome.subscription };
     if (outcome.product === "agents") setAgentPlan(outcome.email, outcome.plan, stripe);

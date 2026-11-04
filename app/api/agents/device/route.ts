@@ -10,5 +10,5 @@ export async function POST(request: Request) {
   const body = (await request.json().catch(() => null)) as { hostLabel?: unknown } | null;
   if (!validHostLabel(body?.hostLabel)) return Response.json({ ok: false, detail: "hostLabel: 1-64 characters of letters, digits, '.', '_' or '-'." }, { status: 422 });
   const { deviceCode, userCode, expiresAt } = startDeviceLogin(body.hostLabel);
-  return Response.json({ ok: true, deviceCode, userCode, expiresAt, interval: 3, verifyUrl: `${SITE_ORIGIN}/app/connect?code=${encodeURIComponent(userCode)}` });
+  return Response.json({ ok: true, deviceCode, userCode, expiresAt, interval: 3, verifyUrl: `${SITE_ORIGIN}/app/connect` });
 }

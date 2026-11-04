@@ -486,6 +486,11 @@ function migrate(instance: DatabaseSync): void {
     create index if not exists agent_events_run_tool on agent_events(run_id, tool) where tool is not null;`);
     instance.prepare("insert into schema_migrations (version, applied_at) values (23, ?)").run(Date.now());
   }
+  if ((current.version ?? 0) < 24) {
+    const columns = new Set((instance.prepare("pragma table_info(accounts)").all() as { name: string }[]).map(c => c.name));
+    if (!columns.has("sessions_after")) instance.exec("alter table accounts add column sessions_after integer");
+    instance.prepare("insert into schema_migrations (version, applied_at) values (24, ?)").run(Date.now());
+  }
   instance.exec("commit");
   } catch (err) {
     instance.exec("rollback");
@@ -560,12 +565,56 @@ export type Account = {
   /** Agent monitoring plan, separate from the website plan above. */
   agent_plan: AgentPlanId;
   agent_stripe_subscription: string | null;
+  /** Sessions issued before this time (ms) are no longer valid: "sign out everywhere". */
+  sessions_after: number | null;
 };
 
 export function ensureAccount(email: string, now = Date.now()): Account {
   const key = email.toLowerCase();
-  db().prepare("insert into accounts (email, plan, created_at) values (?, 'free', ?) on conflict(email) do nothing").run(key, now);
+  // sessions_after: a session cookie minted before this account existed (e.g. for a deleted account with the same email) never counts.
+  db().prepare("insert into accounts (email, plan, created_at, sessions_after) values (?, 'free', ?, ?) on conflict(email) do nothing").run(key, now, now - 1);
   return db().prepare("select * from accounts where email = ?").get(key) as Account;
+}
+
+/** Ends every session issued so far, including the current one. */
+export function revokeSessions(email: string, now = Date.now()): void {
+  db().prepare("update accounts set sessions_after = ? where email = ?").run(now, email.toLowerCase());
+}
+
+/**
+ * Deletes an account and everything stored for it: owned sites with all their
+ * data (removeSite), memberships and invites on other sites, every agent with
+ * runs, events, spans, signals and tokens, usage counters, then the account.
+ * One transaction: either all of it goes or none. Stripe is handled by the
+ * caller before this runs, so a subscription never outlives its account.
+ */
+export function deleteAccount(email: string): boolean {
+  const key = email.toLowerCase();
+  const d = db();
+  if (!getAccount(key)) return false;
+  d.exec("begin");
+  try {
+    for (const { domain } of d.prepare("select domain from sites where owner = ?").all(key) as { domain: string }[]) removeSite(domain, key);
+    d.prepare("delete from site_access where email = ?").run(key);
+    d.prepare("delete from site_invites where email = ?").run(key);
+    const agents = "select id from agents where owner = ?";
+    d.prepare(`delete from agent_signals where owner = ?`).run(key);
+    d.prepare(`delete from agent_events where owner = ?`).run(key);
+    d.prepare(`delete from agent_daily where agent_id in (${agents})`).run(key);
+    d.prepare(`delete from agent_runs where agent_id in (${agents})`).run(key);
+    d.prepare("delete from agent_spans where owner = ?").run(key);
+    d.prepare("delete from agents where owner = ?").run(key);
+    d.prepare("delete from agent_device_codes where approved_by = ?").run(key);
+    d.prepare("delete from agent_tokens where owner = ?").run(key);
+    d.prepare("delete from agent_usage where owner = ?").run(key);
+    d.prepare("delete from usage where owner = ?").run(key);
+    d.prepare("delete from accounts where email = ?").run(key);
+    d.exec("commit");
+    return true;
+  } catch (error) {
+    d.exec("rollback");
+    throw error;
+  }
 }
 
 export function getAccount(email: string): Account | null {

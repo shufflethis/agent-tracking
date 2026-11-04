@@ -1,6 +1,6 @@
 import { currentAccount } from "@/lib/tracking/auth";
 import { SITE_ORIGIN } from "@/lib/site";
-import { approveDeviceLogin } from "@/lib/agents/tokens";
+import { approveDeviceLoginDetail } from "@/lib/agents/tokens";
 
 export const runtime = "nodejs";
 
@@ -11,7 +11,8 @@ export async function POST(request: Request) {
   const account = await currentAccount();
   const form = await request.formData().catch(() => null);
   const code = String(form?.get("code") ?? "");
-  if (!account) return Response.redirect(new URL(`/login?next=${encodeURIComponent(`/app/connect?code=${code}`)}`, request.url), 303);
-  const result = approveDeviceLogin(code, account.email);
-  return Response.redirect(new URL(`/app/connect?result=${result}`, request.url), 303);
+  if (!account) return Response.redirect(new URL("/login?next=/app/connect", request.url), 303);
+  const { result, host } = approveDeviceLoginDetail(code, account.email);
+  const hostPart = result === "approved" && host ? `&host=${encodeURIComponent(host)}` : "";
+  return Response.redirect(new URL(`/app/connect?result=${result}${hostPart}`, request.url), 303);
 }

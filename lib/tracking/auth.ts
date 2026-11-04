@@ -1,13 +1,18 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { readSessionToken, SESSION_COOKIE } from "../session";
-import { ensureAccount, getSite, type Account, type Site } from "./db";
+import { readSessionToken, sessionIssuedAt, SESSION_COOKIE } from "../session";
+import { getAccount, getSite, type Account, type Site } from "./db";
 import { canReadSite, siteRole } from "./site-access";
 
 /** The signed-in account, or null. Reading the cookie makes the caller dynamic, which the dashboard is anyway. */
 export async function currentAccount(): Promise<Account | null> {
   const claims = readSessionToken((await cookies()).get(SESSION_COOKIE)?.value);
-  return claims ? ensureAccount(claims.email) : null;
+  if (!claims) return null;
+  // The account is created at sign-in, never here: a session cookie must not bring a deleted account back.
+  const account = getAccount(claims.email);
+  if (!account) return null;
+  if (account.sessions_after && sessionIssuedAt(claims.expires) <= account.sessions_after) return null;
+  return account;
 }
 
 /** For pages: the account, or a redirect to the login page that comes back here. */

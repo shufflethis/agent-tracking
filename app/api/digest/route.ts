@@ -2,7 +2,7 @@ import { cookies } from "next/headers";
 import { renderDigestOffDonePage, renderDigestOffPage, renderProblemPage } from "@/lib/pages";
 import { readDigestToken } from "@/lib/session";
 import { currentAccount } from "@/lib/tracking/auth";
-import { ensureAccount, setDigest } from "@/lib/tracking/db";
+import { getAccount, setDigest } from "@/lib/tracking/db";
 
 export const runtime = "nodejs";
 
@@ -27,8 +27,8 @@ export async function POST(request: Request) {
     const form = await request.formData().catch(() => null);
     const claims = readDigestToken(typeof form?.get("k") === "string" ? String(form?.get("k")) : "");
     if (!claims) return html(renderProblemPage("That link is no longer valid", "Switch the digest off in the dashboard settings instead."), 410);
-    ensureAccount(claims.email);
-    setDigest(claims.email, false);
+    // A deleted account has nothing to switch off; do not create it again from an old mail link.
+    if (getAccount(claims.email)) setDigest(claims.email, false);
     return html(renderDigestOffDonePage());
   }
   void cookies;

@@ -12,6 +12,10 @@ const en = {
     expired: "This code has expired or was already used. Run the login command again.",
     unknown: "This code is unknown. Check it against your terminal and run the login command again if needed.",
     toFleet: "Go to your agents",
+    enter: "Type the code your terminal shows. Typing it, rather than following a link, makes sure the machine is yours: a link someone sent you cannot connect their machine to your account.",
+    codeLabel: "Code from your terminal",
+    approvedHost: (host: string) => `Connected "${host}". Your terminal picks up the token within a few seconds. You can close this tab.`,
+    notYours: "Did you not just run the login command yourself? Then do not connect, close this tab.",
   },
   fleet: {
     title: "Your agents",
@@ -102,6 +106,10 @@ const de: AgentCopy = {
     expired: "Dieser Code ist abgelaufen oder wurde schon benutzt. Führe den Login-Befehl noch einmal aus.",
     unknown: "Dieser Code ist unbekannt. Vergleiche ihn mit deinem Terminal und starte den Login bei Bedarf neu.",
     toFleet: "Zu deinen Agents",
+    enter: "Tipp den Code ab, den dein Terminal zeigt. Abtippen statt einem Link zu folgen stellt sicher, dass es deine Maschine ist: Ein Link, den dir jemand schickt, kann keine fremde Maschine mit deinem Konto verbinden.",
+    codeLabel: "Code aus deinem Terminal",
+    approvedHost: (host: string) => `„${host}“ ist verbunden. Dein Terminal holt sich das Token in wenigen Sekunden. Du kannst diesen Tab schließen.`,
+    notYours: "Hast du den Login-Befehl nicht gerade selbst ausgeführt? Dann nicht verbinden, schließ diesen Tab.",
   },
   fleet: {
     title: "Deine Agents",

@@ -1955,3 +1955,16 @@ td.num {
 .hteam h3 { font-size: 20px; margin: 0 0 8px; }
 .hteam h3 span { font-family: var(--mono); font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--cyan); margin-left: 10px; }
 .hteam p { margin: 0; color: var(--ink-2); line-height: 1.6; }
+
+/* Plain text inputs on dashboard forms (account, connect a machine). */
+.field {
+  font-family: var(--body);
+  font-size: 15px;
+  padding: 12px 14px;
+  border: 1px solid var(--rule-strong);
+  border-radius: 8px;
+  background: var(--void);
+  color: var(--ink);
+  outline: none;
+}
+.field:focus { border-color: var(--cyan); }

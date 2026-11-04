@@ -181,7 +181,7 @@ export default function Page() {
           Nach der DSGVO haben Sie das Recht auf Auskunft über die Daten, die wir über Sie halten, auf Berichtigung und Löschung, auf Einschränkung der Verarbeitung und Widerspruch
           sowie auf Datenübertragbarkeit (Art. 15 bis 21). Soweit die Verarbeitung auf berechtigtem Interesse beruht, können Sie aus Gründen Ihrer besonderen Situation
           widersprechen. Sie haben außerdem das Recht auf Beschwerde bei einer Aufsichtsbehörde, etwa der Ihres Wohnsitz-Mitgliedstaats. Schreiben Sie dafür an{" "}
-          <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>; Kontodaten löschen Sie im Dashboard selbst, indem Sie eine Site oder das Konto entfernen.
+          <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>; Kontodaten löschen Sie selbst unter <a href="/app/account">Konto → Konto und alle Daten löschen</a>: Das entfernt das Konto mit allen Websites, Agents und Tokens sofort, ohne Anfrage bei uns.
         </p>
         <p>
           Für Besucher von Kundensites: Die Datensätze enthalten keine Kennung, über die eine bestimmte Person auffindbar wäre, und keine Netzwerkadresse. Ein Auskunftsersuchen

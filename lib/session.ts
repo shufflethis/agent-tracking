@@ -64,6 +64,8 @@ export const readLoginToken = (token: string | undefined | null, now = Date.now(
 
 export const mintSessionToken = (email: string, now = Date.now()) => mint("session", email, SESSION_DAYS * 86_400_000, now);
 export const readSessionToken = (token: string | undefined | null, now = Date.now()) => read("session", token, now);
+/** When a session token was issued, from its expiry. Used to honour "sign out everywhere". */
+export const sessionIssuedAt = (expires: number) => expires - SESSION_DAYS * 86_400_000;
 
 export function sessionCookieOptions() {
   return {

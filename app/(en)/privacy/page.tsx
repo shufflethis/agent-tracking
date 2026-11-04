@@ -183,7 +183,7 @@ export default function Page() {
           Under the GDPR you have the right to access the data we hold about you, to have it corrected or deleted, to restrict or object to its processing, and to receive it in a
           portable form (Art. 15 to 21). Where processing rests on legitimate interest, you may object for reasons arising from your particular situation. You also have the right
           to complain to a supervisory authority, for example the one of your member state of residence. To exercise any of these, write to{" "}
-          <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>; for the account data, removing a site or the account in the dashboard deletes it without asking us.
+          <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>; for the account data, <a href="/app/account">Account → Delete account and all data</a> deletes the account with all its websites, agents and tokens at once, without asking us.
         </p>
         <p>
           For visitors of customers&apos; sites: the records contain no identifier through which a particular person could be found, and no network address. A request for
