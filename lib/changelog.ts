@@ -30,6 +30,16 @@ const SNIPPET_PROMPT: L = {
 export const ENTRIES: Entry[] = [
   {
     date: "2026-11-04",
+    tag: "agents",
+    title: { en: "Pricing after the beta: Free and Pro", de: "Preise nach der Beta: Free und Pro" },
+    body: {
+      en: "When the beta ends there will be two plans. Free: 5 agents with the daily briefing and email alerts. Pro: 50 agents, Telegram, Slack, Discord and webhook alerts, OpenTelemetry and task checks, for $9 a month or $90 a year. Nothing changes yet: every account keeps the full beta until the start date, and you get 30 days' notice by email first. Agents you already have keep reporting on either plan.",
+      de: "Wenn die Beta endet, gibt es zwei Pläne. Free: 5 Agents mit täglichem Briefing und E-Mail-Meldungen. Pro: 50 Agents, Meldungen an Telegram, Slack, Discord und Webhooks, OpenTelemetry und Task-Checks, für 9 $ im Monat oder 90 $ im Jahr. Noch ändert sich nichts: Jedes Konto behält die volle Beta bis zum Starttermin, und vorher kommt eine Ankündigung 30 Tage im Voraus per Mail. Bestehende Agents melden in jedem Plan weiter.",
+    },
+    how: { note: { en: "Your plan and the upgrade are in the dashboard under Your agents → Settings.", de: "Deinen Plan und das Upgrade findest du im Dashboard unter Deine Agents → Einstellungen." } },
+  },
+  {
+    date: "2026-11-04",
     tag: "platform",
     title: { en: "A home page about your own agents, and a changelog that tells you how", de: "Eine Startseite für deine eigenen Agents, und ein Changelog, das dir sagt, wie" },
     body: {

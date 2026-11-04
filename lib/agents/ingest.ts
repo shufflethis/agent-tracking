@@ -1,7 +1,8 @@
 import { parseSnapshot } from "./snapshot";
 import { randomUUID } from "node:crypto";
 import { dayKey, db, monthKey } from "../tracking/db";
-import { AGENT_EVENT_TYPES, AGENT_EVENTS_PER_MONTH, AGENT_KINDS, AGENT_LIMIT, MAX_BATCH, type AgentEvent, type AgentEventType, type AgentKind } from "./types";
+import { effectiveAgentPlan } from "./plans";
+import { AGENT_EVENT_TYPES, AGENT_EVENTS_PER_MONTH, AGENT_KINDS, MAX_BATCH, type AgentEvent, type AgentEventType, type AgentKind } from "./types";
 
 /**
  * Agent event ingest.
@@ -83,8 +84,10 @@ export function parseAgentBatch(body: unknown, now = Date.now()): { events: Agen
 
 type RunState = { id: string; run_key: string; status: string; ended_at: number | null; last_event_at: number };
 
-export function recordAgentEvents(owner: string, events: AgentEvent[], now = Date.now()): { accepted: number; duplicates: number; rejected: "agent_limit" | "quota" | null } {
+export function recordAgentEvents(owner: string, events: AgentEvent[], now = Date.now(), pricingStarts?: number | null): { accepted: number; duplicates: number; rejected: "agent_limit" | "quota" | null } {
   const d = db();
+  const stored = (d.prepare("select agent_plan from accounts where email = ?").get(owner) as { agent_plan?: string } | undefined)?.agent_plan;
+  const plan = pricingStarts === undefined ? effectiveAgentPlan(stored, now) : effectiveAgentPlan(stored, now, pricingStarts);
   const month = monthKey(now);
   const used = (d.prepare("select count from agent_usage where owner = ? and month = ?").get(owner, month) as { count: number } | undefined)?.count ?? 0;
   const exists = d.prepare("select 1 from agent_events where owner = ? and id = ?");
@@ -119,7 +122,7 @@ export function recordAgentEvents(owner: string, events: AgentEvent[], now = Dat
     for (const e of fresh) {
       let agentId = (findAgent.get(owner, e.agent.kind, e.agent.host, e.agent.name) as { id: string } | undefined)?.id;
       if (!agentId) {
-        if ((countAgents.get(owner) as { n: number }).n >= AGENT_LIMIT) { rejected = "agent_limit"; continue; }
+        if ((countAgents.get(owner) as { n: number }).n >= plan.agents) { rejected = "agent_limit"; continue; }
         agentId = randomUUID();
         insertAgent.run(agentId, owner, e.agent.kind, e.agent.name, e.agent.host, e.at, e.at);
       }
@@ -163,7 +166,7 @@ export function recordAgentEvents(owner: string, events: AgentEvent[], now = Dat
         case "cron_end": {
           const failed = e.exitCode !== 0;
           update("ended_at = ?, exit_code = ?, duration_ms = ?, status = ?, tail = ?, tail_at = ?", e.at, e.exitCode ?? null, e.durationMs ?? null, failed ? "failed" : "ok", e.tail ?? null, e.tail ? now : null, run.id);
-          if (e.checkName && e.checkVersion) update("check_name = ?, check_version = ?, check_passed = ?", e.checkName, e.checkVersion, failed ? 0 : 1, run.id);
+          if (plan.checks && e.checkName && e.checkVersion) update("check_name = ?, check_version = ?, check_passed = ?", e.checkName, e.checkVersion, failed ? 0 : 1, run.id);
           if (failed) bumpDaily.run(agentId, dayKey(e.at), 0, 1, 0);
           break;
         }

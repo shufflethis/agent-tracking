@@ -7,6 +7,7 @@ import { clock } from "./briefing";
 import { agentCopy } from "./copy";
 import { postJsonPinned } from "./safe-url";
 import { getNotifySettings, type NotifySettings } from "./store";
+import { effectiveAgentPlan } from "./plans";
 
 /**
  * Immediate alerts for runs that failed, hung or went missing, and the
@@ -46,12 +47,12 @@ export async function sendTestWebhook(w: NonNullable<NotifySettings["webhook"]>,
   return post(webhookRequest(w, { agent: "test", host: "agenttracking", status: "failed", at: Date.now(), detail: "", url: `${SITE_ORIGIN}/app/fleet` }, lang, text));
 }
 
-type PendingRow = { id: string; owner: string; lang: string | null; agent_id: string; name: string; host: string; status: Alert["status"]; started_at: number; last_event_at: number; exit_code: number | null };
+type PendingRow = { id: string; owner: string; lang: string | null; agent_plan: string | null; agent_id: string; name: string; host: string; status: Alert["status"]; started_at: number; last_event_at: number; exit_code: number | null };
 
 export async function sendAlerts(now = Date.now(), post: WebhookPost = postWebhook): Promise<number> {
   const d = db();
   const rows = d.prepare(
-    `select r.id, a.owner, acc.lang, a.id as agent_id, a.name, a.host, r.status, r.started_at, r.last_event_at, r.exit_code
+    `select r.id, a.owner, acc.lang, acc.agent_plan, a.id as agent_id, a.name, a.host, r.status, r.started_at, r.last_event_at, r.exit_code
      from agent_runs r join agents a on a.id = r.agent_id join accounts acc on acc.email = a.owner
      where r.status in ('failed','hung','missed') and r.alerted_at is null and r.last_event_at >= ?
      order by a.owner, r.last_event_at`,
@@ -62,7 +63,9 @@ export async function sendAlerts(now = Date.now(), post: WebhookPost = postWebho
   let sent = 0;
   for (const [owner, list] of byOwner) {
     const lang = dashLang(list[0].lang);
-    const settings = getNotifySettings(owner);
+    const stored = getNotifySettings(owner);
+    // Webhook channels are a Pro feature after pricing starts; the stored configuration is kept, only not used.
+    const settings = effectiveAgentPlan(list[0].agent_plan).webhooks ? stored : { ...stored, webhook: null };
     const alerts: Alert[] = list.map((r) => ({
       agent: r.name, host: r.host, status: r.status, at: r.status === "hung" ? r.last_event_at : r.started_at,
       detail: r.status === "failed" && r.exit_code !== null ? `exit ${r.exit_code}` : "", url: `${SITE_ORIGIN}/app/fleet/${r.agent_id}`,

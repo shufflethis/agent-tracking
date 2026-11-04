@@ -104,12 +104,14 @@ describe("billing", () => {
   });
   it("reads a plan out of checkout and subscription events", () => {
     assert.deepEqual(interpretEvent({ type: "checkout.session.completed", data: { object: { metadata: { email: "a@x.com", plan: "pro" }, customer: "cus_1", subscription: "sub_1" } } }), {
+      product: "sites",
       email: "a@x.com",
       plan: "pro",
       customer: "cus_1",
       subscription: "sub_1",
     });
     assert.deepEqual(interpretEvent({ type: "customer.subscription.deleted", data: { object: { metadata: { email: "a@x.com" }, customer: "cus_1" } } }), {
+      product: "sites",
       email: "a@x.com",
       plan: "free",
       customer: "cus_1",

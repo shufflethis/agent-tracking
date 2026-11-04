@@ -26,7 +26,7 @@ it("upgrades a version-16 database without changing historical capture evidence"
     const row = upgraded.prepare("select content_hash, verifier_version, results_json, html_snapshot from content_captures where run_id='old-run'").get() as Record<string, unknown> | undefined;
     assert.ok(row);
     assert.deepEqual({ ...row }, { content_hash: "old-hash", verifier_version: "1", results_json: "[]", html_snapshot: "" });
-    assert.equal((upgraded.prepare("select max(version) as version from schema_migrations").get() as { version: number }).version, 21);
+    assert.equal((upgraded.prepare("select max(version) as version from schema_migrations").get() as { version: number }).version, 22);
   } finally {
     closeDb();
     if (previous === undefined) delete process.env.TRACKING_DB;

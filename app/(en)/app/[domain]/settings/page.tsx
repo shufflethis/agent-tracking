@@ -138,7 +138,7 @@ export default async function Page({ params, searchParams }: { params: Promise<{
               </tbody>
             </table>
           </div>
-          {billingConfigured() ? (
+          {billingConfigured() && (priceIdFor("pro") || priceIdFor("agency")) ? (
             <p style={{ display: "flex", gap: 12, flexWrap: "wrap", margin: 0 }}>
               {plan.id === "free" && priceIdFor("pro") ? <CheckoutButton plan="pro" label={c.upgradePro} /> : null}
               {plan.id !== "agency" && priceIdFor("agency") ? <CheckoutButton plan="agency" label={c.upgradeAgency} /> : null}

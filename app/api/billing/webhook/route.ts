@@ -1,5 +1,5 @@
 import { interpretEvent, verifyWebhook } from "@/lib/billing";
-import { ensureAccount, setPlan } from "@/lib/tracking/db";
+import { ensureAccount, setAgentPlan, setPlan } from "@/lib/tracking/db";
 
 export const runtime = "nodejs";
 
@@ -22,8 +22,10 @@ export async function POST(request: Request) {
   const outcome = interpretEvent(event);
   if (outcome) {
     ensureAccount(outcome.email);
-    setPlan(outcome.email, outcome.plan, { customer: outcome.customer, subscription: outcome.subscription });
-    console.log(`[billing] ${outcome.email} -> ${outcome.plan} (${event.type})`);
+    const stripe = { customer: outcome.customer, subscription: outcome.subscription };
+    if (outcome.product === "agents") setAgentPlan(outcome.email, outcome.plan, stripe);
+    else setPlan(outcome.email, outcome.plan, stripe);
+    console.log(`[billing] ${outcome.email} ${outcome.product} -> ${outcome.plan} (${event.type})`);
   }
   return Response.json({ received: true });
 }

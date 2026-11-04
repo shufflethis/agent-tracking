@@ -51,7 +51,7 @@ export default function DashboardShell({ account, site, view, title, area, child
           </div>
           <div style={{ textAlign: "right", fontSize: 13, color: "var(--muted)" }}>
             <p style={{ margin: "0 0 8px" }}>
-              {account.email} · {c.shell.planLine(plan.name, used.toLocaleString(numberLocale(lang)), allowance.toLocaleString(numberLocale(lang)))}
+              {account.email} · {c.shell.planLine(area === "fleet" ? (account.agent_plan === "pro" ? "Pro" : "Free") : plan.name, used.toLocaleString(numberLocale(lang)), allowance.toLocaleString(numberLocale(lang)))}
             </p>
             <p style={{ margin: 0, display: "flex", gap: 10, justifyContent: "flex-end", alignItems: "center" }}>
               <LangSwitch lang={lang} labelEn={c.actions.langEn} labelDe={c.actions.langDe} />

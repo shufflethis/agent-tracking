@@ -4,6 +4,7 @@ import CopyBlock from "@/components/CopyBlock";
 import { CONNECT_CLAUDE } from "@/lib/agents/format";
 import { claudeSetupPrompt, DISCONNECT_CLAUDE, WRAP_CRON } from "@/lib/agents/setup";
 import { AGENT_EVENTS_PER_MONTH, AGENT_LIMIT } from "@/lib/agents/types";
+import { AGENT_PLANS, AGENT_PRO_PRICE, pricingActive } from "@/lib/agents/plans";
 import { AGENT_EVENT_RETENTION_DAYS } from "@/lib/tracking/plans";
 import { CONTACT_EMAIL, GITHUB_URL, LEGAL } from "@/lib/site";
 
@@ -26,6 +27,9 @@ type Card = { k: string; t: string; d: string };
 
 function copy(lang: "en" | "de") {
   const n = (v: number) => v.toLocaleString(lang === "de" ? "de-DE" : "en-US");
+  // Before AGENT_PRICING_STARTS the beta terms apply and the paid plans are announced; after it they are the plans.
+  const live = pricingActive();
+  const freeN = AGENT_PLANS.free.agents, proN = AGENT_PLANS.pro.agents, pm = AGENT_PRO_PRICE.month, py = AGENT_PRO_PRICE.year;
   if (lang === "de")
     return {
       eyebrow: "Agent-Monitoring · Kostenlose Beta",
@@ -86,9 +90,17 @@ function copy(lang: "en" | "de") {
       why: "Agent Tracking hat damit angefangen, KI-Agenten auf Websites zu messen. Am 31. Oktober 2026 antwortete Boardy darauf: „now point it at their own agents“. Zwei Tage später lief das Monitoring auf unserem eigenen Server.",
       whyAlt: "Boardy (@boardyai), als Antwort an @Wuebbe am 31. Oktober 2026: „now point it at their own agents“. Screenshot des Originalposts auf X.",
       whyLink: "Zum Gespräch auf X ↗",
-      plansTitle: "Kostenlos in der Beta, selbst hostbar für immer",
+      plansTitle: live ? `Kostenlos starten, ${pm} $ wenn du mehr brauchst` : "Kostenlos in der Beta, selbst hostbar für immer",
       plans: [
-        { k: "Cloud · Beta", t: "Kostenlos", d: `Bis ${AGENT_LIMIT} Agents und ${n(AGENT_EVENTS_PER_MONTH)} Events im Monat. Ohne Kreditkarte. Bezahlpläne kommen erst, wenn das Produkt sie verdient hat, und nichts ändert sich ohne 30 Tage Vorankündigung per Mail.` },
+        ...(live
+          ? [
+              { k: "Cloud · Free", t: "Kostenlos", d: `Bis ${freeN} Agents, tägliches Briefing und E-Mail-Meldungen. Ohne Kreditkarte.` },
+              { k: "Cloud · Pro", t: `${pm} $/Monat oder ${py} $/Jahr`, d: `Bis ${proN} Agents, Meldungen an Telegram, Slack, Discord und Webhooks, OpenTelemetry und Task-Checks. Jederzeit zum Periodenende kündbar.` },
+            ]
+          : [
+              { k: "Cloud · Beta", t: "Kostenlos", d: `Bis ${AGENT_LIMIT} Agents und ${n(AGENT_EVENTS_PER_MONTH)} Events im Monat, alle Funktionen. Ohne Kreditkarte.` },
+              { k: "Nach der Beta", t: `Free oder Pro für ${pm} $/Monat`, d: `Free: ${freeN} Agents mit E-Mail-Meldungen. Pro: ${proN} Agents, alle Kanäle, OpenTelemetry und Task-Checks, ${pm} $/Monat oder ${py} $/Jahr. Vorher bekommst du 30 Tage Vorankündigung per Mail; deine bestehenden Agents laufen weiter.` },
+            ]),
         { k: "Selbst gehostet", t: "Dein Server, deine Daten", d: "Alles ist Open Source unter AGPL-3.0: CLI, Ingest, Dashboard, Alerts. Ein Node-Prozess, eine SQLite-Datei." },
       ] as Card[],
       source: "Quellcode und Anleitung auf GitHub",
@@ -103,7 +115,7 @@ function copy(lang: "en" | "de") {
         { q: "Funktioniert das mit Codex, Hermes oder OpenClaw?", a: "Noch nicht mit einer eigenen Anbindung. Bis dahin kannst du jeden Agent-Lauf, den du per Skript oder Cron startest, mit wrap umschließen, und Agents mit OpenTelemetry-Export können Traces direkt senden. Neue Anbindungen stehen im Changelog." },
         { q: "Für wen ist es nicht gedacht?", a: "Wenn du Prompts debuggen, Modellantworten vergleichen oder Token-Kosten messen willst, nimm eine LLM-Tracing-Plattform. Agent Tracking sieht Prompts absichtlich nie." },
         { q: "Wo liegen meine Daten, und wer steht dahinter?", a: `Die gehostete Version läuft auf Servern in ${LEGAL.hostingCountry === "Germany" ? "Deutschland" : LEGAL.hostingCountry} und wird von ${LEGAL.name} betrieben. Gespeichert werden nur Lauf-Metadaten. Lieber auf eigener Infrastruktur? Selbst hosten geht überall, wo Node läuft.` },
-        { q: "Was kostet es?", a: `Während der Beta nichts: bis ${AGENT_LIMIT} Agents und ${n(AGENT_EVENTS_PER_MONTH)} Events im Monat. Selbst gehostet ist es dauerhaft kostenlos.` },
+        { q: "Was kostet es?", a: live ? `Free kostet nichts (${freeN} Agents). Pro kostet ${pm} $ im Monat oder ${py} $ im Jahr (${proN} Agents, alle Kanäle). Selbst gehostet ist es dauerhaft kostenlos.` : `Während der Beta nichts: bis ${AGENT_LIMIT} Agents und ${n(AGENT_EVENTS_PER_MONTH)} Events im Monat. Danach gibt es Free (${freeN} Agents) und Pro für ${pm} $ im Monat, mit 30 Tagen Vorankündigung. Selbst gehostet ist es dauerhaft kostenlos.` },
         { q: "Wie aktualisiere ich die CLI?", a: "Führ den Verbindungsbefehl mit der neuen Version noch einmal aus. Die Hooks zeigen danach auf die neue Version." },
       ],
       finalTitle: "Verbinde deinen ersten Agent",
@@ -168,9 +180,17 @@ function copy(lang: "en" | "de") {
     why: "Agent Tracking started by measuring AI agents on websites. On October 31, 2026, Boardy replied: “now point it at their own agents”. Two days later the monitoring was running on our own server.",
     whyAlt: "Boardy (@boardyai), replying to @Wuebbe on October 31, 2026: “now point it at their own agents”. Screenshot of the original X post.",
     whyLink: "Read the conversation on X ↗",
-    plansTitle: "Free during the beta, self-hostable for good",
+    plansTitle: live ? `Free to start, $${pm} when you need more` : "Free during the beta, self-hostable for good",
     plans: [
-      { k: "Cloud · Beta", t: "Free", d: `Up to ${AGENT_LIMIT} agents and ${n(AGENT_EVENTS_PER_MONTH)} events a month. No card. Paid plans come when the product has earned them, and nothing changes without 30 days' notice by email.` },
+      ...(live
+        ? [
+            { k: "Cloud · Free", t: "Free", d: `Up to ${freeN} agents, daily briefing and email alerts. No card.` },
+            { k: "Cloud · Pro", t: `$${pm}/month or $${py}/year`, d: `Up to ${proN} agents, Telegram, Slack, Discord and webhook alerts, OpenTelemetry and task checks. Cancel any time, effective at the end of the period.` },
+          ]
+        : [
+            { k: "Cloud · Beta", t: "Free", d: `Up to ${AGENT_LIMIT} agents and ${n(AGENT_EVENTS_PER_MONTH)} events a month, every feature. No card.` },
+            { k: "After the beta", t: `Free, or Pro for $${pm}/month`, d: `Free: ${freeN} agents with email alerts. Pro: ${proN} agents, every channel, OpenTelemetry and task checks, $${pm}/month or $${py}/year. You get 30 days' notice by email first, and your existing agents keep running.` },
+          ]),
       { k: "Self-hosted", t: "Your server, your data", d: "Everything is open source under AGPL-3.0: CLI, ingest, dashboard, alerts. One Node process, one SQLite file." },
     ] as Card[],
     source: "Source and instructions on GitHub",
@@ -185,7 +205,7 @@ function copy(lang: "en" | "de") {
       { q: "Does it work with Codex, Hermes or OpenClaw?", a: "Not with a dedicated integration yet. Until then, wrap any agent run you start from a script or cron, and agents with an OpenTelemetry exporter can send traces directly. New integrations are announced in the changelog." },
       { q: "Who is it not for?", a: "If you need to debug prompts, compare model output or track token cost, use an LLM tracing platform. Agent Tracking deliberately never sees prompts." },
       { q: "Where is my data, and who is behind this?", a: `The hosted version runs on servers in ${LEGAL.hostingCountry}, operated by ${LEGAL.name}. Only run metadata is stored. Prefer your own infrastructure? Self-host it anywhere Node runs.` },
-      { q: "What does it cost?", a: `Nothing during the beta: up to ${AGENT_LIMIT} agents and ${n(AGENT_EVENTS_PER_MONTH)} events a month. Self-hosted it is free for good.` },
+      { q: "What does it cost?", a: live ? `Free costs nothing (${freeN} agents). Pro is $${pm} a month or $${py} a year (${proN} agents, every channel). Self-hosted it is free for good.` : `Nothing during the beta: up to ${AGENT_LIMIT} agents and ${n(AGENT_EVENTS_PER_MONTH)} events a month. After that there is Free (${freeN} agents) and Pro for $${pm} a month, with 30 days' notice. Self-hosted it is free for good.` },
       { q: "How do I update the CLI?", a: "Run the connect command with the new version again. The hooks then point at the new version." },
     ],
     finalTitle: "Connect your first agent",
@@ -319,7 +339,7 @@ export default function MonitoringHome({ lang }: { lang: "en" | "de" }) {
 
       <section className="shell section centered" id="plans">
         <h2>{c.plansTitle}</h2>
-        <Cards rows={c.plans} cols={2} />
+        <Cards rows={c.plans} cols={3} />
         <p className="formnote" style={{ marginTop: 16 }}>
           <a href={GITHUB_URL} rel="noopener">{c.source}</a> · {c.more}
         </p>

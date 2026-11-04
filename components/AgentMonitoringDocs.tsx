@@ -1,5 +1,6 @@
 import { CLI_COMMAND } from "@/lib/agents/format";
 import AgentConnectionScope from "@/components/AgentConnectionScope";
+import { AGENT_PLANS, AGENT_PRO_PRICE, pricingActive } from "@/lib/agents/plans";
 import { AGENT_EVENT_RETENTION_DAYS, AGENT_TAIL_RETENTION_DAYS, RAW_RETENTION_DAYS } from "@/lib/tracking/plans";
 
 /** Docs section "Monitor your own agents", EN and DE. Field list matches lib/agents/ingest.ts. */
@@ -14,10 +15,18 @@ const CMD = {
   off: `${CLI_COMMAND} disconnect claude`,
 };
 
+const LIVE = () => pricingActive();
+const PRICE_EN = () => LIVE()
+  ? `Free: ${AGENT_PLANS.free.agents} agents with email alerts. Pro: ${AGENT_PLANS.pro.agents} agents, every channel, OpenTelemetry and task checks, $${AGENT_PRO_PRICE.month}/month or $${AGENT_PRO_PRICE.year}/year.`
+  : `Free during the beta, up to ${AGENT_PLANS.pro.agents} agents and 50,000 events a month.`;
+const PRICE_DE = () => LIVE()
+  ? `Free: ${AGENT_PLANS.free.agents} Agents mit E-Mail-Meldungen. Pro: ${AGENT_PLANS.pro.agents} Agents, alle Kanäle, OpenTelemetry und Task-Checks, ${AGENT_PRO_PRICE.month} $/Monat oder ${AGENT_PRO_PRICE.year} $/Jahr.`
+  : `Kostenlos während der Beta, bis ${AGENT_PLANS.pro.agents} Agents und 50.000 Events im Monat.`;
+
 const COPY = {
   en: {
     title: "Monitor your own agents",
-    intro: "The other side of agent traffic: what your own Claude Code loops and cron jobs did while you were away. Free during the beta, up to 50 agents and 50,000 events a month.",
+    get intro() { return `The other side of agent traffic: what your own Claude Code loops and cron jobs did while you were away. ${PRICE_EN()}`; },
     steps: [
       ["1. Connect this machine", "Shows a code and opens the browser; confirm it while signed in. Each machine gets its own token you can revoke in the settings.", CMD.login],
       ["2. Track Claude Code", "Adds hooks to ~/.claude/settings.json (a backup is written next to it, your own hooks stay). Use --project for .claude/settings.json in the current folder.", CMD.claude],
@@ -32,7 +41,7 @@ const COPY = {
   },
   de: {
     title: "Eigene Agents überwachen",
-    intro: "Die andere Seite von Agent-Traffic: was deine eigenen Claude-Code-Loops und Cron-Jobs gemacht haben, während du weg warst. Kostenlos während der Beta, bis 50 Agents und 50.000 Events im Monat.",
+    get intro() { return `Die andere Seite von Agent-Traffic: was deine eigenen Claude-Code-Loops und Cron-Jobs gemacht haben, während du weg warst. ${PRICE_DE()}`; },
     steps: [
       ["1. Maschine verbinden", "Zeigt einen Code und öffnet den Browser; bestätige ihn, während du angemeldet bist. Jede Maschine bekommt ein eigenes Token, das du in den Einstellungen widerrufen kannst.", CMD.login],
       ["2. Claude Code tracken", "Trägt Hooks in ~/.claude/settings.json ein (daneben entsteht ein Backup, deine eigenen Hooks bleiben). Mit --project für .claude/settings.json im aktuellen Ordner.", CMD.claude],

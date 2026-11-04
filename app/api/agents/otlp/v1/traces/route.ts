@@ -3,12 +3,16 @@ import { bearerFrom } from "@/lib/tracking/api-token";
 import { BodyLimitError, readLimitedBody } from "@/lib/tracking/request-body";
 import { agentTokenOwner } from "@/lib/agents/tokens";
 import { parseOtlp, recordSpans } from "@/lib/agents/otlp";
+import { effectiveAgentPlan } from "@/lib/agents/plans";
+import { getAccount } from "@/lib/tracking/db";
+import { SITE_ORIGIN } from "@/lib/site";
 export const runtime = "nodejs";
-const problem = (message: string, status: number) => Response.json({ code: status === 401 ? 16 : status === 429 || status === 413 ? 8 : status === 415 ? 12 : 3, message }, { status, ...(status === 429 ? { headers: { "Retry-After": "60" } } : {}) });
+const problem = (message: string, status: number) => Response.json({ code: status === 401 ? 16 : status === 429 || status === 413 ? 8 : status === 415 ? 12 : status === 403 ? 7 : 3, message }, { status, ...(status === 429 ? { headers: { "Retry-After": "60" } } : {}) });
 export async function POST(request: Request) {
   if (!take(clientIp(request.headers), "ingest").ok) return problem("Rate limited", 429);
   const credential = agentTokenOwner(bearerFrom(request.headers));
   if (!credential) return problem("Invalid agent token", 401);
+  if (!effectiveAgentPlan(getAccount(credential.owner)?.agent_plan).otlp) return problem(`OpenTelemetry is part of the Pro plan: ${SITE_ORIGIN}/app/fleet/settings#plan`, 403);
   if (request.headers.get("content-type")?.split(";")[0].trim() !== "application/json") return problem("Use OTLP/HTTP JSON (http/json). Protobuf and gRPC are not supported.", 415);
   if (request.headers.get("content-encoding") && request.headers.get("content-encoding") !== "identity") return problem("Compression is not supported; send uncompressed JSON", 415);
   let body: unknown;

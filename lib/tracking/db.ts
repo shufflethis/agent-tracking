@@ -7,6 +7,7 @@ import { MEASUREMENT_VERSION, type BusinessOutcome, type IdentityEvidence, type 
 import { redactPath, safeErrorClass, safeEventName } from "./privacy";
 import { AGENT_EVENT_RETENTION_DAYS, AGENT_TAIL_RETENTION_DAYS, RAW_RETENTION_DAYS, type PlanId } from "./plans";
 import { planFor } from "./plans";
+import type { AgentPlanId } from "../agents/plans";
 import { browserUsage, logUsage } from "./usage-rules";
 import { CHECK_ORIGIN } from "../site";
 import { importLines, type ImportResult, type LogAttempt } from "./log-import";
@@ -467,6 +468,13 @@ function migrate(instance: DatabaseSync): void {
     create index if not exists agent_spans_received on agent_spans(received_at);`);
     instance.prepare("insert into schema_migrations (version, applied_at) values (21, ?)").run(Date.now());
   }
+  if ((current.version ?? 0) < 22) {
+    // Agent monitoring has its own plan and subscription; the website plan and the Stripe customer stay as they are.
+    const columns = new Set((instance.prepare("pragma table_info(accounts)").all() as { name: string }[]).map(c => c.name));
+    if (!columns.has("agent_plan")) instance.exec("alter table accounts add column agent_plan text not null default 'free'");
+    if (!columns.has("agent_stripe_subscription")) instance.exec("alter table accounts add column agent_stripe_subscription text");
+    instance.prepare("insert into schema_migrations (version, applied_at) values (22, ?)").run(Date.now());
+  }
   instance.exec("commit");
   } catch (err) {
     instance.exec("rollback");
@@ -538,6 +546,9 @@ export type Account = {
   digest: number;
   /** Dashboard language, en or de; null until the first sign-in picks one. */
   lang: string | null;
+  /** Agent monitoring plan, separate from the website plan above. */
+  agent_plan: AgentPlanId;
+  agent_stripe_subscription: string | null;
 };
 
 export function ensureAccount(email: string, now = Date.now()): Account {
@@ -554,6 +565,15 @@ export function setPlan(email: string, plan: PlanId, stripe?: { customer?: strin
   db()
     .prepare("update accounts set plan = ?, stripe_customer = coalesce(?, stripe_customer), stripe_subscription = coalesce(?, stripe_subscription) where email = ?")
     .run(plan, stripe?.customer ?? null, stripe?.subscription ?? null, email.toLowerCase());
+}
+
+/** Agent monitoring plan. The Stripe customer is shared with the website plan, the subscription is not. */
+export function setAgentPlan(email: string, plan: AgentPlanId, stripe?: { customer?: string | null; subscription?: string | null }): void {
+  // Back on free, the subscription is gone; otherwise keep the stored one unless a new one arrives.
+  db()
+    .prepare(`update accounts set agent_plan = ?, stripe_customer = coalesce(?, stripe_customer),
+      agent_stripe_subscription = case when ? = 'free' then null else coalesce(?, agent_stripe_subscription) end where email = ?`)
+    .run(plan, stripe?.customer ?? null, plan, stripe?.subscription ?? null, email.toLowerCase());
 }
 
 export function setApiToken(email: string, hash: string | null, now = Date.now()): void {

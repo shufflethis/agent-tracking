@@ -39,6 +39,7 @@ export type AgentEvent = {
   tail?: string;
 };
 
+/** Agents on the largest plan; per-plan limits are in ./plans.ts. */
 export const AGENT_LIMIT = 50;
 export const AGENT_EVENTS_PER_MONTH = 50_000;
 export const MAX_BATCH = 100;

@@ -3,6 +3,9 @@ import { bearerFrom } from "@/lib/tracking/api-token";
 import { BodyLimitError, readLimitedBody } from "@/lib/tracking/request-body";
 import { parseAgentBatch, recordAgentEvents } from "@/lib/agents/ingest";
 import { agentTokenOwner } from "@/lib/agents/tokens";
+import { effectiveAgentPlan } from "@/lib/agents/plans";
+import { getAccount } from "@/lib/tracking/db";
+import { SITE_ORIGIN } from "@/lib/site";
 
 export const runtime = "nodejs";
 
@@ -23,7 +26,10 @@ export async function POST(request: Request) {
   const parsed = parseAgentBatch(body);
   if (!parsed) return problem("Send {events: [...]} with at most 100 documented events.", 422);
   const result = recordAgentEvents(credential.owner, parsed.events);
-  if (result.rejected === "quota") return problem("Monthly agent event limit reached (50,000 during beta).", 429);
-  if (result.rejected === "agent_limit" && result.accepted === 0) return problem("Agent limit reached (50 during beta).", 429);
+  if (result.rejected === "quota") return problem("Monthly agent event limit reached (50,000).", 429);
+  if (result.rejected === "agent_limit" && result.accepted === 0) {
+    const limit = effectiveAgentPlan(getAccount(credential.owner)?.agent_plan).agents;
+    return problem(`Agent limit reached (${limit} on your plan). Existing agents keep reporting; upgrade to add more: ${SITE_ORIGIN}/app/fleet/settings#plan`, 429);
+  }
   return Response.json({ ok: true, accepted: result.accepted, duplicates: result.duplicates, dropped: parsed.dropped, agentLimit: result.rejected === "agent_limit" });
 }
