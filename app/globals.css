@@ -1948,3 +1948,5 @@ td.num {
 .foot-note p a { color: var(--muted); }
 .hwebsites .btn { max-width: 100%; white-space: normal; text-align: center; }
 @media (max-width: 620px) { .hbuilder { grid-template-columns: 1fr; } .hwebsites { padding: 24px; } }
+.hhero-fit { margin: 18px auto 0; max-width: 60ch; font-size: 15px; color: var(--muted); }
+.hhero-fit::before { content: "→ "; color: var(--cyan); }

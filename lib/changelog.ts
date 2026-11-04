@@ -168,6 +168,17 @@ cp .env.example .env && docker compose up -d` },
 
 export const PLANNED: Planned[] = [
   {
+    title: { en: "Guardrails: block risky commands before they run", de: "Leitplanken: riskante Befehle blockieren, bevor sie laufen" },
+    body: {
+      en: "Rules that stop a Claude Code tool call before it runs, such as rm -rf outside the project, a force push to main, reading .env or ~/.ssh, or curl piped into a shell. The rules are checked on your machine; only the verdict is sent (\"blocked: force-push\"), never the command itself. Planned for Pro.",
+      de: "Regeln, die einen Tool-Aufruf von Claude Code stoppen, bevor er läuft, etwa rm -rf außerhalb des Projekts, Force-Push auf main, Lesen von .env oder ~/.ssh oder curl direkt in eine Shell. Geprüft wird auf deiner Maschine; gesendet wird nur das Ergebnis („blockiert: force-push“), nie der Befehl selbst. Geplant für Pro.",
+    },
+    today: {
+      en: "Today: every tool call shows up by name and result, and changes to your Claude Code hooks and settings show up as configuration changes. Which rule do you want first? Tell @wuebbe on X.",
+      de: "Heute schon: Jeder Tool-Aufruf erscheint mit Name und Ergebnis, und Änderungen an deinen Claude-Code-Hooks und -Einstellungen erscheinen als Konfigurationsänderung. Welche Regel willst du zuerst? Schreib @wuebbe auf X.",
+    },
+  },
+  {
     title: { en: "Your time zone", de: "Deine Zeitzone" },
     body: { en: "Briefing hour and dashboard times in your own time zone, including US time zones.", de: "Briefing-Stunde und Zeiten im Dashboard in deiner eigenen Zeitzone, auch US-Zeitzonen." },
     today: { en: "Today: times are Central European Time. Pick the briefing hour in the settings accordingly; 13:00 CET is 7 AM Eastern.", de: "Heute: Zeiten sind mitteleuropäische Zeit. Wähl die Briefing-Stunde in den Einstellungen entsprechend." },

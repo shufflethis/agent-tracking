@@ -35,6 +35,7 @@ function copy(lang: "en" | "de") {
       eyebrow: live ? `Agent-Monitoring · Kostenlos für ${freeN} Agents` : "Agent-Monitoring · Kostenlose Beta",
       h1: "Was macht dein Agent gerade?",
       sub: "Ein Agent kann scheitern, ohne abzustürzen: Er hängt, wartet auf dein „Ja“ oder startet gar nicht erst. Agent Tracking bringt deine Claude-Code-Sessions, Cron-Jobs und eigenen Agents in eine Liste und sagt dir, welcher dich gerade braucht.",
+      fit: "Für Entwickler und Teams, die Claude Code über Nacht, auf mehreren Servern oder per Cron laufen lassen.",
       pick: "Such dir einen Weg aus. Beide machen dasselbe.",
       terminal: "Ins Terminal einfügen",
       terminalHint: "Zeigt einen Code, den du im Browser bestätigst. Ab der nächsten Claude-Code-Session wird getrackt.",
@@ -137,6 +138,7 @@ function copy(lang: "en" | "de") {
     eyebrow: live ? `Agent monitoring · Free for ${freeN} agents` : "Agent monitoring · Free beta",
     h1: "What's your agent doing right now?",
     sub: "An agent can fail without crashing: it stalls, waits for your “yes”, or never starts. Agent Tracking puts your Claude Code sessions, cron jobs and own agents on one list and tells you which one needs you.",
+    fit: "For developers and teams who let Claude Code run overnight, across servers or from cron.",
     pick: "Pick one way. Both do the same thing.",
     terminal: "Paste into your terminal",
     terminalHint: "Shows a code you confirm in the browser. Tracking starts with your next Claude Code session.",
@@ -288,6 +290,7 @@ export default function MonitoringHome({ lang }: { lang: "en" | "de" }) {
         <p className="eyebrow">{c.eyebrow}</p>
         <h1>{c.h1}</h1>
         <p className="hhero-sub">{c.sub}</p>
+        <p className="hhero-fit">{c.fit}</p>
       </section>
 
       <section className="shell hconnect" id="connect">
