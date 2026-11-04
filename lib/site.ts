@@ -117,3 +117,6 @@ export const VERIFY = {
 export const INDEXNOW_KEY = trim(process.env.INDEXNOW_KEY);
 
 export const LEGAL_LINE = [LEGAL.name, LEGAL.addressLines.join(", ")].filter(Boolean).join(" · ");
+
+/** The developer, shown on the home page and in the footer. Avatar copied from the public X profile into public/img. */
+export const BUILDER = { name: "Gorden Wuebbe", handle: "wuebbe", url: "https://x.com/wuebbe", avatar: "/img/wuebbe.webp" };

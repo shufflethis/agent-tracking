@@ -112,6 +112,11 @@ type Dict = {
     dpa: string;
     note: string;
     check: string;
+    tagline: string;
+    monitoring: string;
+    sitesTitle: string;
+    builtBy: string;
+    operated: string;
   };
 };
 
@@ -140,6 +145,11 @@ export const DICT: Record<Locale, Dict> = {
       dpa: "Data processing agreement",
       note: "Open source under AGPL-3.0. Hosted in Germany.",
       check: "Agent readiness check by webmcp-tool.com",
+      tagline: "Know which of your agents needs you: Claude Code sessions, cron jobs and your own agents on one list.",
+      monitoring: "Agent monitoring",
+      sitesTitle: "Websites",
+      builtBy: "Built by",
+      operated: "Servers in Germany (EU)",
     },
   },
   de: {
@@ -166,6 +176,11 @@ export const DICT: Record<Locale, Dict> = {
       dpa: "Auftragsverarbeitungsvertrag",
       note: "Open Source unter AGPL-3.0. Gehostet in Deutschland.",
       check: "Agent Readiness Check von webmcp-tool.com",
+      tagline: "Wisse, welcher deiner Agents dich braucht: Claude-Code-Sessions, Cron-Jobs und eigene Agents in einer Liste.",
+      monitoring: "Agent-Monitoring",
+      sitesTitle: "Websites",
+      builtBy: "Gebaut von",
+      operated: "Server in Deutschland (EU)",
     },
   },
 };

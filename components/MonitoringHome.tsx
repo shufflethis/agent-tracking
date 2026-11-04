@@ -6,7 +6,7 @@ import { claudeSetupPrompt, DISCONNECT_CLAUDE, WRAP_CRON } from "@/lib/agents/se
 import { AGENT_EVENTS_PER_MONTH, AGENT_LIMIT } from "@/lib/agents/types";
 import { AGENT_PLANS, AGENT_PRO_PRICE, pricingActive } from "@/lib/agents/plans";
 import { AGENT_EVENT_RETENTION_DAYS } from "@/lib/tracking/plans";
-import { CONTACT_EMAIL, GITHUB_URL, LEGAL } from "@/lib/site";
+import { BUILDER, CONTACT_EMAIL, GITHUB_URL, LEGAL } from "@/lib/site";
 
 /**
  * The home page: monitoring your own agents. The website analytics moved to
@@ -32,15 +32,20 @@ function copy(lang: "en" | "de") {
   const freeN = AGENT_PLANS.free.agents, proN = AGENT_PLANS.pro.agents, pm = AGENT_PRO_PRICE.month, py = AGENT_PRO_PRICE.year;
   if (lang === "de")
     return {
-      eyebrow: "Agent-Monitoring · Kostenlose Beta",
+      eyebrow: live ? `Agent-Monitoring · Kostenlos für ${freeN} Agents` : "Agent-Monitoring · Kostenlose Beta",
       h1: "Was macht dein Agent gerade?",
       sub: "Ein Agent kann scheitern, ohne abzustürzen: Er hängt, wartet auf dein „Ja“ oder startet gar nicht erst. Agent Tracking bringt deine Claude-Code-Sessions, Cron-Jobs und eigenen Agents in eine Liste und sagt dir, welcher dich gerade braucht.",
       pick: "Such dir einen Weg aus. Beide machen dasselbe.",
       terminal: "Ins Terminal einfügen",
       terminalHint: "Zeigt einen Code, den du im Browser bestätigst. Ab der nächsten Claude-Code-Session wird getrackt.",
-      claude: "Oder in Claude Code einfügen",
+      claude: "In Claude Code einfügen",
       claudeHint: "Claude führt die Befehle aus, wartet auf deine Bestätigung und fragt, bevor es die Crontab ändert.",
-      trust: `Open Source (AGPL-3.0). Von ${LEGAL.name}. Ohne Kreditkarte. Keine Prompts, keine Tool-Ausgaben.`,
+      trust: ["Open Source, AGPL-3.0", live ? `Kostenlos für ${freeN} Agents, ohne Karte` : "Ohne Kreditkarte", "Keine Prompts verlassen deine Maschine"],
+      kick: { alt: "Heute", crit: "Der Maßstab", catch: "Was gemeldet wird", shots: "Beweis", steps: "Einrichtung", today: "Anbindungen", why: "Dahinter", plans: "Preise", faq: "FAQ", start: "Los geht's" },
+      builtBy: "Gebaut von",
+      builtText: "Gorden baut Agent Tracking und geo-tool.com und überwacht damit jeden Tag die Claude-Code-Sessions und Cron-Jobs auf dem Server, auf dem auch diese Seite läuft. Fragen, Bugs oder Wünsche für Anbindungen: schreib auf X.",
+      builtCta: "@wuebbe auf X folgen",
+      operated: `Betrieben von ${LEGAL.name} (USA), Server in Deutschland (EU)`,
       altTitle: "Wie du heute wahrscheinlich nachschaust",
       altDek: "Alle drei Wege sind sinnvoll, für das jeweils Richtige.",
       alts: [
@@ -54,7 +59,7 @@ function copy(lang: "en" | "de") {
       dashboard: "Zum Agent-Dashboard",
       how: "So funktioniert es",
       shotsTitle: "Echte Läufe, kein Demo-Datensatz",
-      shotsDek: "Das ist unser eigener Server, nicht ein Kunde. Wir überwachen damit jeden Tag unsere Claude-Code-Projekte und Cron-Jobs. Kundenlogos haben wir noch keine; verbinde eine Maschine und urteile selbst.",
+      shotsDek: "Das ist der eigene Server des Entwicklers, kein Kunde. Wir überwachen damit jeden Tag unsere Claude-Code-Projekte und Cron-Jobs. Kundenlogos haben wir noch keine; verbinde eine Maschine und urteile selbst.",
       shot1: "18 Agents auf einer Maschine. Sieben brauchen Aufmerksamkeit, der Rest ist ruhig. Aufnahme vom 3. November 2026; ältere Doppel-Einträge aus temporären Ordnern sind ausgeblendet.",
       shot1Alt: "Agent-Liste: Claude-Code-Sessions und Cron-Jobs mit Status wie Problem, hängt vermutlich, erwarteter Lauf fehlt und kein aktiver Alarm",
       shot2: "Eine Claude-Code-Session, Event für Event. Tool-Namen und Ergebnisse, keine Prompts, keine Ausgaben.",
@@ -91,6 +96,13 @@ function copy(lang: "en" | "de") {
       whyAlt: "Boardy (@boardyai), als Antwort an @Wuebbe am 31. Oktober 2026: „now point it at their own agents“. Screenshot des Originalposts auf X.",
       whyLink: "Zum Gespräch auf X ↗",
       plansTitle: live ? `Kostenlos starten, ${pm} $ wenn du mehr brauchst` : "Kostenlos in der Beta, selbst hostbar für immer",
+      tiers: [
+        { id: "free", name: "Free", price: "0 $", per: "für immer", note: "Ohne Kreditkarte", cta: "Kostenlos starten", features: [`${freeN} Agents`, "Claude Code, Cron-Jobs und Skripte", "Tägliches Briefing per E-Mail", "Sofort-Meldungen per E-Mail", `${AGENT_EVENT_RETENTION_DAYS} Tage Verlauf`] },
+        { id: "pro", name: "Pro", price: `${pm} $`, per: "pro Monat", note: `oder ${py} $ im Jahr, zwei Monate geschenkt`, cta: "Mit Pro starten", features: [`${proN} Agents`, "Alles aus Free", "Meldungen an Telegram, Slack, Discord und Webhooks", "OpenTelemetry für eigene Agents", "Task-Checks für Cron-Jobs"] },
+        { id: "self", name: "Selbst gehostet", price: "0 $", per: "auf deinem Server", note: "Open Source unter AGPL-3.0", cta: "Auf GitHub ansehen", features: ["Der komplette Code: CLI, Ingest, Dashboard, Meldungen", "Ein Node-Prozess, eine SQLite-Datei", "Deine Daten verlassen deinen Server nie"] },
+      ],
+      tierPick: "Empfohlen ab 6 Agents",
+      tierFine: "Preise in US-Dollar, zzgl. Steuern, wo fällig. Monatlich kündbar, wirksam zum Ende des Zeitraums. Upgrade und Kündigung im Dashboard.",
       plans: [
         ...(live
           ? [
@@ -122,15 +134,20 @@ function copy(lang: "en" | "de") {
       finalDek: "Ein Befehl, eine Bestätigung im Browser. Ab der nächsten Session siehst du, was er tut.",
     };
   return {
-    eyebrow: "Agent monitoring · Free beta",
+    eyebrow: live ? `Agent monitoring · Free for ${freeN} agents` : "Agent monitoring · Free beta",
     h1: "What's your agent doing right now?",
     sub: "An agent can fail without crashing: it stalls, waits for your “yes”, or never starts. Agent Tracking puts your Claude Code sessions, cron jobs and own agents on one list and tells you which one needs you.",
     pick: "Pick one way. Both do the same thing.",
     terminal: "Paste into your terminal",
     terminalHint: "Shows a code you confirm in the browser. Tracking starts with your next Claude Code session.",
-    claude: "Or paste into Claude Code",
+    claude: "Paste into Claude Code",
     claudeHint: "Claude runs the commands, waits for your confirmation and asks before it changes your crontab.",
-    trust: `Open source (AGPL-3.0). By ${LEGAL.name}. No credit card. No prompts, no tool output.`,
+    trust: ["Open source, AGPL-3.0", live ? `Free for ${freeN} agents, no card` : "No credit card", "No prompts leave your machine"],
+    kick: { alt: "Today", crit: "The bar", catch: "What it flags", shots: "Proof", steps: "Setup", today: "Integrations", why: "Behind it", plans: "Pricing", faq: "FAQ", start: "Get started" },
+    builtBy: "Built by",
+    builtText: "Gorden builds Agent Tracking and geo-tool.com, and uses it every day to watch the Claude Code sessions and cron jobs on the server this site runs on. Questions, bugs or an integration you need: ask on X.",
+    builtCta: "Follow @wuebbe on X",
+    operated: `Operated by ${LEGAL.name} (USA), servers in Germany (EU)`,
     altTitle: "How you probably check today",
     altDek: "All three are reasonable, each for the right job.",
     alts: [
@@ -144,7 +161,7 @@ function copy(lang: "en" | "de") {
     dashboard: "Open the agent dashboard",
     how: "How it works",
     shotsTitle: "Real runs, not a demo data set",
-    shotsDek: "This is our own server, not a customer. We use it every day to watch our Claude Code projects and cron jobs. No customer logos yet; connect one machine and judge for yourself.",
+    shotsDek: "This is the developer's own server, not a customer. We use it every day to watch our Claude Code projects and cron jobs. No customer logos yet; connect one machine and judge for yourself.",
     shot1: "18 agents on one machine. Seven need attention, the rest are quiet. Captured on November 3, 2026; older duplicate entries from temporary folders are hidden.",
     shot1Alt: "Agent list: Claude Code sessions and cron jobs with statuses such as problem, suspected stuck, expected run missing and no active alert",
     shot2: "One Claude Code session, event by event. Tool names and results; no prompts, no output.",
@@ -181,6 +198,13 @@ function copy(lang: "en" | "de") {
     whyAlt: "Boardy (@boardyai), replying to @Wuebbe on October 31, 2026: “now point it at their own agents”. Screenshot of the original X post.",
     whyLink: "Read the conversation on X ↗",
     plansTitle: live ? `Free to start, $${pm} when you need more` : "Free during the beta, self-hostable for good",
+    tiers: [
+      { id: "free", name: "Free", price: "$0", per: "forever", note: "No credit card", cta: "Start free", features: [`${freeN} agents`, "Claude Code, cron jobs and scripts", "Daily briefing by email", "Instant alerts by email", `${AGENT_EVENT_RETENTION_DAYS} days of history`] },
+      { id: "pro", name: "Pro", price: `$${pm}`, per: "per month", note: `or $${py} a year, two months free`, cta: "Start with Pro", features: [`${proN} agents`, "Everything in Free", "Telegram, Slack, Discord and webhook alerts", "OpenTelemetry for your own agents", "Task checks for cron jobs"] },
+      { id: "self", name: "Self-hosted", price: "$0", per: "on your server", note: "Open source under AGPL-3.0", cta: "View on GitHub", features: ["All of the code: CLI, ingest, dashboard, alerts", "One Node process, one SQLite file", "Your data never leaves your server"] },
+    ],
+    tierPick: "Recommended from 6 agents",
+    tierFine: "Prices in US dollars, plus tax where due. Cancel any time, effective at the end of the period. Upgrade and cancel in the dashboard.",
     plans: [
       ...(live
         ? [
@@ -223,15 +247,26 @@ export function monitoringFaqSchema(lang: "en" | "de") {
 
 function Cards({ rows, cols }: { rows: Card[]; cols: 2 | 3 | 4 }) {
   return (
-    <div className={`grid${cols}`} style={{ marginTop: 22, gap: 18 }}>
+    <div className={`grid${cols} hcards`}>
       {rows.map((r) => (
-        <article className="card" style={{ padding: 24 }} key={r.t}>
+        <article className="card hcard" key={r.t}>
           <p className="smallcaps">{r.k}</p>
-          <h3 style={{ fontSize: 19 }}>{r.t}</h3>
-          <p style={{ color: "var(--ink-2)", marginBottom: 0 }}>{r.d}</p>
+          <h3>{r.t}</h3>
+          <p>{r.d}</p>
         </article>
       ))}
     </div>
+  );
+}
+
+/** Section header: a small label, the headline, an optional lead. One rhythm for every section. */
+function Head({ kick, title, dek }: { kick: string; title: string; dek?: string }) {
+  return (
+    <header className="hhead">
+      <p className="hkick">{kick}</p>
+      <h2>{title}</h2>
+      {dek ? <p className="hdek">{dek}</p> : null}
+    </header>
   );
 }
 
@@ -240,114 +275,164 @@ export default function MonitoringHome({ lang }: { lang: "en" | "de" }) {
   const de = lang === "de";
   const L = (p: string) => (de ? `/de${p === "/" ? "" : p}` : p);
   const login = de ? "/login?lang=de&next=/app/fleet" : "/login?next=/app/fleet";
+  const loginPro = de ? "/login?lang=de&next=/app/fleet/settings" : "/login?next=/app/fleet/settings";
   const prompt = claudeSetupPrompt(lang);
+  const live = pricingActive();
+  const tierHref = (id: string) => (id === "self" ? GITHUB_URL : id === "pro" ? loginPro : login);
 
   return (
-    <>
+    <div className="home">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(monitoringFaqSchema(lang)) }} />
 
-      <section className="shell pagehead" style={{ paddingTop: 64, paddingBottom: 12 }}>
+      <section className="shell hhero">
         <p className="eyebrow">{c.eyebrow}</p>
-        <h1 style={{ fontSize: "clamp(32px,5.4vw,60px)", lineHeight: 1.05, maxWidth: "16ch", marginBottom: 20 }}>{c.h1}</h1>
-        <p style={{ fontSize: "clamp(17px,2.1vw,21px)", lineHeight: 1.55, color: "var(--ink)", maxWidth: "56ch", marginTop: 0, marginBottom: 26 }}>{c.sub}</p>
+        <h1>{c.h1}</h1>
+        <p className="hhero-sub">{c.sub}</p>
       </section>
 
-      <section className="shell" id="connect" style={{ paddingBottom: 8 }}>
-        <p className="formnote" style={{ textAlign: "center", marginBottom: 14 }}>{c.pick}</p>
-        <div className="grid2 connectgrid" style={{ gap: 18 }}>
-          <CopyBlock label={c.terminal} text={CONNECT_CLAUDE} lang={lang} hint={c.terminalHint} />
-          <CopyBlock label={c.claude} text={prompt} lang={lang} hint={c.claudeHint} />
+      <section className="shell hconnect" id="connect">
+        <p className="hpick">{c.pick}</p>
+        <div className="hconnect-stack">
+          <CopyBlock kind="terminal" label={c.terminal} text={CONNECT_CLAUDE} lang={lang} hint={c.terminalHint} />
+          <p className="hor" aria-hidden="true"><span>{de ? "oder" : "or"}</span></p>
+          <CopyBlock kind="prompt" label={c.claude} text={prompt} lang={lang} hint={c.claudeHint} />
         </div>
-        <p style={{ display: "flex", gap: 18, justifyContent: "center", alignItems: "center", flexWrap: "wrap", marginTop: 8 }}>
+        <div className="hctas">
           <Link className="btn" href={login}>{c.dashboard}</Link>
-          <Link href={`${L("/docs")}#agent-monitoring`}>{c.how}</Link>
-        </p>
-        <p className="formnote" style={{ textAlign: "center" }}>{c.trust}</p>
+          <Link className="btn ghost" href={`${L("/docs")}#agent-monitoring`}>{c.how}</Link>
+        </div>
+        <ul className="htrust">
+          {c.trust.map((t) => <li key={t}>{t}</li>)}
+          <li className="htrust-by">
+            <a href={BUILDER.url} target="_blank" rel="noopener">
+              <Image src={BUILDER.avatar} alt="" width={22} height={22} unoptimized />
+              {c.builtBy} @{BUILDER.handle}
+            </a>
+          </li>
+        </ul>
       </section>
 
-      <section className="shell section centered" id="alternatives">
-        <h2>{c.altTitle}</h2>
-        <p className="dek" style={{ maxWidth: "56ch" }}>{c.altDek}</p>
+      <section className="shell hsec" id="alternatives">
+        <Head kick={c.kick.alt} title={c.altTitle} dek={c.altDek} />
         <Cards rows={c.alts} cols={3} />
       </section>
 
-      <section className="shell section centered" id="criteria">
-        <h2>{c.critTitle}</h2>
+      <section className="shell hsec" id="criteria">
+        <Head kick={c.kick.crit} title={c.critTitle} />
         <ul className="critlist">
           {c.crit.map((x) => <li key={x}>{x}</li>)}
         </ul>
-        <p className="dek" style={{ maxWidth: "60ch", marginTop: 18 }}>{c.intro}</p>
+        <p className="hafter">{c.intro}</p>
       </section>
 
-      <section className="shell section centered" id="catches">
-        <h2>{c.catchTitle}</h2>
-        <Cards rows={c.catches} cols={4} />
-        <p className="dek" style={{ maxWidth: "62ch", marginTop: 22 }}>{c.alerts}</p>
-      </section>
+      <div className="hband">
+        <section className="shell hsec" id="catches">
+          <Head kick={c.kick.catch} title={c.catchTitle} />
+          <Cards rows={c.catches} cols={4} />
+          <p className="hafter">{c.alerts}</p>
+        </section>
+      </div>
 
-      <section className="shell section centered" id="screens">
-        <h2>{c.shotsTitle}</h2>
-        <p className="dek" style={{ maxWidth: "62ch" }}>{c.shotsDek}</p>
-        <div className="grid2" style={{ gap: 18, marginTop: 22, textAlign: "left" }}>
+      <section className="shell hsec" id="screens">
+        <Head kick={c.kick.shots} title={c.shotsTitle} dek={c.shotsDek} />
+        <div className="grid2 hshots">
           {[["/img/agents/fleet.webp", c.shot1Alt, c.shot1, 820], ["/img/agents/timeline.webp", c.shot2Alt, c.shot2, 980]].map(([src, alt, cap, h]) => (
-            <figure key={src} style={{ margin: 0 }}>
-              <Image src={src as string} alt={alt as string} width={1160} height={h as number} unoptimized style={{ display: "block", width: "100%", height: "auto", aspectRatio: "1160 / 820", objectFit: "cover", objectPosition: "top left", borderRadius: 12, border: "1px solid var(--rule)" }} />
-              <figcaption style={{ fontSize: 13, color: "var(--muted)", marginTop: 8 }}>{cap}</figcaption>
+            <figure key={src as string}>
+              <Image src={src as string} alt={alt as string} width={1160} height={h as number} unoptimized />
+              <figcaption>{cap}</figcaption>
             </figure>
           ))}
         </div>
       </section>
 
-      <section className="shell section" id="steps">
-        <h2 style={{ textAlign: "center" }}>{c.stepsTitle}</h2>
-        <div style={{ maxWidth: "var(--measure)", margin: "22px auto 0" }}>
-          {c.steps.map((s) => (
-            <div key={s.t} style={{ marginTop: 18 }}>
-              <h3 style={{ fontSize: 18, marginBottom: 6 }}>{s.t}</h3>
-              <p style={{ marginTop: 0, color: "var(--ink-2)" }}>{s.d}</p>
-              <CopyBlock label="Terminal" text={s.cmd} lang={lang} />
-            </div>
+      <section className="shell hsec" id="steps">
+        <Head kick={c.kick.steps} title={c.stepsTitle} />
+        <ol className="hsteps">
+          {c.steps.map((s, i) => (
+            <li key={s.t}>
+              <span className="hstep-n" aria-hidden="true">{i + 1}</span>
+              <div className="hstep-body">
+                <h3>{s.t.replace(/^\d+\.\s*/, "")}</h3>
+                <p>{s.d}</p>
+                <CopyBlock kind="terminal" label="Terminal" text={s.cmd} lang={lang} />
+              </div>
+            </li>
           ))}
-          <p><Link href={`${L("/docs")}#agent-monitoring`}>{c.stepsMore} →</Link></p>
-        </div>
+        </ol>
+        <p className="hafter"><Link href={`${L("/docs")}#agent-monitoring`}>{c.stepsMore} →</Link></p>
       </section>
 
-      <section className="shell section centered" id="integrations">
-        <h2>{c.todayTitle}</h2>
-        <Cards rows={c.today} cols={4} />
-        <p style={{ marginTop: 20 }}><Link href={L("/changelog")}>{c.changelog} →</Link></p>
-      </section>
+      <div className="hband">
+        <section className="shell hsec" id="integrations">
+          <Head kick={c.kick.today} title={c.todayTitle} />
+          <Cards rows={c.today} cols={4} />
+          <p className="hafter"><Link href={L("/changelog")}>{c.changelog} →</Link></p>
+        </section>
+      </div>
 
-      <section className="shell section centered" id="privacy">
-        <div className="callout mid" style={{ maxWidth: "var(--measure)", marginLeft: "auto", marginRight: "auto", textAlign: "left" }}>
+      <section className="shell hsec" id="privacy">
+        <div className="callout mid hprivacy">
           <span className="tag">{c.sentTitle}</span>
           <p>{c.sent}</p>
           <p>{c.never} <Link href={`${L("/docs")}#agent-monitoring`}>{c.sentMore}</Link>.</p>
         </div>
       </section>
 
-      <section className="shell section centered" id="why">
-        <h2>{c.whyTitle}</h2>
-        <p className="dek" style={{ maxWidth: "58ch" }}>{c.why}</p>
-        <figure style={{ margin: "18px auto 0", maxWidth: 440 }}>
-          <a href="https://x.com/boardyai/status/2116435532163195363" target="_blank" rel="noopener noreferrer" style={{ display: "block" }}>
-            <Image src="/images/boardy-own-agents.png" width={1100} height={498} alt={c.whyAlt} unoptimized style={{ display: "block", width: "100%", height: "auto", borderRadius: 12 }} />
-            <span style={{ display: "block", fontSize: 13, marginTop: 8 }}>{c.whyLink}</span>
-          </a>
-        </figure>
+      <section className="shell hsec" id="why">
+        <Head kick={c.kick.why} title={c.whyTitle} dek={c.why} />
+        <div className="hwhy">
+          <figure className="hwhy-tweet">
+            <a href="https://x.com/boardyai/status/2116435532163195363" target="_blank" rel="noopener noreferrer">
+              <Image src="/images/boardy-own-agents.png" width={1100} height={498} alt={c.whyAlt} unoptimized />
+              <span>{c.whyLink}</span>
+            </a>
+          </figure>
+          <aside className="card hbuilder">
+            <Image src={BUILDER.avatar} alt={BUILDER.name} width={64} height={64} unoptimized className="hbuilder-img" />
+            <div>
+              <p className="smallcaps">{c.builtBy}</p>
+              <p className="hbuilder-name">{BUILDER.name} <span>@{BUILDER.handle}</span></p>
+              <p className="hbuilder-text">{c.builtText}</p>
+              <a className="btn ghost" href={BUILDER.url} target="_blank" rel="noopener">{c.builtCta}</a>
+              <p className="hbuilder-op">{c.operated}</p>
+            </div>
+          </aside>
+        </div>
       </section>
 
-      <section className="shell section centered" id="plans">
-        <h2>{c.plansTitle}</h2>
-        <Cards rows={c.plans} cols={3} />
-        <p className="formnote" style={{ marginTop: 16 }}>
-          <a href={GITHUB_URL} rel="noopener">{c.source}</a> · {c.more}
-        </p>
-      </section>
+      <div className="hband">
+        <section className="shell hsec" id="plans">
+          <Head kick={c.kick.plans} title={c.plansTitle} />
+          {live ? (
+            <>
+              <div className="htiers">
+                {c.tiers.map((t) => (
+                  <article key={t.id} className={`htier${t.id === "pro" ? " is-pro" : ""}`}>
+                    {t.id === "pro" ? <span className="htier-flag">{c.tierPick}</span> : null}
+                    <h3>{t.name}</h3>
+                    <p className="htier-price"><strong>{t.price}</strong> <span>{t.per}</span></p>
+                    <p className="htier-note">{t.note}</p>
+                    <ul>{t.features.map((f) => <li key={f}>{f}</li>)}</ul>
+                    {t.id === "self"
+                      ? <a className="btn ghost" href={tierHref(t.id)} rel="noopener">{t.cta}</a>
+                      : <Link className={t.id === "pro" ? "btn" : "btn ghost"} href={tierHref(t.id)}>{t.cta}</Link>}
+                  </article>
+                ))}
+              </div>
+              <p className="hfine">{c.tierFine} {c.more}</p>
+            </>
+          ) : (
+            <>
+              <Cards rows={c.plans} cols={3} />
+              <p className="hfine"><a href={GITHUB_URL} rel="noopener">{c.source}</a> · {c.more}</p>
+            </>
+          )}
+        </section>
+      </div>
 
-      <section className="shell section centered" id="faq">
-        <h2>{c.faqTitle}</h2>
-        <div className="faq" style={{ marginTop: 18, textAlign: "left" }}>
+      <section className="shell hsec" id="faq">
+        <Head kick={c.kick.faq} title={c.faqTitle} />
+        <div className="faq hfaq">
           {c.faq.map((f) => (
             <details key={f.q}>
               <summary><h3>{f.q}</h3></summary>
@@ -357,22 +442,25 @@ export default function MonitoringHome({ lang }: { lang: "en" | "de" }) {
         </div>
       </section>
 
-      <section className="shell section centered" id="websites">
-        <div className="card" style={{ padding: 28, maxWidth: "var(--measure)", margin: "0 auto", textAlign: "left" }}>
-          <h2 style={{ fontSize: 22, marginTop: 0 }}>{c.websitesTitle}</h2>
-          <p style={{ color: "var(--ink-2)" }}>{c.websites}</p>
-          <p style={{ marginBottom: 0 }}><Link href={L("/websites")}>{c.websitesLink}</Link></p>
+      <section className="shell hsec" id="websites">
+        <div className="card hwebsites">
+          <div>
+            <h2>{c.websitesTitle}</h2>
+            <p>{c.websites}</p>
+          </div>
+          <Link className="btn ghost" href={L("/websites")}>{c.websitesLink}</Link>
         </div>
       </section>
 
-      <section className="shell section centered" id="start">
-        <h2>{c.finalTitle}</h2>
-        <p className="dek" style={{ maxWidth: "56ch" }}>{c.finalDek}</p>
-        <div style={{ maxWidth: "var(--measure)", margin: "18px auto 0", textAlign: "left" }}>
-          <CopyBlock label={c.terminal} text={CONNECT_CLAUDE} lang={lang} />
+      <section className="hfinal" id="start">
+        <div className="shell">
+          <Head kick={c.kick.start} title={c.finalTitle} dek={c.finalDek} />
+          <div className="hfinal-box">
+            <CopyBlock kind="terminal" label={c.terminal} text={CONNECT_CLAUDE} lang={lang} />
+          </div>
+          <div className="hctas"><Link className="btn" href={login}>{c.dashboard}</Link></div>
         </div>
-        <p><Link className="btn" href={login}>{c.dashboard}</Link></p>
       </section>
-    </>
+    </div>
   );
 }

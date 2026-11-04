@@ -7,7 +7,7 @@ import { useState } from "react";
  * is on screen is what gets copied even if this never hydrates. Nothing is
  * recorded: a copy is not an event anyone needs to count.
  */
-export default function CopyButton({ text, label, copiedLabel, ghost = true }: { text: string; label: string; copiedLabel: string; ghost?: boolean }) {
+export default function CopyButton({ text, label, copiedLabel, ghost = true, className }: { text: string; label: string; copiedLabel: string; ghost?: boolean; className?: string }) {
   const [copied, setCopied] = useState(false);
 
   const copy = async () => {
@@ -22,7 +22,7 @@ export default function CopyButton({ text, label, copiedLabel, ghost = true }: {
   };
 
   return (
-    <button type="button" className={ghost ? "btn ghost" : "btn"} onClick={copy} aria-live="polite" style={{ fontSize: 14, padding: "10px 16px" }}>
+    <button type="button" className={className ?? (ghost ? "btn ghost" : "btn")} data-copied={copied || undefined} onClick={copy} aria-live="polite" style={className ? undefined : { fontSize: 14, padding: "10px 16px" }}>
       {copied ? copiedLabel : label}
     </button>
   );
