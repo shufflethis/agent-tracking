@@ -20,6 +20,8 @@ export async function GET(_request: Request, { params }: { params: Promise<{ dom
 export async function POST(request: Request, { params }: { params: Promise<{ domain: string }> }) {
   const site = await owned(params);
   if (!site) return problem("Site owner sign-in required.", 403);
+  // The browser runner loads pages the site owner controls. Off until it runs isolated from the host (own user, sandbox, no loopback).
+  if (process.env.TASK_RUNNER_ENABLED !== "1") return problem("Browser checks are paused.", 503);
   let raw: string;
   try { raw = new TextDecoder("utf-8", { fatal: true }).decode(await readLimitedBody(request, 4096)); }
   catch (error) { return problem(error instanceof BodyLimitError ? "Body too large." : "Invalid body.", error instanceof BodyLimitError ? 413 : 400); }

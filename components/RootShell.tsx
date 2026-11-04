@@ -116,7 +116,8 @@ export default function RootShell({ locale, children }: { locale: Locale; childr
               dangerouslySetInnerHTML={{
                 __html:
                   "window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(i){plausible.o=i||{}};plausible.init();" +
-                  `addEventListener("load",function(){var s=document.createElement("script");s.async=true;s.src=${JSON.stringify(PLAUSIBLE_SCRIPT)};document.head.appendChild(s)})`,
+                  // Never on signed-in pages: their paths carry customer domains and agent ids.
+                  `/^\\/app(\\/|$)/.test(location.pathname)||addEventListener("load",function(){var s=document.createElement("script");s.async=true;s.src=${JSON.stringify(PLAUSIBLE_SCRIPT)};document.head.appendChild(s)})`,
               }}
             />
           </>

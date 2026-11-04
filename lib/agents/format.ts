@@ -23,6 +23,15 @@ export function every(ms: number): string {
 export const HEALTH_CHIP: Record<string, string> = { problem: "chip fail", running: "chip accent", ok: "chip pass", idle: "chip na" };
 export const STATUS_CHIP: Record<string, string> = { failed: "chip fail", hung: "chip fail", missed: "chip fail", running: "chip accent", ok: "chip pass" };
 
-export const CLI_COMMAND = "npx --yes https://agenttracking.co/downloads/agenttracking-0.3.0.tgz";
+export const CLI_FILE = "agenttracking-0.3.0.tgz";
+export const CLI_URL = `https://agenttracking.co/downloads/${CLI_FILE}`;
+/** SHA-256 of public/downloads/<CLI_FILE>. lib/agents/cli-checksum.test.ts fails when the file and this value drift apart. */
+export const CLI_SHA256 = "08b59c4fde72b5e0cb8b229e58499ade506e6d8d719bc9c9f37a1b2d3da967c9";
+export const CLI_COMMAND = `npx --yes ${CLI_URL}`;
+/** Download, check the hash, then run from the checked file. */
+export const CLI_VERIFY = `curl -fsSLO ${CLI_URL}
+echo "${CLI_SHA256}  ${CLI_FILE}" | sha256sum -c -
+tar -tzf ${CLI_FILE}            # list what is inside
+npx --yes ./${CLI_FILE} connect claude`;
 export const CONNECT_CLAUDE = `${CLI_COMMAND} connect claude`;
 export const WRAP_EXAMPLE = `${CLI_COMMAND} wrap --name backup --every 24h --tail 20 -- ./backup.sh`;

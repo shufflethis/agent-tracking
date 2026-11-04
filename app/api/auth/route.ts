@@ -70,6 +70,12 @@ export async function POST(request: Request) {
   // The interstitial's form: token in, session cookie out.
   const token = typeof body.k === "string" ? body.k.trim() : "";
   if (token) {
+    // Login CSRF: another site must not be able to sign a visitor into an account it chose.
+    const origin = request.headers.get("origin");
+    const fetchSite = request.headers.get("sec-fetch-site");
+    if ((origin && origin !== SITE_ORIGIN && origin !== new URL(request.url).origin) || fetchSite === "cross-site") {
+      return html(renderProblemPage("Sign-in blocked", "This sign-in was started from another website. Open the link from your email directly."), 403);
+    }
     const claims = readLoginToken(token);
     if (!claims) return html(renderProblemPage("That link is no longer valid", "Sign-in links last 30 minutes. Ask for a new one on the login page."), 410);
     // One use per link. A mail gateway that follows the link only renders the

@@ -65,6 +65,8 @@ export async function POST(request: Request) {
     case "share": {
       const site = getSite(domain);
       if (!site || site.owner !== account.email) return problem("Not your site.", 403);
+      // Only a verified owner may publish numbers under the domain's name.
+      if (body.on === true && !site.verified_at) return problem("Verify the site before publishing its stats.", 409);
       setPublicShare(domain, body.on === true);
       return Response.json({ ok: true, share: body.on === true });
     }

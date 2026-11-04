@@ -1,4 +1,4 @@
-import { CLI_COMMAND } from "@/lib/agents/format";
+import { CLI_COMMAND, CLI_SHA256, CLI_VERIFY } from "@/lib/agents/format";
 import AgentConnectionScope from "@/components/AgentConnectionScope";
 import { AGENT_PLANS, AGENT_PRO_PRICE, pricingActive } from "@/lib/agents/plans";
 import { AGENT_EVENT_RETENTION_DAYS, AGENT_TAIL_RETENTION_DAYS, RAW_RETENTION_DAYS } from "@/lib/tracking/plans";
@@ -71,6 +71,12 @@ export default function AgentMonitoringDocs({ lang }: { lang: "en" | "de" }) {
         </div>
       ))}
       <p>{c.after}</p>
+      <h3 style={{ fontSize: 18 }} id="verify">{lang === "de" ? "Erst prüfen, dann ausführen" : "Check before you run it"}</h3>
+      <p>{lang === "de"
+        ? "npx führt Code aus dem Netz aus. Wer das nicht blind tun will: Datei laden, die SHA-256-Prüfsumme vergleichen, den Inhalt ansehen und dann aus der geprüften Datei starten. Der Quellcode liegt auf GitHub."
+        : "npx runs code from the network. If you would rather not do that blindly: download the file, compare its SHA-256 checksum, look inside, then run it from the checked file. The source is on GitHub."}</p>
+      <p style={{ fontFamily: "var(--mono)", fontSize: 13, overflowWrap: "anywhere" }}>SHA-256: {CLI_SHA256}</p>
+      <pre className="code" style={{ whiteSpace: "pre-wrap" }}>{CLI_VERIFY}</pre>
       <h3 style={{ fontSize: 18 }}>{c.sentTitle}</h3>
       <ul>{c.sent.map((s) => <li key={s}>{s}</li>)}</ul>
       <p>{c.never}</p>

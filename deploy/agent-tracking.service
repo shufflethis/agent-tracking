@@ -9,7 +9,7 @@ User=root
 WorkingDirectory=/root/agent-tracking
 EnvironmentFile=/root/agent-tracking/.env.production
 Environment=NODE_ENV=production
-ExecStart=/usr/bin/node --no-warnings /root/agent-tracking/node_modules/next/dist/bin/next start -p 3058
+ExecStart=/usr/bin/node --no-warnings /root/agent-tracking/node_modules/next/dist/bin/next start -H 127.0.0.1 -p 3058
 Restart=always
 RestartSec=5
 

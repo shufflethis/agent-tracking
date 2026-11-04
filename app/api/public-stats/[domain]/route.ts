@@ -18,7 +18,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ doma
   const { domain } = await params;
   const host = normalizeDomain(decodeURIComponent(domain));
   const site = host ? getSite(host) : null;
-  if (!site || !site.public_share) return Response.json({ error: "No public stats page for that site." }, { status: 404 });
+  if (!site || !site.public_share || !site.verified_at) return Response.json({ error: "No public stats page for that site." }, { status: 404 });
   const dash = loadDashboard(site.domain, 30);
   const o = dash.overview;
   return Response.json(

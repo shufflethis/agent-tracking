@@ -36,7 +36,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { domain } = await params;
   const host = normalizeDomain(decodeURIComponent(domain));
   const site = host ? getSite(host) : null;
-  if (!site || !site.public_share) return { title: "Stats", robots: { index: false } };
+  if (!site || !site.public_share || !site.verified_at) return { title: "Stats", robots: { index: false } };
   const n = activitySignals(loadDashboard(site.domain, 30).overview);
   const state = measurementState(site);
   const title = state !== "active" && n === 0 ? `${site.domain}: ${stateText[state]}` : `${site.domain}: ${n.toLocaleString("en-GB")} activity signals in 30 days`;
@@ -54,7 +54,7 @@ export default async function Page({ params }: Params) {
   const { domain } = await params;
   const host = normalizeDomain(decodeURIComponent(domain));
   const site = host ? getSite(host) : null;
-  if (!site || !site.public_share) notFound();
+  if (!site || !site.public_share || !site.verified_at) notFound();
   const dash = loadDashboard(site.domain, 30);
   const o = dash.overview;
   const n = activitySignals(o);

@@ -14,7 +14,7 @@ export default async function Image({ params }: { params: Promise<{ domain: stri
   const { domain } = await params;
   const host = normalizeDomain(decodeURIComponent(domain));
   const site = host ? getSite(host) : null;
-  if (!site || !site.public_share) return genericImage("Agent Tracking", "What AI agents do on a site, measured.");
+  if (!site || !site.public_share || !site.verified_at) return genericImage("Agent Tracking", "What AI agents do on a site, measured.");
   const o = loadDashboard(site.domain, 30).overview;
   const n = activitySignals(o);
   return new ImageResponse(
