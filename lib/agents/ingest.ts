@@ -1,4 +1,5 @@
 import { parseSnapshot } from "./snapshot";
+import { checkConfig, checkNewTool } from "./signals";
 import { randomUUID } from "node:crypto";
 import { dayKey, db, monthKey } from "../tracking/db";
 import { effectiveAgentPlan } from "./plans";
@@ -141,6 +142,8 @@ export function recordAgentEvents(owner: string, events: AgentEvent[], now = Dat
       if (e.dataLoss) update("data_loss = 1", run.id);
       if (!Number(insertEvent.run(e.id, owner, run.id, e.at, now, e.type, e.tool ?? null, e.ok === undefined ? null : e.ok ? 1 : 0, e.callId ?? null, e.childId ?? null, e.snapshot ? JSON.stringify({ snapshot: e.snapshot }) : e.kernel ? JSON.stringify({ kernel: e.kernel }) : null).changes)) { duplicates++; continue; }
       accepted++;
+      if (plan.signals && e.snapshot) checkConfig(d, owner, agentId, e.snapshot, e.at);
+      if (plan.signals && e.type === "tool_end" && e.tool) checkNewTool(d, owner, agentId, e.tool, e.id, e.at);
       if (e.snapshot) d.prepare("update agent_runs set config_json = ?, config_at = ? where id = ? and (config_at is null or config_at <= ?)").run(JSON.stringify(e.snapshot), e.at, run.id, e.at);
       if (e.type !== "config_snapshot" && run.ended_at === null && e.at >= run.last_event_at) update("last_event_at = ?, last_event_type = ?", e.at, e.type, run.id);
       update("started_at = min(started_at, ?)", e.at, run.id);

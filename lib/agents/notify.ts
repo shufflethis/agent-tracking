@@ -8,6 +8,7 @@ import { agentCopy } from "./copy";
 import { postJsonPinned } from "./safe-url";
 import { getNotifySettings, type NotifySettings } from "./store";
 import { effectiveAgentPlan } from "./plans";
+import { signalText, type SignalKind, type SignalPayload } from "./signals";
 
 /**
  * Immediate alerts for runs that failed, hung or went missing, and the
@@ -19,10 +20,11 @@ const MAX_WEBHOOK_ALERTS = 10;
 const ALERT_WINDOW_MS = 24 * 3_600_000;
 const HOUR_FORMAT = new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Berlin", hour: "2-digit", hourCycle: "h23" });
 
-export type Alert = { agent: string; host: string; status: "failed" | "hung" | "missed"; at: number; detail: string; url: string };
+export type Alert = { agent: string; host: string; status: "failed" | "hung" | "missed" | "signal"; at: number; detail: string; url: string };
 
 export function alertText(a: Alert, lang: DashLang): string {
   const c = agentCopy(lang).briefing;
+  if (a.status === "signal") return `${a.agent} (${a.host}): ${a.detail}\n${a.url}`;
   const what = a.status === "hung" ? c.hung(clock(a.at)) : a.status === "missed" ? c.missed(clock(a.at)) : c.failed(clock(a.at), null) + (a.detail ? `, ${a.detail}` : "");
   return `${a.agent} (${a.host}): ${what}\n${a.url}`;
 }
@@ -47,7 +49,8 @@ export async function sendTestWebhook(w: NonNullable<NotifySettings["webhook"]>,
   return post(webhookRequest(w, { agent: "test", host: "agenttracking", status: "failed", at: Date.now(), detail: "", url: `${SITE_ORIGIN}/app/fleet` }, lang, text));
 }
 
-type PendingRow = { id: string; owner: string; lang: string | null; agent_plan: string | null; agent_id: string; name: string; host: string; status: Alert["status"]; started_at: number; last_event_at: number; exit_code: number | null };
+type PendingRow = { id: string; owner: string; lang: string | null; agent_plan: string | null; agent_id: string; name: string; host: string; status: "failed" | "hung" | "missed"; started_at: number; last_event_at: number; exit_code: number | null };
+type PendingSignal = { id: string; owner: string; lang: string | null; agent_plan: string | null; agent_id: string; name: string; host: string; kind: SignalKind; payload: string; at: number };
 
 export async function sendAlerts(now = Date.now(), post: WebhookPost = postWebhook): Promise<number> {
   const d = db();
@@ -57,19 +60,43 @@ export async function sendAlerts(now = Date.now(), post: WebhookPost = postWebho
      where r.status in ('failed','hung','missed') and r.alerted_at is null and r.last_event_at >= ?
      order by a.owner, r.last_event_at`,
   ).all(now - ALERT_WINDOW_MS) as PendingRow[];
-  const byOwner = new Map<string, PendingRow[]>();
-  for (const r of rows) byOwner.set(r.owner, [...(byOwner.get(r.owner) ?? []), r]);
+  const signals = d.prepare(
+    `select s.id, s.owner, acc.lang, acc.agent_plan, s.agent_id, a.name, a.host, s.kind, s.payload, s.at
+     from agent_signals s join agents a on a.id = s.agent_id join accounts acc on acc.email = s.owner
+     where s.alerted_at is null and s.at >= ? order by s.owner, s.at`,
+  ).all(now - ALERT_WINDOW_MS) as PendingSignal[];
+  const byOwner = new Map<string, { runs: PendingRow[]; signals: PendingSignal[]; lang: string | null; plan: string | null }>();
+  const slot = (r: { owner: string; lang: string | null; agent_plan: string | null }) => {
+    let v = byOwner.get(r.owner);
+    if (!v) byOwner.set(r.owner, (v = { runs: [], signals: [], lang: r.lang, plan: r.agent_plan }));
+    return v;
+  };
+  for (const r of rows) slot(r).runs.push(r);
+  for (const s of signals) slot(s).signals.push(s);
   const mark = d.prepare("update agent_runs set alerted_at = ? where id = ?");
+  const markSignal = d.prepare("update agent_signals set alerted_at = ? where id = ?");
   let sent = 0;
-  for (const [owner, list] of byOwner) {
-    const lang = dashLang(list[0].lang);
+  for (const [owner, group] of byOwner) {
+    const lang = dashLang(group.lang);
     const stored = getNotifySettings(owner);
+    const plan = effectiveAgentPlan(group.plan);
     // Webhook channels are a Pro feature after pricing starts; the stored configuration is kept, only not used.
-    const settings = effectiveAgentPlan(list[0].agent_plan).webhooks ? stored : { ...stored, webhook: null };
-    const alerts: Alert[] = list.map((r) => ({
-      agent: r.name, host: r.host, status: r.status, at: r.status === "hung" ? r.last_event_at : r.started_at,
-      detail: r.status === "failed" && r.exit_code !== null ? `exit ${r.exit_code}` : "", url: `${SITE_ORIGIN}/app/fleet/${r.agent_id}`,
-    }));
+    const settings = plan.webhooks ? stored : { ...stored, webhook: null };
+    const list = group.runs;
+    // Signals of an account that is no longer on Pro are dropped, not kept for later.
+    const signalList = plan.signals ? group.signals : [];
+    if (!plan.signals) for (const s of group.signals) markSignal.run(now, s.id);
+    const alerts: Alert[] = [
+      ...list.map((r): Alert => ({
+        agent: r.name, host: r.host, status: r.status, at: r.status === "hung" ? r.last_event_at : r.started_at,
+        detail: r.status === "failed" && r.exit_code !== null ? `exit ${r.exit_code}` : "", url: `${SITE_ORIGIN}/app/fleet/${r.agent_id}`,
+      })),
+      ...signalList.map((s): Alert => ({
+        agent: s.name, host: s.host, status: "signal", at: s.at,
+        detail: signalText(s.kind, JSON.parse(s.payload) as SignalPayload, lang), url: `${SITE_ORIGIN}/app/fleet/${s.agent_id}`,
+      })),
+    ];
+    if (!alerts.length) continue;
     // Marked as sent only when at least one configured channel delivered; otherwise retried until ALERT_WINDOW_MS passes.
     const channels = Number(settings.alertsEmail) + Number(Boolean(settings.webhook));
     let delivered = false;
@@ -94,7 +121,8 @@ export async function sendAlerts(now = Date.now(), post: WebhookPost = postWebho
     }
     if (channels > 0 && !delivered) continue;
     for (const r of list) mark.run(now, r.id);
-    sent += list.length;
+    for (const s of signalList) markSignal.run(now, s.id);
+    sent += alerts.length;
   }
   return sent;
 }

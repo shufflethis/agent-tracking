@@ -1950,3 +1950,8 @@ td.num {
 @media (max-width: 620px) { .hbuilder { grid-template-columns: 1fr; } .hwebsites { padding: 24px; } }
 .hhero-fit { margin: 18px auto 0; max-width: 60ch; font-size: 15px; color: var(--muted); }
 .hhero-fit::before { content: "→ "; color: var(--cyan); }
+.hteam { margin-top: 20px; display: flex; gap: 24px; align-items: center; justify-content: space-between; flex-wrap: wrap; padding: 26px 28px; border: 1px dashed var(--rule-strong); border-radius: 16px; background: var(--void); }
+.hteam > div { flex: 1 1 480px; }
+.hteam h3 { font-size: 20px; margin: 0 0 8px; }
+.hteam h3 span { font-family: var(--mono); font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--cyan); margin-left: 10px; }
+.hteam p { margin: 0; color: var(--ink-2); line-height: 1.6; }

@@ -99,9 +99,10 @@ function copy(lang: "en" | "de") {
       plansTitle: live ? `Kostenlos starten, ${pm} $ wenn du mehr brauchst` : "Kostenlos in der Beta, selbst hostbar für immer",
       tiers: [
         { id: "free", name: "Free", price: "0 $", per: "für immer", note: "Ohne Kreditkarte", cta: "Kostenlos starten", features: [`${freeN} Agents`, "Claude Code, Cron-Jobs und Skripte", "Tägliches Briefing per E-Mail", "Sofort-Meldungen per E-Mail", `${AGENT_EVENT_RETENTION_DAYS} Tage Verlauf`] },
-        { id: "pro", name: "Pro", price: `${pm} $`, per: "pro Monat", note: `oder ${py} $ im Jahr, zwei Monate geschenkt`, cta: "Mit Pro starten", features: [`${proN} Agents`, "Alles aus Free", "Meldungen an Telegram, Slack, Discord und Webhooks", "OpenTelemetry für eigene Agents", "Task-Checks für Cron-Jobs"] },
+        { id: "pro", name: "Pro", price: `${pm} $`, per: "pro Monat", note: `oder ${py} $ im Jahr, zwei Monate geschenkt`, cta: "Mit Pro starten", features: [`${proN} Agents`, "Alles aus Free", "Meldungen an Telegram, Slack, Discord und Webhooks", "Meldung bei Konfigurationsänderungen: MCP-Server, Plugins, Regeln, CLAUDE.md", "Meldung, wenn ein Agent ein Tool zum ersten Mal nutzt", "OpenTelemetry und Task-Checks"] },
         { id: "self", name: "Selbst gehostet", price: "0 $", per: "auf deinem Server", note: "Open Source unter AGPL-3.0", cta: "Auf GitHub ansehen", features: ["Der komplette Code: CLI, Ingest, Dashboard, Meldungen", "Ein Node-Prozess, eine SQLite-Datei", "Deine Daten verlassen deinen Server nie"] },
       ],
+      team: { name: "Team", price: "Auf Anfrage", text: "Für Unternehmen, die Agents auf vielen Rechnern laufen lassen. Geplant: mehrere Mitglieder mit einer gemeinsamen Flotte, Audit-Log zum Export, Leitplanken zentral für alle Maschinen, Rechnung statt Karte. Erzähl uns, was du brauchst, dann bauen wir es mit dir.", cta: "Team anfragen" },
       tierPick: "Empfohlen ab 6 Agents",
       tierFine: "Preise in US-Dollar, zzgl. Steuern, wo fällig. Monatlich kündbar, wirksam zum Ende des Zeitraums. Upgrade und Kündigung im Dashboard.",
       plans: [
@@ -202,9 +203,10 @@ function copy(lang: "en" | "de") {
     plansTitle: live ? `Free to start, $${pm} when you need more` : "Free during the beta, self-hostable for good",
     tiers: [
       { id: "free", name: "Free", price: "$0", per: "forever", note: "No credit card", cta: "Start free", features: [`${freeN} agents`, "Claude Code, cron jobs and scripts", "Daily briefing by email", "Instant alerts by email", `${AGENT_EVENT_RETENTION_DAYS} days of history`] },
-      { id: "pro", name: "Pro", price: `$${pm}`, per: "per month", note: `or $${py} a year, two months free`, cta: "Start with Pro", features: [`${proN} agents`, "Everything in Free", "Telegram, Slack, Discord and webhook alerts", "OpenTelemetry for your own agents", "Task checks for cron jobs"] },
+      { id: "pro", name: "Pro", price: `$${pm}`, per: "per month", note: `or $${py} a year, two months free`, cta: "Start with Pro", features: [`${proN} agents`, "Everything in Free", "Telegram, Slack, Discord and webhook alerts", "Alerts on configuration changes: MCP servers, plugins, rules, CLAUDE.md", "Alerts when an agent uses a tool for the first time", "OpenTelemetry and task checks"] },
       { id: "self", name: "Self-hosted", price: "$0", per: "on your server", note: "Open source under AGPL-3.0", cta: "View on GitHub", features: ["All of the code: CLI, ingest, dashboard, alerts", "One Node process, one SQLite file", "Your data never leaves your server"] },
     ],
+    team: { name: "Team", price: "On request", text: "For companies running agents on many machines. Planned: several members on one shared fleet, an audit log to export, guardrails set once for every machine, invoice instead of card. Tell us what you need and we build it with you.", cta: "Ask about Team" },
     tierPick: "Recommended from 6 agents",
     tierFine: "Prices in US dollars, plus tax where due. Cancel any time, effective at the end of the period. Upgrade and cancel in the dashboard.",
     plans: [
@@ -422,6 +424,13 @@ export default function MonitoringHome({ lang }: { lang: "en" | "de" }) {
                   </article>
                 ))}
               </div>
+              <aside className="hteam">
+                <div>
+                  <h3>{c.team.name} <span>{c.team.price}</span></h3>
+                  <p>{c.team.text}</p>
+                </div>
+                <a className="btn ghost" href={`mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent("Agent Tracking Team")}`}>{c.team.cta}</a>
+              </aside>
               <p className="hfine">{c.tierFine} {c.more}</p>
             </>
           ) : (

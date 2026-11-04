@@ -7,6 +7,9 @@ import { CLI_COMMAND, duration, every, STATUS_CHIP, when } from "@/lib/agents/fo
 import { agentById, agentRuns, checkComparisons } from "@/lib/agents/store";
 import { requireAccount } from "@/lib/tracking/auth";
 import { dashLang } from "@/lib/tracking/copy";
+import { db } from "@/lib/tracking/db";
+import { effectiveAgentPlan } from "@/lib/agents/plans";
+import { agentSignals, signalText, type SignalPayload } from "@/lib/agents/signals";
 
 export const metadata: Metadata = { title: "Agent", robots: { index: false, follow: false } };
 export const runtime = "nodejs";
@@ -25,6 +28,8 @@ export default async function Page({ params }: { params: Promise<{ agentId: stri
   const c = agentCopy(lang).fleet;
   const comparisons = checkComparisons(account.email, agentId);
   const de = lang === "de";
+  const signalsOn = effectiveAgentPlan(account.agent_plan).signals;
+  const signals = agentSignals(db(), account.email, agentId);
 
   return (
     <DashboardShell account={account} area="fleet" title={agent.name}>
@@ -57,6 +62,20 @@ export default async function Page({ params }: { params: Promise<{ agentId: stri
             </tbody>
           </table>
         </div>
+        <h2 style={{ marginTop: 32 }} id="signals">{de ? "Auffälligkeiten" : "Signals"}</h2>
+        <p>{de
+          ? "Änderungen an der Konfiguration (MCP-Server, Plugins, Berechtigungsregeln, Einstellungen, CLAUDE.md) und Tools, die dieser Agent zum ersten Mal benutzt. Nur Anzahlen, Prüfsummen und Tool-Namen, keine Inhalte."
+          : "Configuration changes (MCP servers, plugins, permission rules, settings, CLAUDE.md) and tools this agent uses for the first time. Counts, checksums and tool names only, no contents."}</p>
+        {signals.length ? (
+          <div className="tablewrap"><table>
+            <thead><tr><th>{de ? "Zeit" : "Time"}</th><th>{de ? "Was" : "What"}</th></tr></thead>
+            <tbody>{signals.map((sg) => <tr key={sg.id}><td>{when(sg.at, lang)}</td><td>{signalText(sg.kind, JSON.parse(sg.payload) as SignalPayload, lang)}</td></tr>)}</tbody>
+          </table></div>
+        ) : (
+          <p style={{ color: "var(--muted)" }}>{signalsOn
+            ? (de ? "Noch nichts. Neue Agents lernen drei Tage und 20 Tool-Aufrufe lang, was normal ist." : "Nothing yet. New agents learn what is normal for three days and 20 tool calls.")
+            : <>{de ? "Teil von Pro." : "Part of Pro."} <Link href="/app/fleet/settings#plan">{de ? "Plan ansehen" : "See plans"}</Link></>}</p>
+        )}
         <h2 style={{ marginTop: 32 }}>{de ? "Prüfungen nach Version" : "Checks by version"}</h2>
         <p>{de ? "Letzte 90 Tage. Vergleiche dieselbe Aufgabe mit denselben Testdaten und Bedingungen. Ein einzelner Lauf belegt keine Verbesserung." : "Last 90 days. Compare the same task with the same fixtures and conditions. One run does not establish an improvement."}</p>
         {comparisons.length ? <div className="tablewrap"><table>

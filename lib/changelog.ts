@@ -31,6 +31,19 @@ export const ENTRIES: Entry[] = [
   {
     date: "2026-11-04",
     tag: "agents",
+    title: { en: "Pro: alerts when a configuration changes or an agent uses a new tool", de: "Pro: Meldung, wenn sich die Konfiguration ändert oder ein Agent ein neues Tool nutzt" },
+    body: {
+      en: "Two new alerts for Pro, through the same channels as failures. Configuration: an MCP server or plugin added or removed, permission rules loosened or tightened, settings, .mcp.json or CLAUDE.md changed. New behavior: an agent uses a tool it has not used before, say a backup job that suddenly calls WebFetch. Both come from data that was already sent: counts, checksums and tool names, never file contents or commands. New agents learn for three days and 20 tool calls before they can trigger a new-tool alert. Each agent's page lists its signals.",
+      de: "Zwei neue Meldungen in Pro, über dieselben Kanäle wie Fehler. Konfiguration: ein MCP-Server oder Plugin kommt dazu oder fällt weg, Berechtigungsregeln werden lockerer oder strenger, Einstellungen, .mcp.json oder CLAUDE.md ändern sich. Neues Verhalten: Ein Agent nutzt ein Tool, das er vorher nie genutzt hat, etwa ein Backup-Job, der plötzlich WebFetch aufruft. Beides stammt aus Daten, die ohnehin gesendet werden: Anzahlen, Prüfsummen und Tool-Namen, nie Dateiinhalte oder Befehle. Neue Agents lernen drei Tage und 20 Tool-Aufrufe lang, bevor sie eine Meldung zu neuen Tools auslösen. Auf der Seite jedes Agents stehen seine Auffälligkeiten.",
+    },
+    how: {
+      terminal: CONNECT_CLAUDE,
+      note: { en: "Configuration snapshots need CLI 0.3.0: run the command above once more on each machine. Then switch to Pro under Your agents → Settings.", de: "Konfigurations-Snapshots brauchen CLI 0.3.0: Führ den Befehl oben auf jeder Maschine noch einmal aus. Dann unter Deine Agents → Einstellungen auf Pro wechseln." },
+    },
+  },
+  {
+    date: "2026-11-04",
+    tag: "agents",
     title: { en: "Paid plans: Free and Pro", de: "Bezahlpläne: Free und Pro" },
     body: {
       en: "Agent monitoring now has two plans. Free: 5 agents with the daily briefing and email alerts. Pro: 50 agents, Telegram, Slack, Discord and webhook alerts, OpenTelemetry and task checks, for $9 a month or $90 a year. Agents you already have keep reporting on either plan; only new agents above the limit are refused.",

@@ -25,11 +25,13 @@ export type AgentPlan = {
   otlp: boolean;
   /** Named task checks reported by `wrap --check`. */
   checks: boolean;
+  /** Alerts on configuration changes and first-time tools (lib/agents/signals.ts). */
+  signals: boolean;
 };
 
 export const AGENT_PLANS: Record<AgentPlanId, AgentPlan> = {
-  free: { id: "free", agents: 5, webhooks: false, otlp: false, checks: false },
-  pro: { id: "pro", agents: 50, webhooks: true, otlp: true, checks: true },
+  free: { id: "free", agents: 5, webhooks: false, otlp: false, checks: false, signals: false },
+  pro: { id: "pro", agents: 50, webhooks: true, otlp: true, checks: true, signals: true },
 };
 
 /** Prices shown on the site, in US dollars. Stripe holds the real amounts; keep these in step. */

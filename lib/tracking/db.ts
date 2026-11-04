@@ -475,6 +475,17 @@ function migrate(instance: DatabaseSync): void {
     if (!columns.has("agent_stripe_subscription")) instance.exec("alter table accounts add column agent_stripe_subscription text");
     instance.prepare("insert into schema_migrations (version, applied_at) values (22, ?)").run(Date.now());
   }
+  if ((current.version ?? 0) < 23) {
+    // Signals (lib/agents/signals.ts): configuration changes and first-time tools, alerted once.
+    instance.exec(`create table if not exists agent_signals (
+      id text primary key, owner text not null, agent_id text not null references agents(id),
+      kind text not null check (kind in ('config_change','new_tool')), key text not null, payload text not null,
+      at integer not null, alerted_at integer, unique (agent_id, kind, key)
+    );
+    create index if not exists agent_signals_pending on agent_signals(alerted_at, at);
+    create index if not exists agent_events_run_tool on agent_events(run_id, tool) where tool is not null;`);
+    instance.prepare("insert into schema_migrations (version, applied_at) values (23, ?)").run(Date.now());
+  }
   instance.exec("commit");
   } catch (err) {
     instance.exec("rollback");

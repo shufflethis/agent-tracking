@@ -17,10 +17,10 @@ const CMD = {
 
 const LIVE = () => pricingActive();
 const PRICE_EN = () => LIVE()
-  ? `Free: ${AGENT_PLANS.free.agents} agents with email alerts. Pro: ${AGENT_PLANS.pro.agents} agents, every channel, OpenTelemetry and task checks, $${AGENT_PRO_PRICE.month}/month or $${AGENT_PRO_PRICE.year}/year.`
+  ? `Free: ${AGENT_PLANS.free.agents} agents with email alerts. Pro: ${AGENT_PLANS.pro.agents} agents, every channel, alerts on configuration changes and first-time tools, OpenTelemetry and task checks, $${AGENT_PRO_PRICE.month}/month or $${AGENT_PRO_PRICE.year}/year.`
   : `Free during the beta, up to ${AGENT_PLANS.pro.agents} agents and 50,000 events a month.`;
 const PRICE_DE = () => LIVE()
-  ? `Free: ${AGENT_PLANS.free.agents} Agents mit E-Mail-Meldungen. Pro: ${AGENT_PLANS.pro.agents} Agents, alle Kanäle, OpenTelemetry und Task-Checks, ${AGENT_PRO_PRICE.month} $/Monat oder ${AGENT_PRO_PRICE.year} $/Jahr.`
+  ? `Free: ${AGENT_PLANS.free.agents} Agents mit E-Mail-Meldungen. Pro: ${AGENT_PLANS.pro.agents} Agents, alle Kanäle, Meldungen bei Konfigurationsänderungen und neuen Tools, OpenTelemetry und Task-Checks, ${AGENT_PRO_PRICE.month} $/Monat oder ${AGENT_PRO_PRICE.year} $/Jahr.`
   : `Kostenlos während der Beta, bis ${AGENT_PLANS.pro.agents} Agents und 50.000 Events im Monat.`;
 
 const COPY = {
