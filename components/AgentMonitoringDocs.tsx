@@ -1,6 +1,7 @@
-import { CLI_COMMAND, CLI_SHA256, CLI_VERIFY } from "@/lib/agents/format";
+import { CLI_COMMAND, CLI_SHA256, CLI_VERIFY, DOCTOR_COMMAND } from "@/lib/agents/format";
 import AgentConnectionScope from "@/components/AgentConnectionScope";
 import { AGENT_PLANS, AGENT_PRO_PRICE, pricingActive } from "@/lib/agents/plans";
+import { SITE_ORIGIN } from "@/lib/site";
 import { AGENT_EVENT_RETENTION_DAYS, AGENT_TAIL_RETENTION_DAYS, RAW_RETENTION_DAYS } from "@/lib/tracking/plans";
 
 /** Docs section "Monitor your own agents", EN and DE. Field list matches lib/agents/ingest.ts. */
@@ -8,19 +9,23 @@ import { AGENT_EVENT_RETENTION_DAYS, AGENT_TAIL_RETENTION_DAYS, RAW_RETENTION_DA
 const CMD = {
   login: `${CLI_COMMAND} login`,
   claude: `${CLI_COMMAND} connect claude`,
+  doctor: DOCTOR_COMMAND,
   wrap: `# crontab: before
 0 7 * * * /opt/backup.sh
 # after
 0 7 * * * ${CLI_COMMAND} wrap --name backup --every 24h --tail 20 -- /opt/backup.sh`,
+  guard: `${CLI_COMMAND} guard --max-failures 5
+${CLI_COMMAND} pause --reason "deploy freeze"
+${CLI_COMMAND} resume`,
   off: `${CLI_COMMAND} disconnect claude`,
 };
 
 const LIVE = () => pricingActive();
 const PRICE_EN = () => LIVE()
-  ? `Free: ${AGENT_PLANS.free.agents} agents with email alerts. Pro: ${AGENT_PLANS.pro.agents} agents, every channel, alerts on configuration changes and first-time tools, OpenTelemetry and task checks, $${AGENT_PRO_PRICE.month}/month or $${AGENT_PRO_PRICE.year}/year.`
+  ? `Free: ${AGENT_PLANS.free.agents} agents with local-timezone morning briefing, email alerts and read-only API/MCP. Pro: ${AGENT_PLANS.pro.agents} agents, every channel, alerts on configuration changes, first-time tools and runaway error loops, OpenTelemetry and task checks, $${AGENT_PRO_PRICE.month}/month or $${AGENT_PRO_PRICE.year}/year.`
   : `Free during the beta, up to ${AGENT_PLANS.pro.agents} agents and 50,000 events a month.`;
 const PRICE_DE = () => LIVE()
-  ? `Free: ${AGENT_PLANS.free.agents} Agents mit E-Mail-Meldungen. Pro: ${AGENT_PLANS.pro.agents} Agents, alle Kanäle, Meldungen bei Konfigurationsänderungen und neuen Tools, OpenTelemetry und Task-Checks, ${AGENT_PRO_PRICE.month} $/Monat oder ${AGENT_PRO_PRICE.year} $/Jahr.`
+  ? `Free: ${AGENT_PLANS.free.agents} Agents mit Morgen-Briefing in deiner Zeitzone, E-Mail-Meldungen sowie Lese-API und MCP. Pro: ${AGENT_PLANS.pro.agents} Agents, alle Kanäle, Meldungen bei Konfigurationsänderungen, neuen Tools und Fehlerschleifen, OpenTelemetry und Task-Checks, ${AGENT_PRO_PRICE.month} $/Monat oder ${AGENT_PRO_PRICE.year} $/Jahr.`
   : `Kostenlos während der Beta, bis ${AGENT_PLANS.pro.agents} Agents und 50.000 Events im Monat.`;
 
 const COPY = {
@@ -30,9 +35,10 @@ const COPY = {
     steps: [
       ["1. Connect this machine", "Shows a code and opens the browser; confirm it while signed in. Each machine gets its own token you can revoke in the settings.", CMD.login],
       ["2. Track Claude Code", "Adds hooks to ~/.claude/settings.json (a backup is written next to it, your own hooks stay). Use --project for .claude/settings.json in the current folder.", CMD.claude],
-      ["3. Wrap cron jobs", "Output and exit code of the job stay exactly as they were. --every tells us when the next run is due, so a missing run is noticed. --tail sends the last stderr lines, with tokens and passwords masked.", CMD.wrap],
+      ["3. Inspect local hooks and cron jobs", "Scans connection state, Claude hooks, local MCP server counts and unwrapped crontab schedules on this machine without sending data.", CMD.doctor],
+      ["4. Wrap cron jobs", "Output and exit code of the job stay exactly as they were. --every tells us when the next run is due, so a missing run is noticed. --tail sends the last stderr lines, with tokens and keys masked.", CMD.wrap],
     ],
-    after: "Every morning (07:00 Europe/Berlin by default) you get one briefing. Immediate alerts go out when a run fails, is stuck, or goes missing: by email, and optionally to Telegram, Slack, Discord or a webhook.",
+    after: "Every morning (07:00 in your configured IANA time zone; Europe/Berlin by default) you get one briefing. Immediate alerts go out when a run fails, is stuck, goes missing, or spins in an error loop: by email, and optionally to Telegram, Slack, Discord or a webhook.",
     sentTitle: "What is sent, and what never is",
     sent: ["Event type: session start and end, tool start and end, turn end, cron start and end", "Tool name (for example Bash or mcp__github__create_issue) and whether it succeeded", "The project folder name (only the last part of the path) and a host label", "A session id, hashed on your machine with a secret that never leaves it", "For cron: exit code, duration, and only with --tail the masked last stderr lines"],
     never: "The Claude Code integration does not send prompts, answers, tool input or output, file contents, full paths or transcripts. Cron --tail optionally sends error output; masking does not guarantee that all sensitive content is removed.",
@@ -45,9 +51,10 @@ const COPY = {
     steps: [
       ["1. Maschine verbinden", "Zeigt einen Code und öffnet den Browser; bestätige ihn, während du angemeldet bist. Jede Maschine bekommt ein eigenes Token, das du in den Einstellungen widerrufen kannst.", CMD.login],
       ["2. Claude Code tracken", "Trägt Hooks in ~/.claude/settings.json ein (daneben entsteht ein Backup, deine eigenen Hooks bleiben). Mit --project für .claude/settings.json im aktuellen Ordner.", CMD.claude],
-      ["3. Cron-Jobs umschließen", "Ausgabe und Exit-Code des Jobs bleiben genau wie vorher. --every sagt uns, wann der nächste Lauf fällig ist, damit ein fehlender Lauf auffällt. --tail schickt die letzten stderr-Zeilen mit, Tokens und Passwörter maskiert.", CMD.wrap],
+      ["3. Lokale Hooks und Cron-Jobs prüfen", "Prüft Verbindungsstatus, Claude-Hooks, lokale MCP-Anzahl und noch nicht umschlossene Crontab-Einträge rein lokal, ohne Daten zu senden.", CMD.doctor],
+      ["4. Cron-Jobs umschließen", "Ausgabe und Exit-Code des Jobs bleiben genau wie vorher. --every sagt uns, wann der nächste Lauf fällig ist, damit ein fehlender Lauf auffällt. --tail schickt die letzten stderr-Zeilen mit, Tokens und Schlüssel maskiert.", CMD.wrap],
     ],
-    after: "Jeden Morgen (standardmäßig 07:00 Europe/Berlin) kommt ein Briefing. Sofort-Meldungen gibt es, wenn ein Lauf fehlschlägt, hängt oder fehlt: per Mail und optional an Telegram, Slack, Discord oder einen Webhook.",
+    after: "Jeden Morgen (standardmäßig 07:00 in deiner gewählten IANA-Zeitzone; Vorgabe Europe/Berlin) kommt ein Briefing. Sofort-Meldungen gibt es, wenn ein Lauf fehlschlägt, hängt, fehlt oder in einer Fehlerschleife dreht: per Mail und optional an Telegram, Slack, Discord oder einen Webhook.",
     sentTitle: "Was gesendet wird, und was nie",
     sent: ["Event-Typ: Session-Start und -Ende, Tool-Start und -Ende, Turn-Ende, Cron-Start und -Ende", "Tool-Name (zum Beispiel Bash oder mcp__github__create_issue) und ob er erfolgreich war", "Der Projektordner-Name (nur der letzte Teil des Pfads) und ein Host-Label", "Eine Session-ID, auf deiner Maschine gehasht mit einem Geheimnis, das sie nie verlässt", "Bei Cron: Exit-Code, Dauer und nur mit --tail die maskierten letzten stderr-Zeilen"],
     never: "Die Claude-Code-Anbindung sendet keine Prompts, Antworten, Tool-Eingaben oder -Ausgaben, Dateiinhalte, vollen Pfade oder Transkripte. Cron --tail sendet optional Fehlerausgaben; die Maskierung garantiert nicht, dass alle sensiblen Inhalte entfernt werden.",
@@ -81,8 +88,18 @@ export default function AgentMonitoringDocs({ lang }: { lang: "en" | "de" }) {
       <ul>{c.sent.map((s) => <li key={s}>{s}</li>)}</ul>
       <p>{c.never}</p>
       <p>{c.retention}</p>
-      <h3>{lang === "de" ? "Konfiguration und OpenTelemetry" : "Configuration and OpenTelemetry"}</h3>
-      <p>{lang === "de" ? "CLI 0.3.0 erfasst bei Sessionstart und Konfigurationsänderungen Fingerabdrücke fester Konfigurationsdateien sowie Zähler für MCP-Einträge, Plugins und Berechtigungsregeln. Inhalte und Regeln bleiben lokal. Die Aufnahme zeigt konfigurierte Einträge, keine wirksamen Rechte. Eine lokale Vorschau erhältst du mit:" : "CLI 0.3.0 captures fingerprints of fixed configuration files and counts of MCP entries, plugins and permission rules on session start and configuration changes. Contents and rules stay local. These are configured entries, not effective permissions. Preview locally with:"}</p>
+      <h3>{lang === "de" ? "Lokale Bremse (PreToolUse-Guard)" : "Local circuit breaker (PreToolUse guard)"}</h3>
+      <p>{lang === "de"
+        ? "Optional kannst du in ~/.agenttracking/guard.json eine rein lokale Schutzregel setzen. Ist sie aktiv, stoppt der PreToolUse-Hook neue Tool-Aufrufe direkt auf deiner Maschine, ohne Netzwerkaufruf und ohne Prompts oder Argumente zu lesen. Ein neuer Prompt im Terminal setzt Fehlerserien automatisch zurück:"
+        : "Optionally configure a purely local rule in ~/.agenttracking/guard.json. When active, the PreToolUse hook blocks new tool calls directly on your machine with no network round-trip and without reading prompts or arguments. Submitting a fresh prompt resets consecutive failure streaks automatically:"}</p>
+      <pre className="code">{CMD.guard}</pre>
+      <h3 id="fleet-api">{lang === "de" ? "Flotten-API und MCP (get_fleet_status)" : "Fleet API and MCP (get_fleet_status)"}</h3>
+      <p>{lang === "de"
+        ? "Mit einem Lese-Token (wmt_..., erstellbar unter Deine Agents -> Einstellungen) kannst du den Status deiner eigenen Agents per HTTP oder direkt über MCP in Claude Desktop, Claude Code oder Cursor abfragen:"
+        : "With an account read token (wmt_..., created under Your agents -> Settings) you can query your monitored agents over HTTP or ask Claude Desktop, Claude Code or Cursor directly via MCP:"}</p>
+      <pre className="code" style={{ whiteSpace: "pre-wrap" }}>{`curl -sS -H "Authorization: Bearer wmt_your_token" ${SITE_ORIGIN}/api/agents/fleet\n# MCP (streamable HTTP): POST ${SITE_ORIGIN}/api/mcp -> tool get_fleet_status`}</pre>
+      <h3>{lang === "de" ? "Konfiguration, Fehlerschleifen und OpenTelemetry" : "Configuration, error loops and OpenTelemetry"}</h3>
+      <p>{lang === "de" ? "CLI 0.4.0 erfasst bei Sessionstart und Konfigurationsänderungen Fingerabdrücke fester Konfigurationsdateien sowie Zähler für MCP-Einträge, Plugins und Berechtigungsregeln. Inhalte und Regeln bleiben lokal. Pro meldet außerdem Fehlerschleifen, wenn fünf Tool-Aufrufe am Stück oder derselbe Tool-Aufruf achtmal in 15 Minuten scheitert. Eine lokale Vorschau der Konfigurations-Metadaten erhältst du mit:" : "CLI 0.4.0 captures fingerprints of fixed configuration files and counts of MCP entries, plugins and permission rules on session start and configuration changes. Contents and rules stay local. Pro also flags runaway error loops when five tool calls fail in a row or the same tool fails eight times in 15 minutes. Preview snapshot metadata locally with:"}</p>
       <pre className="code">{`${CLI_COMMAND} snapshot`}</pre>
       <p><a href="/app/fleet/telemetry">OpenTelemetry</a>: {lang === "de" ? "Geschützter OTLP/HTTP-JSON-Empfänger mit Trace- und Elternbeziehungen, Status, Dienstversionen und ausgewählten Modell-/Tool-Metadaten. Die Einrichtung steht im Dashboard. Protobuf, gRPC, Metriken und Logs werden nicht angenommen." : "Authenticated OTLP/HTTP JSON receiver with trace/parent relationships, status, service versions and selected model/tool metadata. Setup is in the dashboard. Protobuf, gRPC, metrics and logs are not accepted."}</p>
       <h3>{lang === "de" ? "Optionale Linux-Beobachtung" : "Optional Linux observation"}</h3>

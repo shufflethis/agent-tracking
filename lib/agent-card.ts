@@ -3,16 +3,15 @@ import { CONTACT_EMAIL, LEGAL, SITE_HOST, SITE_NAME, SITE_ORIGIN } from "@/lib/s
 /**
  * The documents other agents read to find out what this installation is and
  * what it can do: an MCP server card, an A2A agent card, an RFC 9727 API
- * catalogue and an OpenAPI description. All four describe the one thing
- * the server actually offers, the stats of a tracked site to its owner,
- * and nothing that does not exist.
+ * catalogue and an OpenAPI description. All four describe only endpoints and
+ * tools that actually exist on this server.
  */
 
 export const MCP_CARD = {
   $schema: "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   name: `${SITE_HOST.split(".").reverse().join(".")}/agent-tracking`,
-  description: `Read authorized site statistics on ${SITE_HOST}: recognized referrals, crawler claims and verification, browser tool observations and separate server outcome receipts. Requires a read token for a site the account can access.`,
-  version: "1.0.0",
+  description: `Read authorized agent fleet status (get_fleet_status) and tracked website statistics (get_agent_stats) on ${SITE_HOST}. Requires an account read token (wmt_...).`,
+  version: "1.1.0",
   websiteUrl: `${SITE_ORIGIN}/docs#api`,
   remotes: [{ type: "streamable-http", url: `${SITE_ORIGIN}/api/mcp` }],
 };
@@ -20,8 +19,8 @@ export const MCP_CARD = {
 export const AGENT_CARD = {
   protocolVersion: "0.3.0",
   name: SITE_HOST,
-  description: `${SITE_NAME}: recognized referrals, crawler evidence, observed browser tools and separate server outcome receipts for an authorized site. Browser attempts do not confirm an agent actor.`,
-  version: "1.0.0",
+  description: `${SITE_NAME}: read-only status of your monitored agent fleet (Claude Code sessions, cron jobs, signals) and evidence-labeled statistics for authorized websites.`,
+  version: "1.1.0",
   url: `${SITE_ORIGIN}/api/mcp`,
   preferredTransport: "JSONRPC",
   provider: { organization: LEGAL.name, url: LEGAL.website },
@@ -29,9 +28,16 @@ export const AGENT_CARD = {
   capabilities: { streaming: false, pushNotifications: false, stateTransitionHistory: false },
   defaultInputModes: ["text/plain", "application/json"],
   defaultOutputModes: ["text/plain", "application/json"],
-  securitySchemes: { bearer: { type: "http", scheme: "bearer", description: "API token from the site's settings page" } },
+  securitySchemes: { bearer: { type: "http", scheme: "bearer", description: "API token (wmt_...) from settings" } },
   security: [{ bearer: [] }],
   skills: [
+    {
+      id: "get_fleet_status",
+      name: "Get your monitored agent fleet status",
+      description: "Health counts, latest run status (completed, failed, suspected stuck, missing, task checks) and recent signals (config drift, first-time tools, suspected runaway loops) for your own agents.",
+      tags: ["agent-monitoring", "claude-code", "cron", "observability", "mcp"],
+      examples: ["Did any of my overnight Claude Code sessions or cron jobs fail or get stuck?", "Show recent configuration or loop alerts on my agent fleet."],
+    },
     {
       id: "get_agent_stats",
       name: "Get a site's agent statistics",
@@ -44,6 +50,11 @@ export const AGENT_CARD = {
 
 export const API_CATALOG = {
   linkset: [
+    {
+      anchor: `${SITE_ORIGIN}/api/agents/fleet`,
+      "service-desc": [{ href: `${SITE_ORIGIN}/openapi.json`, type: "application/vnd.oai.openapi+json" }],
+      "service-doc": [{ href: `${SITE_ORIGIN}/docs#agent-monitoring`, type: "text/html" }],
+    },
     {
       anchor: `${SITE_ORIGIN}/api/stats`,
       "service-desc": [{ href: `${SITE_ORIGIN}/openapi.json`, type: "application/vnd.oai.openapi+json" }],
@@ -64,17 +75,20 @@ const daysParam = { name: "days", in: "query", required: false, description: "Wi
 export const OPENAPI = {
   openapi: "3.1.0",
   info: {
-    title: `${SITE_HOST} Stats API`,
-    version: "1.0.0",
-    summary: "Evidence-labeled summaries for sites the caller may read.",
+    title: `${SITE_HOST} Fleet & Stats API`,
+    version: "1.1.0",
+    summary: "Read-only fleet health for your own agents and evidence-labeled summaries for authorized websites.",
     description:
-      "Daily counters and separate measurement-status, crawler-verification and server-receipt summaries as JSON. The account read token is created in site settings and can access owned or explicitly shared sites. It does not authorize outcome writes. MCP tool get_agent_stats returns the same site summary. Public stats pages expose only published aggregate fields, never private findings or receipts.",
+      "Authenticated with one read-only account API token (wmt_...) created in dashboard settings. Exposes monitored agent fleet health (/api/agents/fleet and MCP tool get_fleet_status) and website statistics (/api/stats/{domain} and MCP tool get_agent_stats).",
     license: { name: "AGPL-3.0-only", identifier: "AGPL-3.0-only" },
     contact: { name: SITE_NAME, url: `${SITE_ORIGIN}/docs#api`, email: CONTACT_EMAIL },
   },
   servers: [{ url: SITE_ORIGIN }],
-  components: { securitySchemes: { bearerAuth: { type: "http", scheme: "bearer", description: "API token (wmt_...) from the site's settings page; see /auth.md" } } },
+  components: { securitySchemes: { bearerAuth: { type: "http", scheme: "bearer", description: "API token (wmt_...) from settings; see /auth.md" } } },
   paths: {
+    "/api/agents/fleet": {
+      get: { operationId: "getFleetStatus", summary: "Health, latest runs and signals of your monitored agents", security: bearer, responses: { "200": { description: "Fleet counts, per-agent latest run and recent signals", content: { "application/json": { schema: { type: "object", required: ["generatedAt", "timezone", "plan", "counts", "agents", "recentSignals"], properties: { generatedAt: { type: "string", format: "date-time" }, timezone: { type: "string" }, plan: { type: "object" }, counts: { type: "object" }, agents: { type: "array", items: { type: "object" } }, recentSignals: { type: "array", items: { type: "object" } } } } } } }, "401": { description: "No or invalid token" } } },
+    },
     "/api/stats": {
       get: { operationId: "listSites", summary: "The sites this token can read", security: bearer, responses: { "200": { description: "Plan, history window and the sites with their stats URLs", content: { "application/json": { schema: { type: "object", properties: { plan: { type: "string" }, maxDays: { type: "integer" }, sites: { type: "array", items: { type: "object", properties: { domain: { type: "string" }, verified: { type: "boolean" }, stats: { type: "string", format: "uri" } } } } } } } } }, "401": { description: "No or invalid token" } } },
     },
@@ -91,7 +105,7 @@ export const OPENAPI = {
       post: { operationId: "importServerLog", summary: "Import a server access log (nginx or Apache combined, plain or gzip)", security: bearer, parameters: [domainParam], requestBody: { required: true, content: { "text/plain": { schema: { type: "string" } }, "application/gzip": { schema: { type: "string", format: "binary" } } } }, responses: { "200": { description: "Lines scanned, agent fetches, unverified lines and bursts" } } },
     },
     "/api/mcp": {
-      post: { operationId: "mcp", summary: "MCP server (streamable HTTP, JSON-RPC 2.0) with the tool get_agent_stats", security: bearer, requestBody: { required: true, content: { "application/json": { schema: { type: "object" } } } }, responses: { "200": { description: "JSON-RPC response" } } },
+      post: { operationId: "mcp", summary: "MCP server (streamable HTTP, JSON-RPC 2.0) with tools get_fleet_status and get_agent_stats", security: bearer, requestBody: { required: true, content: { "application/json": { schema: { type: "object" } } } }, responses: { "200": { description: "JSON-RPC response" } } },
     },
   },
 };

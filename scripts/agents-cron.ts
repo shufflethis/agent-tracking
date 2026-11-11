@@ -28,7 +28,8 @@ async function main() {
   for (const owner of dueBriefingOwners(now)) {
     const briefing = buildBriefing(owner, now - BRIEFING_WINDOW_MS, now);
     if (briefingWorthSending(briefing)) {
-      const mail = renderBriefingMail(briefing, dashLang(getAccount(owner)?.lang), `${SITE_ORIGIN}/app/fleet`);
+      const account = getAccount(owner);
+      const mail = renderBriefingMail(briefing, dashLang(account?.lang), `${SITE_ORIGIN}/app/fleet`, account?.timezone ?? undefined);
       const result = await sendMail({ to: [{ email: owner }], subject: mail.subject, text: mail.text, html: mail.html, ledger: { family: "agent-briefing" } });
       if (!result.ok) { console.log(`briefing: ${owner.replace(/^(.).*@/, "$1***@")} failed: ${result.reason}`); continue; }
       briefed++;

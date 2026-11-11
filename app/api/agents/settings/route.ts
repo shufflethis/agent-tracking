@@ -10,12 +10,14 @@ export async function POST(request: Request) {
   if (r instanceof Response) return r;
   const f = (k: string) => String(r.form.get(k) ?? "").trim();
   const kind = f("webhookKind") as WebhookKind | "";
+  const timezone = f("timezone") || undefined;
   // Telegram, Slack, Discord and webhooks are Pro features once paid plans start; email stays on every plan.
   if (kind && !effectiveAgentPlan(r.account.agent_plan).webhooks) return backTo(request, "/app/fleet/settings?saved=needs_pro#plan");
   // A generic webhook must resolve to public addresses only; checked again before every send.
   if (kind === "generic" && !(await resolvePublicTarget(f("webhookUrl")))) return backTo(request, "/app/fleet/settings?saved=invalid_url");
   const result = saveNotifySettings(r.account.email, {
     briefingHour: Number(f("briefingHour")),
+    ...(timezone ? { timezone } : {}),
     alertsEmail: f("alertsEmail") === "on",
     webhook: kind ? { kind, url: f(kind === "telegram" ? "telegramToken" : "webhookUrl"), ...(kind === "telegram" ? { chatId: f("telegramChat") } : {}) } : null,
   });

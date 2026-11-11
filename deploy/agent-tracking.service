@@ -5,6 +5,7 @@ After=network.target
 
 [Service]
 Type=simple
+# Dedicated service user recommended on new hosts (e.g. User=agenttracking).
 User=root
 WorkingDirectory=/root/agent-tracking
 EnvironmentFile=/root/agent-tracking/.env.production
@@ -12,6 +13,13 @@ Environment=NODE_ENV=production
 ExecStart=/usr/bin/node --no-warnings /root/agent-tracking/node_modules/next/dist/bin/next start -H 127.0.0.1 -p 3058
 Restart=always
 RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectControlGroups=true
+ProtectKernelModules=true
+ProtectKernelTunables=true
+RestrictSUIDSGID=true
+MemoryMax=768M
 
 [Install]
 WantedBy=multi-user.target

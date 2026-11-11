@@ -80,3 +80,29 @@ test("signals go out with the alerts once and are then marked", () => withDb(asy
   assert.equal(await sendAlerts(T0 + 7_400_000, post), 0);
   assert.equal(calls.length, 1);
 }));
+
+test("thrashing signal fires once per run on 5 consecutive failures or 8 repeat tool failures in 15m", () => withDb(() => {
+  const o = proOwner();
+  const run1 = "1111111111111111";
+  const streak = Array.from({ length: 6 }, (_, i) => ev("tool_end", T0 + i * 1000, { run: run1, tool: i % 2 ? "Bash" : "Edit", ok: false }));
+  recordAgentEvents(o, [ev("session_start", T0, { run: run1 }), ...streak], T0);
+  let s = signals();
+  assert.equal(s.length, 1);
+  assert.equal(s[0].kind, "thrashing");
+  assert.equal(JSON.parse(s[0].payload).streak, true);
+  assert.match(signalText("thrashing", JSON.parse(s[0].payload), "en"), /5 failed tool calls in a row/);
+  assert.match(signalText("thrashing", JSON.parse(s[0].payload), "de"), /5 fehlgeschlagene Tool-Aufrufe in Folge/);
+
+  // Interleaved successes prevent a 5-streak, but 8 failures of WebFetch within 15m still trip streak: false
+  const run2 = "2222222222222222";
+  const interleaved: AgentEvent[] = [ev("session_start", T0 + 60_000, { run: run2 })];
+  for (let i = 0; i < 8; i++) {
+    interleaved.push(ev("tool_end", T0 + 61_000 + i * 10_000, { run: run2, tool: "WebFetch", ok: false }));
+    interleaved.push(ev("tool_end", T0 + 62_000 + i * 10_000, { run: run2, tool: "Read", ok: true }));
+  }
+  recordAgentEvents(o, interleaved, T0 + 200_000);
+  s = signals();
+  assert.equal(s.length, 2);
+  assert.equal(s[1].kind, "thrashing");
+  assert.deepEqual(JSON.parse(s[1].payload), { tool: "WebFetch", failures: 8, streak: false });
+}));

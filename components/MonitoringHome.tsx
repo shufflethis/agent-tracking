@@ -2,7 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import CopyBlock from "@/components/CopyBlock";
 import { CONNECT_CLAUDE } from "@/lib/agents/format";
-import { claudeSetupPrompt, DISCONNECT_CLAUDE, WRAP_CRON } from "@/lib/agents/setup";
+import { claudeSetupPrompt, DISCONNECT_CLAUDE, DOCTOR_COMMAND, GUARD_EXAMPLE, WRAP_CRON } from "@/lib/agents/setup";
 import { AGENT_EVENTS_PER_MONTH, AGENT_LIMIT } from "@/lib/agents/types";
 import { AGENT_PLANS, AGENT_PRO_PRICE, pricingActive } from "@/lib/agents/plans";
 import { AGENT_EVENT_RETENTION_DAYS } from "@/lib/tracking/plans";
@@ -71,20 +71,22 @@ function copy(lang: "en" | "de") {
         { k: "Fehlt", t: "Ein Cron-Job, der nie gestartet ist", d: "Mit --every weiß das Monitoring, wann der nächste Lauf fällig ist. Bleibt er aus, gibt es eine Meldung." },
         { k: "Fehlgeschlagen", t: "Exit-Code und Tool-Fehler", d: "Fehlgeschlagene Läufe und Tool-Aufrufe, bei Cron optional mit den letzten stderr-Zeilen, Tokens maskiert." },
         { k: "Wartet", t: "Claude wartet auf dich", d: "Sessions, die auf eine Eingabe warten, sind markiert, statt stundenlang unbemerkt zu bleiben." },
+        { k: "Fehlerschleife", t: "Ein Agent dreht sich im Kreis", d: "Fünf fehlgeschlagene Tool-Aufrufe am Stück oder acht Fehler desselben Tools in 15 Minuten lösen ein Pro-Signal aus, ohne Prompts zu lesen." },
+        { k: "Drift & neue Tools", t: "Geänderte Regeln oder unbekanntes Tool", d: "Pro meldet geänderte MCP-Server, Plugins, Berechtigungsregeln oder CLAUDE.md sowie Tools, die dieser Agent zum ersten Mal nutzt." },
       ] as Card[],
-      alerts: "Einmal am Tag kommt ein Briefing zur Stunde deiner Wahl (Zeiten vorerst in mitteleuropäischer Zeit). Sofort-Meldungen gehen per Mail raus und optional an Telegram, Slack, Discord oder einen Webhook.",
+      alerts: "Einmal am Tag kommt ein Briefing zur Stunde und Zeitzone deiner Wahl (US, Europa, UTC oder APAC). Sofort-Meldungen gehen per Mail raus und optional an Telegram, Slack, Discord oder einen Webhook.",
       stepsTitle: "In drei Schritten eingerichtet",
       steps: [
         { t: "1. Claude Code verbinden", d: "Meldet die Maschine an und trägt Hooks in ~/.claude/settings.json ein. Daneben entsteht ein Backup, deine eigenen Hooks bleiben. Mit --project gilt es nur für den aktuellen Ordner.", cmd: CONNECT_CLAUDE },
-        { t: "2. Cron-Jobs umschließen", d: "Ausgabe und Exit-Code deines Jobs bleiben genau gleich. --every meldet fehlende Läufe, --tail schickt maskierte Fehlerzeilen mit.", cmd: WRAP_CRON },
-        { t: "3. Abschalten, wenn du willst", d: "Entfernt nur unsere Hooks, sonst nichts.", cmd: DISCONNECT_CLAUDE },
+        { t: "2. Lokale Cron-Jobs prüfen und umschließen", d: "doctor findet nicht umschlossene Crontab-Jobs lokal, ohne Daten zu senden. wrap behält Ausgabe und Exit-Code exakt bei; --every meldet fehlende Läufe, --tail maskiert Fehlerzeilen.", cmd: `${DOCTOR_COMMAND}\n${WRAP_CRON}` },
+        { t: "3. Lokale Bremse setzen oder jederzeit abschalten", d: "Optional stoppt guard fehlgeschlagene Tool-Schleifen lokal auf deinem Rechner. disconnect entfernt unsere Hooks rückstandslos.", cmd: `${GUARD_EXAMPLE}\n${DISCONNECT_CLAUDE}` },
       ],
-      stepsMore: "Konfigurations-Snapshots, OpenTelemetry und die optionale Linux-Beobachtung stehen in der Doku.",
+      stepsMore: "Lokale Schutzregeln, Konfigurations-Snapshots, MCP-Abfragen und OpenTelemetry stehen in der Doku.",
       todayTitle: "Heute verbunden, als Nächstes geplant",
       today: [
-        { k: "Heute", t: "Claude Code", d: "Über Hooks, mit einem Befehl." },
-        { k: "Heute", t: "Cron-Jobs und Skripte", d: "Jeder Befehl lässt sich mit wrap umschließen, also auch ein Agent, den du per Skript startest." },
-        { k: "Heute", t: "OpenTelemetry", d: "Alles, was OTLP/HTTP-JSON-Traces sendet, landet mit Trace-Struktur im Dashboard." },
+        { k: "Heute", t: "Claude Code", d: "Über Hooks, mit einem Befehl, inklusive optionaler lokaler PreToolUse-Bremse." },
+        { k: "Heute", t: "Cron-Jobs und Skripte", d: "doctor erkennt bestehende Crontab-Einträge; jeder Befehl lässt sich mit wrap umschließen." },
+        { k: "Heute", t: "OpenTelemetry & MCP", d: "OTLP/HTTP-JSON-Traces senden und den eigenen Flottenstatus per MCP (get_fleet_status) direkt in Claude oder Cursor abfragen." },
         { k: "Als Nächstes", t: "Codex, Hermes, OpenClaw", d: "Eigene Anbindungen sind geplant. Den Stand findest du im Changelog." },
       ] as Card[],
       changelog: "Zum Changelog",
@@ -98,8 +100,8 @@ function copy(lang: "en" | "de") {
       whyLink: "Zum Gespräch auf X ↗",
       plansTitle: live ? `Kostenlos starten, ${pm} $ wenn du mehr brauchst` : "Kostenlos in der Beta, selbst hostbar für immer",
       tiers: [
-        { id: "free", name: "Free", price: "0 $", per: "für immer", note: "Ohne Kreditkarte", cta: "Kostenlos starten", features: [`${freeN} Agents`, "Claude Code, Cron-Jobs und Skripte", "Tägliches Briefing per E-Mail", "Sofort-Meldungen per E-Mail", `${AGENT_EVENT_RETENTION_DAYS} Tage Verlauf`] },
-        { id: "pro", name: "Pro", price: `${pm} $`, per: "pro Monat", note: `oder ${py} $ im Jahr, zwei Monate geschenkt`, cta: "Mit Pro starten", features: [`${proN} Agents`, "Alles aus Free", "Meldungen an Telegram, Slack, Discord und Webhooks", "Meldung bei Konfigurationsänderungen: MCP-Server, Plugins, Regeln, CLAUDE.md", "Meldung, wenn ein Agent ein Tool zum ersten Mal nutzt", "OpenTelemetry und Task-Checks"] },
+        { id: "free", name: "Free", price: "0 $", per: "für immer", note: "Ohne Kreditkarte", cta: "Kostenlos starten", features: [`${freeN} Agents`, "Claude Code, Cron-Jobs und Skripte", "Tägliches Briefing in deiner lokalen Zeitzone", "Sofort-Meldungen per E-Mail", "Lese-API und MCP (get_fleet_status)", `${AGENT_EVENT_RETENTION_DAYS} Tage Verlauf`] },
+        { id: "pro", name: "Pro", price: `${pm} $`, per: "pro Monat", note: `oder ${py} $ im Jahr, zwei Monate geschenkt`, cta: "Mit Pro starten", features: [`${proN} Agents`, "Alles aus Free", "Meldungen an Telegram, Slack, Discord und Webhooks", "Meldung bei Fehlerschleifen (wiederholt scheiternde Tool-Aufrufe)", "Meldung bei Konfigurationsänderungen und neuen Tools", "OpenTelemetry und Task-Checks"] },
         { id: "self", name: "Selbst gehostet", price: "0 $", per: "auf deinem Server", note: "Open Source unter AGPL-3.0", cta: "Auf GitHub ansehen", features: ["Der komplette Code: CLI, Ingest, Dashboard, Meldungen", "Ein Node-Prozess, eine SQLite-Datei", "Deine Daten verlassen deinen Server nie"] },
       ],
       team: { name: "Team", price: "Auf Anfrage", text: "Für Unternehmen, die Agents auf vielen Rechnern laufen lassen. Geplant: mehrere Mitglieder mit einer gemeinsamen Flotte, Audit-Log zum Export, Leitplanken zentral für alle Maschinen, Rechnung statt Karte. Erzähl uns, was du brauchst, dann bauen wir es mit dir.", cta: "Team anfragen" },
@@ -131,6 +133,7 @@ function copy(lang: "en" | "de") {
         { q: "Wo liegen meine Daten, und wer steht dahinter?", a: `Die gehostete Version läuft auf Servern in ${LEGAL.hostingCountry === "Germany" ? "Deutschland" : LEGAL.hostingCountry} und wird von ${LEGAL.name} betrieben. Gespeichert werden nur Lauf-Metadaten. Lieber auf eigener Infrastruktur? Selbst hosten geht überall, wo Node läuft.` },
         { q: "Was kostet es?", a: live ? `Free kostet nichts (${freeN} Agents). Pro kostet ${pm} $ im Monat oder ${py} $ im Jahr (${proN} Agents, alle Kanäle). Selbst gehostet ist es dauerhaft kostenlos.` : `Während der Beta nichts: bis ${AGENT_LIMIT} Agents und ${n(AGENT_EVENTS_PER_MONTH)} Events im Monat. Danach gibt es Free (${freeN} Agents) und Pro für ${pm} $ im Monat, mit 30 Tagen Vorankündigung. Selbst gehostet ist es dauerhaft kostenlos.` },
         { q: "Wie aktualisiere ich die CLI?", a: "Führ den Verbindungsbefehl mit der neuen Version noch einmal aus. Die Hooks zeigen danach auf die neue Version." },
+        { q: "Kann ich einen Agent lokal stoppen oder per MCP abfragen?", a: "Ja. Mit agenttracking pause oder guard --max-failures 5 stoppt der lokale Hook neue Tool-Aufrufe direkt auf deiner Maschine, ohne Netzwerkaufruf. Und über POST /api/mcp (Tool get_fleet_status) können Claude oder Cursor den Status deiner Flotte mit einem Lese-Token abfragen." },
       ],
       finalTitle: "Verbinde deinen ersten Agent",
       finalDek: "Ein Befehl, eine Bestätigung im Browser. Ab der nächsten Session siehst du, was er tut.",
@@ -175,20 +178,22 @@ function copy(lang: "en" | "de") {
       { k: "Missing", t: "A cron job that never started", d: "With --every the monitor knows when the next run is due. If it does not come, you hear about it." },
       { k: "Failed", t: "Exit codes and tool errors", d: "Failed runs and tool calls; for cron, optionally with the last stderr lines, tokens masked." },
       { k: "Waiting", t: "Claude is waiting on you", d: "Sessions waiting for input are marked instead of sitting unnoticed for hours." },
+      { k: "Runaway loop", t: "An agent spinning on errors", d: "Five failed tool calls in a row or eight failures of the same tool within 15 minutes trigger a Pro signal, without reading prompts." },
+      { k: "Drift & new tools", t: "Changed rules or first-time tool", d: "Pro flags changed MCP servers, plugins, permission rules or CLAUDE.md, and tools an agent calls for the first time." },
     ] as Card[],
-    alerts: "Once a day you get one briefing, at the hour you pick (times are in Central European Time for now; US time zones are next). Immediate alerts go out by email, and optionally to Telegram, Slack, Discord or a webhook.",
+    alerts: "Once a day you get one briefing at the hour and time zone you pick (US, Europe, UTC or APAC). Immediate alerts go out by email, and optionally to Telegram, Slack, Discord or a webhook.",
     stepsTitle: "Set up in three steps",
     steps: [
       { t: "1. Connect Claude Code", d: "Signs this machine in and adds hooks to ~/.claude/settings.json. A backup is written next to it and your own hooks stay. Use --project for the current folder only.", cmd: CONNECT_CLAUDE },
-      { t: "2. Wrap your cron jobs", d: "Your job's output and exit code stay exactly the same. --every reports missing runs, --tail sends masked error lines.", cmd: WRAP_CRON },
-      { t: "3. Switch it off whenever you like", d: "Removes our hooks and nothing else.", cmd: DISCONNECT_CLAUDE },
+      { t: "2. Inspect and wrap cron jobs", d: "doctor finds unwrapped crontab schedules locally without sending data. wrap keeps output and exit code untouched; --every reports missing runs, --tail sends masked error lines.", cmd: `${DOCTOR_COMMAND}\n${WRAP_CRON}` },
+      { t: "3. Add a local brake, or switch off", d: "Optionally stop consecutive failing tool loops right on your machine with guard. disconnect removes our hooks and nothing else.", cmd: `${GUARD_EXAMPLE}\n${DISCONNECT_CLAUDE}` },
     ],
-    stepsMore: "Configuration snapshots, OpenTelemetry and the optional Linux observation are in the docs.",
+    stepsMore: "Local guardrails, configuration snapshots, MCP fleet queries and OpenTelemetry are in the docs.",
     todayTitle: "Connected today, planned next",
     today: [
-      { k: "Today", t: "Claude Code", d: "Through hooks, with one command." },
-      { k: "Today", t: "Cron jobs and scripts", d: "Any command can be wrapped, including an agent you start from a script." },
-      { k: "Today", t: "OpenTelemetry", d: "Anything that sends OTLP/HTTP JSON traces shows up with its trace structure." },
+      { k: "Today", t: "Claude Code", d: "Through hooks, with one command, plus an optional local PreToolUse circuit breaker." },
+      { k: "Today", t: "Cron jobs and scripts", d: "doctor discovers existing crontab entries; any command or script can be wrapped." },
+      { k: "Today", t: "OpenTelemetry & MCP", d: "Send OTLP/HTTP JSON traces, and ask Claude or Cursor how your fleet did via MCP (get_fleet_status)." },
       { k: "Next", t: "Codex, Hermes, OpenClaw", d: "Dedicated integrations are planned. Follow them in the changelog." },
     ] as Card[],
     changelog: "Read the changelog",
@@ -202,8 +207,8 @@ function copy(lang: "en" | "de") {
     whyLink: "Read the conversation on X ↗",
     plansTitle: live ? `Free to start, $${pm} when you need more` : "Free during the beta, self-hostable for good",
     tiers: [
-      { id: "free", name: "Free", price: "$0", per: "forever", note: "No credit card", cta: "Start free", features: [`${freeN} agents`, "Claude Code, cron jobs and scripts", "Daily briefing by email", "Instant alerts by email", `${AGENT_EVENT_RETENTION_DAYS} days of history`] },
-      { id: "pro", name: "Pro", price: `$${pm}`, per: "per month", note: `or $${py} a year, two months free`, cta: "Start with Pro", features: [`${proN} agents`, "Everything in Free", "Telegram, Slack, Discord and webhook alerts", "Alerts on configuration changes: MCP servers, plugins, rules, CLAUDE.md", "Alerts when an agent uses a tool for the first time", "OpenTelemetry and task checks"] },
+      { id: "free", name: "Free", price: "$0", per: "forever", note: "No credit card", cta: "Start free", features: [`${freeN} agents`, "Claude Code, cron jobs and scripts", "Daily briefing in your local time zone", "Instant alerts by email", "Read-only API and MCP (get_fleet_status)", `${AGENT_EVENT_RETENTION_DAYS} days of history`] },
+      { id: "pro", name: "Pro", price: `$${pm}`, per: "per month", note: `or $${py} a year, two months free`, cta: "Start with Pro", features: [`${proN} agents`, "Everything in Free", "Telegram, Slack, Discord and webhook alerts", "Alerts on runaway error loops (repeated failing tool calls)", "Alerts on configuration changes and first-time tools", "OpenTelemetry and task checks"] },
       { id: "self", name: "Self-hosted", price: "$0", per: "on your server", note: "Open source under AGPL-3.0", cta: "View on GitHub", features: ["All of the code: CLI, ingest, dashboard, alerts", "One Node process, one SQLite file", "Your data never leaves your server"] },
     ],
     team: { name: "Team", price: "On request", text: "For companies running agents on many machines. Planned: several members on one shared fleet, an audit log to export, guardrails set once for every machine, invoice instead of card. Tell us what you need and we build it with you.", cta: "Ask about Team" },
@@ -235,6 +240,7 @@ function copy(lang: "en" | "de") {
       { q: "Where is my data, and who is behind this?", a: `The hosted version runs on servers in ${LEGAL.hostingCountry}, operated by ${LEGAL.name}. Only run metadata is stored. Prefer your own infrastructure? Self-host it anywhere Node runs.` },
       { q: "What does it cost?", a: live ? `Free costs nothing (${freeN} agents). Pro is $${pm} a month or $${py} a year (${proN} agents, every channel). Self-hosted it is free for good.` : `Nothing during the beta: up to ${AGENT_LIMIT} agents and ${n(AGENT_EVENTS_PER_MONTH)} events a month. After that there is Free (${freeN} agents) and Pro for $${pm} a month, with 30 days' notice. Self-hosted it is free for good.` },
       { q: "How do I update the CLI?", a: "Run the connect command with the new version again. The hooks then point at the new version." },
+      { q: "Can I pause an agent locally or query my fleet through MCP?", a: "Yes. With agenttracking pause or guard --max-failures 5, the local hook blocks new tool calls right on your machine without a network round-trip. And with POST /api/mcp (tool get_fleet_status), Claude or Cursor can check your monitored agents using a read-only token." },
     ],
     finalTitle: "Connect your first agent",
     finalDek: "One command, one confirmation in the browser. From your next session on you can see what it does.",
@@ -333,7 +339,7 @@ export default function MonitoringHome({ lang }: { lang: "en" | "de" }) {
       <div className="hband">
         <section className="shell hsec" id="catches">
           <Head kick={c.kick.catch} title={c.catchTitle} />
-          <Cards rows={c.catches} cols={4} />
+          <Cards rows={c.catches} cols={3} />
           <p className="hafter">{c.alerts}</p>
         </section>
       </div>

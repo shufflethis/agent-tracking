@@ -48,7 +48,7 @@ export default async function Page({ params }: { params: Promise<{ agentId: stri
             <tbody>
               {runs.map((r) => (
                 <tr key={r.id}>
-                  <td><Link href={`/app/fleet/${agentId}/runs/${r.id}`}>{when(r.startedAt, lang)}</Link></td>
+                  <td><Link href={`/app/fleet/${agentId}/runs/${r.id}`}>{when(r.startedAt, lang, account.timezone)}</Link></td>
                   <td>{duration(r.durationMs ?? (r.endedAt ? r.endedAt - r.startedAt : null))}</td>
                   <td><span className={STATUS_CHIP[r.status]}>{runLabel(r, lang)}</span></td>
                   <td>{checkLabel(r, lang)}{r.checkName ? <small style={{ display: "block" }}>{r.checkName} · {r.checkVersion}</small> : null}</td>
@@ -64,12 +64,12 @@ export default async function Page({ params }: { params: Promise<{ agentId: stri
         </div>
         <h2 style={{ marginTop: 32 }} id="signals">{de ? "Auffälligkeiten" : "Signals"}</h2>
         <p>{de
-          ? "Änderungen an der Konfiguration (MCP-Server, Plugins, Berechtigungsregeln, Einstellungen, CLAUDE.md) und Tools, die dieser Agent zum ersten Mal benutzt. Nur Anzahlen, Prüfsummen und Tool-Namen, keine Inhalte."
-          : "Configuration changes (MCP servers, plugins, permission rules, settings, CLAUDE.md) and tools this agent uses for the first time. Counts, checksums and tool names only, no contents."}</p>
+          ? "Änderungen an der Konfiguration (MCP-Server, Plugins, Berechtigungsregeln, Einstellungen, CLAUDE.md), Tools, die dieser Agent zum ersten Mal benutzt, und Fehlerschleifen (fünf fehlgeschlagene Tool-Aufrufe am Stück oder acht Fehler desselben Tools in 15 Minuten). Nur Anzahlen, Prüfsummen und Tool-Namen, keine Inhalte."
+          : "Configuration changes (MCP servers, plugins, permission rules, settings, CLAUDE.md), tools this agent uses for the first time, and runaway error loops (five consecutive failed tool calls or eight failures of the same tool in 15 minutes). Counts, checksums and tool names only, no contents."}</p>
         {signals.length ? (
           <div className="tablewrap"><table>
             <thead><tr><th>{de ? "Zeit" : "Time"}</th><th>{de ? "Was" : "What"}</th></tr></thead>
-            <tbody>{signals.map((sg) => <tr key={sg.id}><td>{when(sg.at, lang)}</td><td>{signalText(sg.kind, JSON.parse(sg.payload) as SignalPayload, lang)}</td></tr>)}</tbody>
+            <tbody>{signals.map((sg) => <tr key={sg.id}><td>{when(sg.at, lang, account.timezone)}</td><td>{signalText(sg.kind, JSON.parse(sg.payload) as SignalPayload, lang)}</td></tr>)}</tbody>
           </table></div>
         ) : (
           <p style={{ color: "var(--muted)" }}>{signalsOn

@@ -3,7 +3,9 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { configDir, readConfig } from "./config.js";
 import { connectClaude, defaultCommand, disconnectClaude, installRuntime, settingsPathFor } from "./connect-claude.js";
+import { runDoctor } from "./doctor.js";
 import { flush } from "./flush.js";
+import { describeGuard, runGuardCommand, runPause, runResume } from "./guard.js";
 import { login } from "./login.js";
 import { runHook } from "./hook.js";
 import { spoolSize } from "./spool.js";
@@ -16,10 +18,16 @@ const HELP = `agenttracking: see what your agents did while you slept
   agenttracking login                 connect this machine to your account
   agenttracking connect claude        track Claude Code sessions (user settings)
   agenttracking disconnect claude     remove the hooks again
+  agenttracking doctor                check hooks, crontab jobs and local MCP count
   agenttracking wrap --name <n> [--every 24h] [--tail 20] -- <command...>
                                       run a cron command and report start, end, exit code
   agenttracking wrap --name eval --check booking --version v1 -- ./check.sh
                                       record a named task check, using its exit code
+  agenttracking pause [--agent <n>] [--reason <text>]
+                                      locally pause Claude Code tool calls on this machine
+  agenttracking resume                clear local pause and failure streaks
+  agenttracking guard [--max-failures <n|off>] [--deny-tool <Tool>] [--reset]
+                                      configure opt-in local PreToolUse circuit breaker
   agenttracking snapshot              preview sanitized configuration metadata
   agenttracking observe --pid <PID> --name <agent> [--seconds 60]
                                       optional Linux eBPF observation (requires bpftrace)
@@ -35,6 +43,10 @@ type Command = (args: string[]) => Promise<number>;
 const commands: Record<string, Command> = {
   async hook(args) { await runHook(args[0] ?? ""); return 0; },
   async flush() { await flush(); return 0; },
+  doctor: (args) => runDoctor(args),
+  pause: (args) => runPause(args),
+  resume: (args) => runResume(args),
+  guard: (args) => runGuardCommand(args),
   observe,
   async snapshot() { const cfg = readConfig(); if (!cfg) throw new Error("Connect this machine first"); console.log(JSON.stringify(captureSnapshot(cfg, process.cwd()), null, 2)); return 0; },
   wrap: (args) => wrap(args),
@@ -64,6 +76,8 @@ const commands: Record<string, Command> = {
     if (!c) { console.log("Not connected. Run: agenttracking login"); return 1; }
     console.log(`Connected as host "${c.host}" to ${c.origin}`);
     console.log(`Queued events: ${spoolSize()}`);
+    const guard = describeGuard();
+    if (guard) console.log(`Local guard: ${guard}`);
     const loss = join(configDir(), "telemetry-loss");
     if (existsSync(loss)) console.log(`Telemetry warning: ${readFileSync(loss, "utf8").trim()}`);
     const auth = join(configDir(), "auth-error");

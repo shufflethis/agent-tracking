@@ -1,3 +1,4 @@
+import { openSecret, sealSecret } from "../secret-box";
 import { db, monthKey } from "../tracking/db";
 import { webhookHostAllowed } from "./safe-url";
 import type { RunRow } from "./status";
@@ -90,23 +91,60 @@ export function medianDurationMs(agentId: string, days: number, now = Date.now()
   return values.length % 2 ? values[mid] : Math.round((values[mid - 1] + values[mid]) / 2);
 }
 
+export const DEFAULT_TIMEZONE = "Europe/Berlin";
+
+export const COMMON_TIMEZONES = [
+  "America/Los_Angeles",
+  "America/Denver",
+  "America/Chicago",
+  "America/New_York",
+  "America/Toronto",
+  "America/Sao_Paulo",
+  "UTC",
+  "Europe/London",
+  "Europe/Berlin",
+  "Europe/Paris",
+  "Europe/Zurich",
+  "Asia/Dubai",
+  "Asia/Kolkata",
+  "Asia/Singapore",
+  "Asia/Tokyo",
+  "Australia/Sydney",
+] as const;
+
+export function validTimeZone(tz: unknown): tz is string {
+  if (typeof tz !== "string" || !tz.trim() || tz.length > 64 || !/^[A-Za-z0-9_+-]+(?:\/[A-Za-z0-9_+-]+)*$/.test(tz)) return false;
+  try {
+    new Intl.DateTimeFormat("en-US", { timeZone: tz }).format(0);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export function safeTimeZone(tz: string | null | undefined): string {
+  return validTimeZone(tz) ? tz : DEFAULT_TIMEZONE;
+}
+
 export type WebhookKind = "telegram" | "slack" | "discord" | "generic";
 export type NotifySettings = {
   briefingHour: number;
+  timezone?: string;
   alertsEmail: boolean;
   webhook: { kind: WebhookKind; url: string; chatId?: string } | null;
 };
 const WEBHOOK_KINDS: WebhookKind[] = ["telegram", "slack", "discord", "generic"];
 
-export function getNotifySettings(owner: string): NotifySettings {
-  const r = db().prepare("select briefing_hour, alerts_email, webhook_kind, webhook_url, webhook_chat_id from accounts where email = ?").get(owner) as
-    | { briefing_hour: number; alerts_email: number; webhook_kind: string | null; webhook_url: string | null; webhook_chat_id: string | null }
+export function getNotifySettings(owner: string): NotifySettings & { timezone: string } {
+  const r = db().prepare("select briefing_hour, timezone, alerts_email, webhook_kind, webhook_url, webhook_chat_id from accounts where email = ?").get(owner) as
+    | { briefing_hour: number; timezone: string | null; alerts_email: number; webhook_kind: string | null; webhook_url: string | null; webhook_chat_id: string | null }
     | undefined;
-  if (!r) return { briefingHour: 7, alertsEmail: true, webhook: null };
-  const webhook = r.webhook_kind && r.webhook_url && WEBHOOK_KINDS.includes(r.webhook_kind as WebhookKind)
-    ? { kind: r.webhook_kind as WebhookKind, url: r.webhook_url, ...(r.webhook_chat_id ? { chatId: r.webhook_chat_id } : {}) }
+  if (!r) return { briefingHour: 7, timezone: DEFAULT_TIMEZONE, alertsEmail: true, webhook: null };
+  const unsealedUrl = openSecret(r.webhook_url);
+  const webhook = r.webhook_kind && unsealedUrl && WEBHOOK_KINDS.includes(r.webhook_kind as WebhookKind)
+    ? { kind: r.webhook_kind as WebhookKind, url: unsealedUrl, ...(r.webhook_chat_id ? { chatId: r.webhook_chat_id } : {}) }
     : null;
-  return { briefingHour: r.briefing_hour, alertsEmail: r.alerts_email === 1, webhook };
+  return { briefingHour: r.briefing_hour, timezone: safeTimeZone(r.timezone), alertsEmail: r.alerts_email === 1, webhook };
 }
 
 export function validWebhook(w: NonNullable<NotifySettings["webhook"]>): boolean {
@@ -116,11 +154,13 @@ export function validWebhook(w: NonNullable<NotifySettings["webhook"]>): boolean
   try { return webhookHostAllowed(w.kind, new URL(w.url)); } catch { return false; }
 }
 
-export function saveNotifySettings(owner: string, s: NotifySettings): "ok" | "invalid_url" | "invalid_hour" {
+export function saveNotifySettings(owner: string, s: NotifySettings): "ok" | "invalid_url" | "invalid_hour" | "invalid_timezone" {
   if (!Number.isInteger(s.briefingHour) || s.briefingHour < 0 || s.briefingHour > 23) return "invalid_hour";
+  if (s.timezone !== undefined && !validTimeZone(s.timezone)) return "invalid_timezone";
   if (s.webhook && !validWebhook(s.webhook)) return "invalid_url";
-  db().prepare("update accounts set briefing_hour = ?, alerts_email = ?, webhook_kind = ?, webhook_url = ?, webhook_chat_id = ? where email = ?").run(
-    s.briefingHour, s.alertsEmail ? 1 : 0, s.webhook?.kind ?? null, s.webhook?.url ?? null, s.webhook?.chatId ?? null, owner,
+  const tz = s.timezone ?? getNotifySettings(owner).timezone;
+  db().prepare("update accounts set briefing_hour = ?, timezone = ?, alerts_email = ?, webhook_kind = ?, webhook_url = ?, webhook_chat_id = ? where email = ?").run(
+    s.briefingHour, tz, s.alertsEmail ? 1 : 0, s.webhook?.kind ?? null, s.webhook ? sealSecret(s.webhook.url) : null, s.webhook?.chatId ?? null, owner,
   );
   return "ok";
 }

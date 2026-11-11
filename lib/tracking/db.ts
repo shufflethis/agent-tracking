@@ -491,6 +491,23 @@ function migrate(instance: DatabaseSync): void {
     if (!columns.has("sessions_after")) instance.exec("alter table accounts add column sessions_after integer");
     instance.prepare("insert into schema_migrations (version, applied_at) values (24, ?)").run(Date.now());
   }
+  if ((current.version ?? 0) < 25) {
+    const columns = new Set((instance.prepare("pragma table_info(accounts)").all() as { name: string }[]).map(c => c.name));
+    if (!columns.has("timezone")) instance.exec("alter table accounts add column timezone text not null default 'Europe/Berlin'");
+    instance.exec(`
+      create table agent_signals_v2 (
+        id text primary key, owner text not null, agent_id text not null references agents(id),
+        kind text not null check (kind in ('config_change','new_tool','thrashing')), key text not null, payload text not null,
+        at integer not null, alerted_at integer, unique (agent_id, kind, key)
+      );
+      insert into agent_signals_v2 (id, owner, agent_id, kind, key, payload, at, alerted_at)
+        select id, owner, agent_id, kind, key, payload, at, alerted_at from agent_signals;
+      drop table agent_signals;
+      alter table agent_signals_v2 rename to agent_signals;
+      create index if not exists agent_signals_pending on agent_signals(alerted_at, at);
+    `);
+    instance.prepare("insert into schema_migrations (version, applied_at) values (25, ?)").run(Date.now());
+  }
   instance.exec("commit");
   } catch (err) {
     instance.exec("rollback");
@@ -567,6 +584,8 @@ export type Account = {
   agent_stripe_subscription: string | null;
   /** Sessions issued before this time (ms) are no longer valid: "sign out everywhere". */
   sessions_after: number | null;
+  /** IANA time zone for morning briefings and fleet timestamps (default Europe/Berlin). */
+  timezone?: string | null;
 };
 
 export function ensureAccount(email: string, now = Date.now()): Account {
@@ -939,7 +958,16 @@ export function recordEvents(domain: string, owner: string, events: StoredEvent[
   const day = dayKey(now);
   if (prunedFor !== day) {
     prunedFor = day;
-    pruneRaw(now);
+    const active = handle;
+    if (active && active.path !== ":memory:") {
+      setImmediate(() => {
+        if (handle === active) {
+          try { pruneRaw(now); } catch { /* nightly cron retries */ }
+        }
+      });
+    } else {
+      pruneRaw(now);
+    }
   }
 
   const eventColumns = [

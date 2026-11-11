@@ -2,7 +2,7 @@ import { escapeHtml } from "../email";
 import { button, heading, layout, paragraph } from "../email-layout";
 import type { DashLang } from "../tracking/copy";
 import { agentCopy } from "./copy";
-import { eventCountsBetween, medianDurationMs, runsBetween, type BriefingRun } from "./store";
+import { eventCountsBetween, medianDurationMs, runsBetween, safeTimeZone, type BriefingRun } from "./store";
 import type { AgentKind, RunStatus } from "./types";
 
 /**
@@ -21,7 +21,8 @@ export type BriefingAgent = {
 };
 export type Briefing = { problems: BriefingAgent[]; quiet: BriefingAgent[] };
 
-export const clock = (at: number) => new Intl.DateTimeFormat("de-DE", { timeZone: TIME_ZONE, hour: "2-digit", minute: "2-digit" }).format(new Date(at));
+export const clock = (at: number, timeZone = TIME_ZONE) =>
+  new Intl.DateTimeFormat("de-DE", { timeZone: safeTimeZone(timeZone), hour: "2-digit", minute: "2-digit" }).format(new Date(at));
 
 export function buildBriefing(owner: string, since: number, now: number): Briefing {
   const byAgent = new Map<string, { runs: BriefingRun[] }>();
@@ -56,10 +57,10 @@ export const briefingWorthSending = (b: Briefing) => b.problems.length + b.quiet
 const label = (a: BriefingAgent) => `${a.name} (${a.host})`;
 const lastLines = (tail: string) => tail.split("\n").filter((l) => l.trim()).slice(-TAIL_LINES).join("\n");
 
-export function problemLine(a: BriefingAgent, lang: DashLang): string {
+export function problemLine(a: BriefingAgent, lang: DashLang, timeZone = TIME_ZONE): string {
   const c = agentCopy(lang).briefing;
   const p = a.lastProblem!;
-  const what = p.reason === "data_loss" ? (lang === "de" ? "Datenlücke gemeldet" : "data loss reported") : p.reason === "tool_errors" ? (lang === "de" ? "Toolfehler beobachtet" : "tool errors observed") : p.status === "hung" ? c.hung(clock(p.at)) : p.status === "missed" ? c.missed(clock(p.at)) : c.failed(clock(p.at), p.exitCode);
+  const what = p.reason === "data_loss" ? (lang === "de" ? "Datenlücke gemeldet" : "data loss reported") : p.reason === "tool_errors" ? (lang === "de" ? "Toolfehler beobachtet" : "tool errors observed") : p.status === "hung" ? c.hung(clock(p.at, timeZone)) : p.status === "missed" ? c.missed(clock(p.at, timeZone)) : c.failed(clock(p.at, timeZone), p.exitCode);
   return `${label(a)}: ${what}`;
 }
 
@@ -70,7 +71,7 @@ function quietLine(a: BriefingAgent, lang: DashLang): string {
   return `${label(a)} ${summary}${slow}`;
 }
 
-export function renderBriefingMail(b: Briefing, lang: DashLang, dashboardUrl: string): { subject: string; text: string; html: string } {
+export function renderBriefingMail(b: Briefing, lang: DashLang, dashboardUrl: string, timeZone = TIME_ZONE): { subject: string; text: string; html: string } {
   const c = agentCopy(lang).briefing;
   const subject = c.subject(b.problems.length, b.quiet.length);
   const text: string[] = [subject, ""];
@@ -79,7 +80,7 @@ export function renderBriefingMail(b: Briefing, lang: DashLang, dashboardUrl: st
     text.push(c.problemsHeading);
     html.push(paragraph(`<strong>${escapeHtml(c.problemsHeading)}</strong>`));
     for (const a of b.problems) {
-      const line = problemLine(a, lang);
+      const line = problemLine(a, lang, timeZone);
       const tail = a.lastProblem?.tail ? lastLines(a.lastProblem.tail) : "";
       text.push(`- ${line}`, ...(tail ? tail.split("\n").map((l) => `    ${l}`) : []));
       html.push(paragraph(escapeHtml(line)));

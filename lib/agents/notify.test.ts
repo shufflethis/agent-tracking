@@ -3,7 +3,7 @@ import { test } from "node:test";
 import { db } from "../tracking/db";
 import { recordAgentEvents } from "./ingest";
 import { dueBriefingOwners, markBriefed, sendAlerts, sendTestWebhook, webhookRequest, type Alert } from "./notify";
-import { saveNotifySettings } from "./store";
+import { saveNotifySettings, getNotifySettings } from "./store";
 import type { AgentEvent } from "./types";
 import { owner, proOwner, withDb } from "./test-db";
 
@@ -105,4 +105,37 @@ test("an alert that could not be delivered is retried, not marked sent", () => w
     globalThis.fetch = (async () => Response.json({ messageId: "m" })) as typeof fetch;
     assert.equal(await sendAlerts(T + 120_000, async () => false), 1);
   } finally { globalThis.fetch = original; if (key === undefined) delete process.env.BREVO_API_KEY; else process.env.BREVO_API_KEY = key; }
+}));
+
+test("briefings respect per-account US time zones and seal webhook URLs at rest", () => withDb(() => {
+  const prevSecret = process.env.UNLOCK_SECRET;
+  process.env.UNLOCK_SECRET = "test-notify-secret-0123456789abcdef";
+  try {
+    const la = proOwner("la@example.com");
+    const ny = owner("ny@example.com");
+    recordAgentEvents(la, failing("west-job"), T);
+    recordAgentEvents(ny, failing("east-job"), T);
+    assert.equal(saveNotifySettings(la, { briefingHour: 7, timezone: "America/Los_Angeles", alertsEmail: true, webhook: { kind: "slack", url: "https://hooks.slack.com/services/T1/B2/secret" } }), "ok");
+    assert.equal(saveNotifySettings(ny, { briefingHour: 8, timezone: "America/New_York", alertsEmail: true, webhook: null }), "ok");
+    assert.equal(saveNotifySettings(ny, { briefingHour: 8, timezone: "Not/AZone", alertsEmail: true, webhook: null }), "invalid_timezone");
+
+    // Raw DB column is encrypted, while getNotifySettings unseals transparently
+    const rawRow = db().prepare("select webhook_url, timezone from accounts where email = ?").get(la) as { webhook_url: string; timezone: string };
+    assert.match(rawRow.webhook_url, /^enc:v1:/);
+    assert.doesNotMatch(rawRow.webhook_url, /hooks\.slack\.com/);
+    assert.equal(rawRow.timezone, "America/Los_Angeles");
+    assert.equal(getNotifySettings(la).webhook?.url, "https://hooks.slack.com/services/T1/B2/secret");
+
+    // Nov 15, 2026 (standard time: NY is UTC-5, LA is UTC-8)
+    // At 12:59 UTC -> NY is 07:59, LA is 04:59: neither due
+    assert.deepEqual(dueBriefingOwners(Date.UTC(2026, 10, 15, 12, 59)), []);
+    // At 13:00 UTC -> NY is 08:00 (due!), LA is 05:00 (not due)
+    assert.deepEqual(dueBriefingOwners(Date.UTC(2026, 10, 15, 13, 0)), [ny]);
+    markBriefed(ny, Date.UTC(2026, 10, 15, 13, 0));
+    // At 15:00 UTC -> LA is 07:00 (due!)
+    assert.deepEqual(dueBriefingOwners(Date.UTC(2026, 10, 15, 15, 0)), [la]);
+  } finally {
+    if (prevSecret === undefined) delete process.env.UNLOCK_SECRET;
+    else process.env.UNLOCK_SECRET = prevSecret;
+  }
 }));

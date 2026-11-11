@@ -1,3 +1,4 @@
+import { ENTRIES } from "@/lib/changelog";
 import { guideBySlug, guides } from "@/lib/guides";
 import { homeContent } from "@/lib/home-content";
 import { CONNECT_CLAUDE } from "@/lib/agents/format";
@@ -20,8 +21,8 @@ function home(lang: DashLang): string {
     `# ${de ? "Agent Tracking: Was macht dein Agent gerade?" : "Agent Tracking: what's your agent doing right now?"}`,
     "",
     de
-      ? "> Claude-Code-Sessions, Cron-Jobs und eigene Agents in einer Liste: hängende, fehlende und gescheiterte Läufe, Session-Timelines, Morgen-Briefing und Meldungen. Keine Prompts, keine Tool-Ausgaben. Kostenlos in der Beta, Open Source."
-      : "> Claude Code sessions, cron jobs and your own agents on one list: stuck, missing and failed runs, session timelines, a morning briefing and alerts. No prompts, no tool output. Free during the beta, open source.",
+      ? "> Claude-Code-Sessions, Cron-Jobs und eigene Agents in einer Liste: hängende, fehlende, gescheiterte Läufe und Fehlerschleifen, Session-Timelines, Morgen-Briefing in deiner Zeitzone und Meldungen. Keine Prompts, keine Tool-Ausgaben. Kostenlos für 5 Agents, Open Source."
+      : "> Claude Code sessions, cron jobs and your own agents on one list: stuck, missing, failed and looping runs, session timelines, a morning briefing in your local time zone and alerts. No prompts, no tool output. Free for 5 agents, open source.",
     "",
     `## ${de ? "Verbinden" : "Connect"}`,
     "",
@@ -92,12 +93,29 @@ function docs(lang: DashLang): string {
       ? "Site im Dashboard anlegen, Snippet installieren und prüfen. Unterstützte Browser-WebMCP-Aufrufe werden beobachtet; data-agent-goal markiert nur einen Versuch. Server-Logs liefern getrennte Crawler-Belege, Server-Abschlussbelege brauchen eine eigene Integration und einen Site-Schreibzugang."
       : "Add the site in the dashboard, install and verify the snippet. Supported browser WebMCP calls are observed; data-agent-goal marks an attempt only. Server logs provide separate crawler evidence, and confirmed outcomes require a site-server integration with its own write credential.",
     "",
-    "## Stats API and MCP", "",
+    "## Fleet & Stats API and MCP", "",
+    `- GET ${SITE_ORIGIN}/api/agents/fleet with Authorization: Bearer <token> (health, latest runs and signals of your monitored agents)`,
     `- GET ${SITE_ORIGIN}/api/stats/{domain}?days=30 with Authorization: Bearer <token>`,
     `- GET ${SITE_ORIGIN}/api/stats lists the token's sites; GET ${SITE_ORIGIN}/api/export/{domain} is CSV`,
-    `- MCP: POST ${SITE_ORIGIN}/api/mcp, tool get_agent_stats · card ${SITE_ORIGIN}/.well-known/mcp.json · OpenAPI ${SITE_ORIGIN}/openapi.json`,
+    `- MCP: POST ${SITE_ORIGIN}/api/mcp, tools get_fleet_status and get_agent_stats · card ${SITE_ORIGIN}/.well-known/mcp.json · OpenAPI ${SITE_ORIGIN}/openapi.json`,
     "",
     `## ${c.seesTitle}`, "", rows(c.sees),
+  ].join("\n");
+}
+
+function changelog(lang: DashLang): string {
+  const de = lang === "de";
+  return [
+    `# ${de ? "Agent Tracking Changelog" : "Agent Tracking changelog"}`,
+    "",
+    ...ENTRIES.flatMap((e) => [
+      `## ${e.date} · ${e.title[lang]}`,
+      "",
+      e.body[lang],
+      "",
+      ...(e.points ? [...e.points[lang].map((p) => `- ${p}`), ""] : []),
+      ...(e.how?.terminal ? ["```sh", e.how.terminal, "```", ""] : []),
+    ]),
   ].join("\n");
 }
 
@@ -111,6 +129,8 @@ export async function GET(_request: Request, { params }: { params: Promise<{ pat
   else if (path === "/de/websites") body = websites("de");
   else if (path === "/docs") body = docs("en");
   else if (path === "/de/docs") body = docs("de");
+  else if (path === "/changelog") body = changelog("en");
+  else if (path === "/de/changelog") body = changelog("de");
   else if (path === "/guides") body = guideIndex("en");
   else if (path === "/de/guides") body = guideIndex("de");
   else if (path.startsWith("/guides/")) body = guide("en", path.slice("/guides/".length));

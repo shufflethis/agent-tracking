@@ -12,8 +12,8 @@ Every account-bound endpoint (the stats API, the CSV export, the log import and 
 ## How to get a token
 
 1. Sign in at ${SITE_ORIGIN}/login (magic link by email, no password).
-2. Open a site's settings page and press "Create token". The token starts with \`wmt_\` and is shown once; only its hash is stored.
-3. The token reads every site on the account. Creating a new one revokes the old one.
+2. Open Your agents → Settings (or any site's settings page) and press "Create token". The token starts with \`wmt_\` and is shown once; only its hash is stored.
+3. The token reads your monitored agent fleet and every site on the account. Creating a new one revokes the old one.
 
 ## How to send it
 
@@ -21,10 +21,11 @@ Every account-bound endpoint (the stats API, the CSV export, the log import and 
 Authorization: Bearer wmt_your_token
 \`\`\`
 
+- Agent fleet API: GET ${SITE_ORIGIN}/api/agents/fleet
 - Stats API: GET ${SITE_ORIGIN}/api/stats and GET ${SITE_ORIGIN}/api/stats/{domain}?days=30
 - CSV export: GET ${SITE_ORIGIN}/api/export/{domain}
 - Log import: POST ${SITE_ORIGIN}/api/logs/{domain}
-- MCP server: POST ${SITE_ORIGIN}/api/mcp (streamable HTTP); a client that cannot set headers may pass the token as the \`token\` argument of the get_agent_stats tool.
+- MCP server: POST ${SITE_ORIGIN}/api/mcp (streamable HTTP, tools \`get_fleet_status\` and \`get_agent_stats\`); a client that cannot set headers may pass the token as the \`token\` argument.
 
 ## What needs no token
 

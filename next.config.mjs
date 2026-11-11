@@ -19,10 +19,32 @@ const CSP = [
   "upgrade-insecure-requests",
 ].join("; ");
 
+const markdownAccept = [{ type: "header", key: "accept", value: ".*text/markdown.*" }];
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
+  async rewrites() {
+    // Content negotiation in beforeFiles routes directly inside Next.js without
+    // constructing an external self-proxy URL behind nginx X-Forwarded-Proto.
+    return {
+      beforeFiles: [
+        { source: "/", destination: "/api/md/home", has: markdownAccept },
+        { source: "/de", destination: "/api/md/de", has: markdownAccept },
+        { source: "/websites", destination: "/api/md/websites", has: markdownAccept },
+        { source: "/de/websites", destination: "/api/md/de/websites", has: markdownAccept },
+        { source: "/docs", destination: "/api/md/docs", has: markdownAccept },
+        { source: "/de/docs", destination: "/api/md/de/docs", has: markdownAccept },
+        { source: "/changelog", destination: "/api/md/changelog", has: markdownAccept },
+        { source: "/de/changelog", destination: "/api/md/de/changelog", has: markdownAccept },
+        { source: "/guides", destination: "/api/md/guides", has: markdownAccept },
+        { source: "/de/guides", destination: "/api/md/de/guides", has: markdownAccept },
+        { source: "/guides/:slug*", destination: "/api/md/guides/:slug*", has: markdownAccept },
+        { source: "/de/guides/:slug*", destination: "/api/md/de/guides/:slug*", has: markdownAccept },
+      ],
+    };
+  },
   async headers() {
     return [
       {
@@ -44,6 +66,7 @@ const nextConfig = {
           { key: "X-Frame-Options", value: "DENY" },
           { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(), payment=(), usb=()" },
           { key: "Content-Security-Policy", value: CSP },
+          { key: "Vary", value: "Accept" },
           // Where the machine-readable descriptions are, for clients that read headers before bodies.
           {
             key: "Link",

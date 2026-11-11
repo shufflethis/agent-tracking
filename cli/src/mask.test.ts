@@ -17,6 +17,14 @@ const cases: [string, string][] = [
   ["Authorization: Basic YWRtaW46aHVudGVyMg==", "YWRtaW46aHVudGVyMg=="],
   ["mysql -u root -pHunter2xyz", "Hunter2xyz"],
   ["b64 QUJDREVGR0hJSktMTU5PUFFSU1RVVldYWVphYmNkZWZnaGlqa2xtbm9w", "QUJDREVGR0hJSktMTU5PUFFSU1RVVldYWVphYmNkZWZnaGlqa2xtbm9w"],
+  ["aws AKIAIOSFODNN7EXAMPLE failed", "AKIAIOSFODNN7EXAMPLE"],
+  ["gcp AIzaSyDaGmWKa4JsXZ-HjGw7ISLn_3namBGewQe denied", "AIzaSyDaGmWKa4JsXZ-HjGw7ISLn_3namBGewQe"],
+  ["stripe rk_live_51Nabcdefgh12345678", "rk_live_51Nabcdefgh12345678"],
+  ["webhook whsec_abcdefgh1234567890", "whsec_abcdefgh1234567890"],
+  ["anthropic sk-ant-api03-abcdefgh12345678", "sk-ant-api03-abcdefgh12345678"],
+  ["npm npm_1234567890abcdefABCD", "npm_1234567890abcdefABCD"],
+  ["tg 123456789:AAHdqTcvCH1vGWJxfSeofSAs0K5PALDsaw", "AAHdqTcvCH1vGWJxfSeofSAs0K5PALDsaw"],
+  ["key -----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjE=\n-----END OPENSSH PRIVATE KEY-----", "b3BlbnNzaC1rZXktdjE="],
 ];
 
 for (const [input, secret] of cases) {

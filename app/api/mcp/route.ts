@@ -1,5 +1,7 @@
+import { fleetSummaryFor } from "@/lib/agents/fleet-api";
 import { bearerFrom, accountForToken } from "@/lib/tracking/api-token";
 import { getSite } from "@/lib/tracking/db";
+import { BodyLimitError, readLimitedBody } from "@/lib/tracking/request-body";
 import { clampDays, statsFor } from "@/lib/tracking/stats-api";
 import { clientIp, take } from "@/lib/ratelimit";
 import { SITE_HOST, SITE_ORIGIN } from "@/lib/site";
@@ -8,19 +10,15 @@ import { canReadSite } from "@/lib/tracking/site-access";
 export const runtime = "nodejs";
 
 /**
- * A minimal MCP server with one tool, so an agent can read a site's numbers
- * with the same token the stats API takes.
- *
- * Streamable HTTP transport, JSON responses only: no sessions, no SSE, no
- * resources. initialize, ping, tools/list and tools/call are all a client
- * needs to call get_agent_stats, and everything else answers "method not
- * found" honestly. The token travels as a bearer header or as the `token`
- * argument, for clients that cannot set headers.
+ * Minimal MCP server (streamable HTTP, JSON responses only) exposing two
+ * read-only tools with the same account API token (wmt_...):
+ *   - get_fleet_status: health, recent runs and signals of your own agents
+ *   - get_agent_stats: daily AI referral, fetch and tool statistics of a site
  */
 
 const PROTOCOLS = ["2025-06-18", "2025-03-26", "2024-11-05"];
 
-const TOOL = {
+const STATS_TOOL = {
   name: "get_agent_stats",
   description:
     "Daily agent statistics for a site tracked on " +
@@ -37,6 +35,23 @@ const TOOL = {
   },
 };
 
+const FLEET_TOOL = {
+  name: "get_fleet_status",
+  description:
+    "Read-only status of your own monitored AI agents and cron jobs on " +
+    SITE_HOST +
+    ": health counts (problem, running, ok, idle), each agent's latest run (exit code, turns, tool errors, suspected stuck or missing runs, task checks) and recent Pro signals (configuration changes, first-time tools, suspected runaway loops). Needs the account's API token (bearer header or the token argument).",
+  inputSchema: {
+    type: "object",
+    properties: {
+      problemsOnly: { type: "boolean", default: false, description: "When true, return only agents currently marked as problem or running." },
+      token: { type: "string", description: "API token from the dashboard's settings page, if not sent as a bearer header." },
+    },
+  },
+};
+
+const TOOLS = [FLEET_TOOL, STATS_TOOL];
+
 type Rpc = { jsonrpc?: string; id?: string | number | null; method?: string; params?: Record<string, unknown> };
 
 const json = (body: unknown, status = 200) => Response.json(body, { status, headers: { "cache-control": "no-store" } });
@@ -44,7 +59,7 @@ const result = (id: Rpc["id"], value: unknown) => ({ jsonrpc: "2.0", id: id ?? n
 const failure = (id: Rpc["id"], code: number, message: string) => ({ jsonrpc: "2.0", id: id ?? null, error: { code, message } });
 
 export async function GET() {
-  return json({ name: SITE_HOST, endpoint: `${SITE_ORIGIN}/api/mcp`, transport: "streamable-http", tools: [TOOL.name] });
+  return json({ name: SITE_HOST, endpoint: `${SITE_ORIGIN}/api/mcp`, transport: "streamable-http", tools: TOOLS.map((t) => t.name) });
 }
 
 export async function POST(request: Request) {
@@ -53,13 +68,14 @@ export async function POST(request: Request) {
 
   let msg: Rpc;
   try {
-    msg = (await request.json()) as Rpc;
-  } catch {
+    const bytes = await readLimitedBody(request, 32 * 1024);
+    msg = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes)) as Rpc;
+  } catch (err) {
+    if (err instanceof BodyLimitError) return json(failure(null, -32600, "Request body too large."), 413);
     return json(failure(null, -32700, "Parse error."), 400);
   }
   if (Array.isArray(msg) || msg.jsonrpc !== "2.0" || typeof msg.method !== "string") return json(failure(null, -32600, "Invalid request."), 400);
 
-  // Notifications carry no id and get no body.
   if (msg.id === undefined && msg.method.startsWith("notifications/")) return new Response(null, { status: 202 });
 
   switch (msg.method) {
@@ -71,26 +87,43 @@ export async function POST(request: Request) {
     case "ping":
       return json(result(msg.id, {}));
     case "tools/list":
-      return json(result(msg.id, { tools: [TOOL] }));
+      return json(result(msg.id, { tools: TOOLS }));
     case "tools/call": {
       const name = msg.params?.name;
-      if (name !== TOOL.name) return json(failure(msg.id, -32602, `Unknown tool: ${String(name)}`));
       const args = (msg.params?.arguments ?? {}) as Record<string, unknown>;
-      const text = await call(args, request.headers);
-      return json(result(msg.id, { content: [{ type: "text", text: text.text }], isError: text.isError }));
+      if (name === STATS_TOOL.name) {
+        const out = await callStats(args, request.headers);
+        return json(result(msg.id, { content: [{ type: "text", text: out.text }], isError: out.isError }));
+      }
+      if (name === FLEET_TOOL.name) {
+        const out = callFleet(args, request.headers);
+        return json(result(msg.id, { content: [{ type: "text", text: out.text }], isError: out.isError }));
+      }
+      return json(failure(msg.id, -32602, `Unknown tool: ${String(name)}`));
     }
     default:
       return json(failure(msg.id, -32601, `Method not found: ${msg.method}`));
   }
 }
 
-async function call(args: Record<string, unknown>, headers: Headers): Promise<{ text: string; isError: boolean }> {
+async function callStats(args: Record<string, unknown>, headers: Headers): Promise<{ text: string; isError: boolean }> {
   const token = bearerFrom(headers) ?? (typeof args.token === "string" ? args.token : null);
   const account = token ? accountForToken(token) : null;
-  if (!account) return { text: "No valid API token. Create one on the site's settings page and send it as a bearer header or as the token argument.", isError: true };
+  if (!account) return { text: "No valid API token. Create one under Settings and send it as a bearer header or as the token argument.", isError: true };
   const domain = String(args.domain ?? "").trim().toLowerCase();
   const site = getSite(domain);
   if (!site || !canReadSite(site.domain, account.email)) return { text: `No site ${domain || "(empty)"} on this account.`, isError: true };
   const days = clampDays(args.days ?? 30, account);
   return { text: JSON.stringify(statsFor(site.domain, account, days), null, 2), isError: false };
+}
+
+function callFleet(args: Record<string, unknown>, headers: Headers): { text: string; isError: boolean } {
+  const token = bearerFrom(headers) ?? (typeof args.token === "string" ? args.token : null);
+  const account = token ? accountForToken(token) : null;
+  if (!account) return { text: "No valid API token. Create one under Settings and send it as a bearer header or as the token argument.", isError: true };
+  const summary = fleetSummaryFor(account);
+  const filtered = args.problemsOnly === true
+    ? { ...summary, agents: summary.agents.filter((a) => a.health === "problem" || a.health === "running") }
+    : summary;
+  return { text: JSON.stringify(filtered, null, 2), isError: false };
 }

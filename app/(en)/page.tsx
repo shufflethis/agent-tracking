@@ -27,7 +27,7 @@ const PAGE_LD = {
   name: TITLE,
   description: DESCRIPTION,
   inLanguage: "en",
-  dateModified: "2026-11-03",
+  dateModified: "2026-11-11",
   isPartOf: { "@id": `${SITE_ORIGIN}/#site` },
   about: { "@id": `${SITE_ORIGIN}/#app` },
 };

@@ -2,13 +2,14 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import DashboardShell from "@/components/DashboardShell";
 import AgentConnectionScope from "@/components/AgentConnectionScope";
+import { TokenPanel } from "@/components/SiteActions";
 import { agentCopy } from "@/lib/agents/copy";
 import { when } from "@/lib/agents/format";
-import { getNotifySettings, listAgents } from "@/lib/agents/store";
+import { COMMON_TIMEZONES, getNotifySettings, listAgents } from "@/lib/agents/store";
 import { AGENT_PRO_PRICE, agentCheckoutReady, agentPlanId, effectiveAgentPlan, pricingActive } from "@/lib/agents/plans";
 import { listAgentTokens } from "@/lib/agents/tokens";
 import { requireAccount } from "@/lib/tracking/auth";
-import { dashLang } from "@/lib/tracking/copy";
+import { actionStrings, dashCopy, dashLang } from "@/lib/tracking/copy";
 
 export const metadata: Metadata = { title: "Agent settings", robots: { index: false, follow: false } };
 export const runtime = "nodejs";
@@ -27,6 +28,9 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ s
   const plan = effectiveAgentPlan(account.agent_plan);
   const agentCount = listAgents(account.email).length;
   const paying = stored === "pro" && Boolean(account.agent_stripe_subscription);
+  const actions = actionStrings(lang);
+  const docsHref = lang === "de" ? "/de/docs" : "/docs";
+  const tzOptions = COMMON_TIMEZONES.includes(s.timezone as (typeof COMMON_TIMEZONES)[number]) ? [...COMMON_TIMEZONES] : [s.timezone, ...COMMON_TIMEZONES];
 
   return (
     <DashboardShell account={account} area="fleet" title={c.title}>
@@ -67,6 +71,11 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ s
               {Array.from({ length: 24 }, (_, h) => <option key={h} value={h}>{String(h).padStart(2, "0")}:00</option>)}
             </select>
           </label>
+          <label style={{ display: "block", marginTop: 12 }}>{c.timezone}
+            <select name="timezone" defaultValue={s.timezone} style={field}>
+              {tzOptions.map((tz) => <option key={tz} value={tz}>{tz}</option>)}
+            </select>
+          </label>
           <h2 style={{ fontSize: 20 }}>{c.alerts}</h2>
           <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
             <input type="checkbox" name="alertsEmail" defaultChecked={s.alertsEmail} /> {c.alertsEmail}
@@ -96,6 +105,17 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ s
             <button className="btn ghost" type="submit">{c.test}</button>
           </form>
         ) : null}
+        <div className="card" id="api" style={{ padding: 24, marginBottom: 24 }}>
+          <h2 style={{ fontSize: 20, marginTop: 0 }}>{c.api.title}</h2>
+          <p style={{ color: "var(--ink-2)", maxWidth: "62ch" }}>
+            {c.api.text} <Link href={`${docsHref}#fleet-api`}>{c.api.docs}</Link>.
+          </p>
+          <TokenPanel
+            hasToken={Boolean(account.api_token_hash)}
+            existsLabel={dashCopy(lang).actions.tokenExists(account.api_token_created_at ? new Date(account.api_token_created_at).toISOString().slice(0, 10) : "")}
+            c={actions}
+          />
+        </div>
         <h2 style={{ fontSize: 20 }}>{c.machines}</h2>
         <AgentConnectionScope lang={lang} />
         {machines.length ? (
@@ -106,8 +126,8 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ s
                 {machines.map((m) => (
                   <tr key={m.id}>
                     <td>{m.hostLabel}</td>
-                    <td>{when(m.createdAt, lang)}</td>
-                    <td>{m.lastSeenAt ? when(m.lastSeenAt, lang) : fleet.never}</td>
+                    <td>{when(m.createdAt, lang, s.timezone)}</td>
+                    <td>{m.lastSeenAt ? when(m.lastSeenAt, lang, s.timezone) : fleet.never}</td>
                     <td>
                       <form method="post" action="/api/agents/tokens/revoke">
                         <input type="hidden" name="id" value={m.id} />

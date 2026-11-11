@@ -1,3 +1,4 @@
+import { CONNECT_CLAUDE } from "@/lib/agents/format";
 import { GITHUB_URL, SITE_HOST, SITE_ORIGIN } from "@/lib/site";
 import { guides } from "@/lib/guides";
 
@@ -5,9 +6,9 @@ export const revalidate = 3600;
 
 const BODY = `# ${SITE_HOST}
 
-> Agent Tracking shows what AI agents are doing, on two sides. Your own agents: Claude Code sessions, cron jobs and OpenTelemetry traces on one list, with stuck, missing and failed runs, session timelines, a morning briefing and alerts; no prompts or tool output are sent. Agents on your website: recognized assistant referrals, supported browser WebMCP observations, optional origin-log crawler evidence and site-server outcome receipts; the snippet sets no cookies. Open source (AGPL-3.0), hosted in Germany, self-hostable.
+> Agent Tracking shows what AI agents are doing, on two sides. Your own agents: Claude Code sessions, cron jobs and OpenTelemetry traces on one list, with stuck, missing, failed and looping runs, session timelines, a morning briefing in your local time zone and alerts; no prompts or tool output are sent. Agents on your website: recognized assistant referrals, supported browser WebMCP observations, optional origin-log crawler evidence and site-server outcome receipts; the snippet sets no cookies. Open source (AGPL-3.0), hosted in Germany, self-hostable.
 
-Connect a machine: \`npx --yes https://agenttracking.co/downloads/agenttracking-0.3.0.tgz connect claude\`
+Connect a machine: \`${CONNECT_CLAUDE}\`
 
 ## Not to be confused with
 
@@ -29,8 +30,9 @@ ${guides("en").map((g) => `- [${g.question}](${SITE_ORIGIN}/guides/${g.slug}): $
 
 ## For agents with an API token
 
-- Stats API: GET ${SITE_ORIGIN}/api/stats/{domain}?days=30 with Authorization: Bearer <token>.
-- MCP endpoint: POST ${SITE_ORIGIN}/api/mcp (streamable HTTP, one tool: get_agent_stats).
+- Fleet API (your own monitored agents): GET ${SITE_ORIGIN}/api/agents/fleet with Authorization: Bearer <token>.
+- Website Stats API: GET ${SITE_ORIGIN}/api/stats/{domain}?days=30 with Authorization: Bearer <token>.
+- MCP endpoint: POST ${SITE_ORIGIN}/api/mcp (streamable HTTP, tools: get_fleet_status, get_agent_stats).
 
 ## Legal
 

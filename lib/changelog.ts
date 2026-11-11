@@ -1,5 +1,6 @@
-import { CLI_COMMAND, CONNECT_CLAUDE } from "@/lib/agents/format";
-import { claudeSetupPrompt } from "@/lib/agents/setup";
+import { CLI_COMMAND, CONNECT_CLAUDE, DOCTOR_COMMAND } from "@/lib/agents/format";
+import { claudeSetupPrompt, GUARD_EXAMPLE } from "@/lib/agents/setup";
+import { SITE_ORIGIN } from "@/lib/site";
 import { snippetFor } from "@/lib/tracking/snippet";
 
 /**
@@ -28,6 +29,40 @@ const SNIPPET_PROMPT: L = {
 };
 
 export const ENTRIES: Entry[] = [
+  {
+    date: "2026-11-11",
+    tag: "agents",
+    title: {
+      en: "CLI 0.4.0, runaway loop alerts, local time zones, and MCP fleet queries",
+      de: "CLI 0.4.0, Meldung bei Fehlerschleifen, lokale Zeitzonen und MCP-Flottenabfrage",
+    },
+    body: {
+      en: "Four upgrades across the agent monitor and CLI 0.4.0. First, morning briefings and dashboard timestamps now run in your chosen IANA time zone (US, Europe, UTC or APAC) instead of Europe/Berlin only. Second, Pro detects runaway error loops (five failed tool calls in a row or eight failures of the same tool in 15 minutes) without reading prompts or outputs. Third, CLI 0.4.0 adds `agenttracking doctor` to discover unwrapped crontab jobs locally, an opt-in local `PreToolUse` circuit breaker (`pause`, `resume`, `guard --max-failures 5`), and broader secret masking for `--tail`. Fourth, `GET /api/agents/fleet` and MCP tool `get_fleet_status` let Claude, Cursor or scripts check your monitored agents with a read-only token.",
+      de: "Vier Erweiterungen im Agent-Monitoring und in CLI 0.4.0. Erstens laufen Morgen-Briefings und Zeitstempel im Dashboard jetzt in deiner gewählten IANA-Zeitzone (US, Europa, UTC oder APAC) statt nur in Europe/Berlin. Zweitens erkennt Pro Fehlerschleifen (fünf fehlgeschlagene Tool-Aufrufe am Stück oder acht Fehler desselben Tools in 15 Minuten), ohne Prompts oder Ausgaben zu lesen. Drittens bringt CLI 0.4.0 `agenttracking doctor` zur lokalen Erkennung nicht umschlossener Cron-Jobs, eine optionale lokale `PreToolUse`-Bremse (`pause`, `resume`, `guard --max-failures 5`) und breitere Secret-Maskierung für `--tail`. Viertens erlauben `GET /api/agents/fleet` und das MCP-Tool `get_fleet_status` die Abfrage deiner Agents direkt aus Claude, Cursor oder eigenen Skripten.",
+    },
+    points: {
+      en: [
+        `Update hooks to CLI 0.4.0: ${CONNECT_CLAUDE}`,
+        `Audit local hooks and crontab schedules: ${DOCTOR_COMMAND}`,
+        `Optional local loop brake: ${GUARD_EXAMPLE}`,
+        `Query your fleet: GET ${SITE_ORIGIN}/api/agents/fleet or POST ${SITE_ORIGIN}/api/mcp (get_fleet_status)`,
+      ],
+      de: [
+        `Hooks auf CLI 0.4.0 aktualisieren: ${CONNECT_CLAUDE}`,
+        `Lokale Hooks und Crontab prüfen: ${DOCTOR_COMMAND}`,
+        `Optionale lokale Schleifen-Bremse: ${GUARD_EXAMPLE}`,
+        `Flotte abfragen: GET ${SITE_ORIGIN}/api/agents/fleet oder POST ${SITE_ORIGIN}/api/mcp (get_fleet_status)`,
+      ],
+    },
+    how: {
+      terminal: `${CONNECT_CLAUDE}\n${DOCTOR_COMMAND}`,
+      claude: { en: claudeSetupPrompt("en"), de: claudeSetupPrompt("de") },
+      note: {
+        en: "Pick your time zone and create a read-only API/MCP token under Your agents → Settings.",
+        de: "Zeitzone und Lese-Token für API/MCP stellst du unter Deine Agents → Einstellungen ein.",
+      },
+    },
+  },
   {
     date: "2026-11-04",
     tag: "agents",

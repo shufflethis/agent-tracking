@@ -1,16 +1,23 @@
 import { currentAccount } from "@/lib/tracking/auth";
-import { SITE_ORIGIN } from "@/lib/site";
+import { clientIp, take } from "@/lib/ratelimit";
+import { sameOriginFormPost } from "@/lib/agents/form-route";
 import { approveDeviceLoginDetail } from "@/lib/agents/tokens";
+import { readLimitedBody } from "@/lib/tracking/request-body";
 
 export const runtime = "nodejs";
 
-/** The confirmation form on /app/connect posts here. Session cookie is SameSite=Lax; the Origin check is belt and braces. */
+/** The confirmation form on /app/connect posts here. Session cookie is SameSite=Lax; Origin/Sec-Fetch-Site and rate limits guard approval. */
 export async function POST(request: Request) {
-  const origin = request.headers.get("origin");
-  if (origin && origin !== SITE_ORIGIN && origin !== new URL(request.url).origin) return new Response("Forbidden", { status: 403 });
+  if (!sameOriginFormPost(request)) return new Response("Forbidden", { status: 403 });
+  if (!take(clientIp(request.headers), "requests").ok) return new Response("Too many requests", { status: 429 });
   const account = await currentAccount();
-  const form = await request.formData().catch(() => null);
-  const code = String(form?.get("code") ?? "");
+  let code = "";
+  try {
+    const bytes = await readLimitedBody(request, 8 * 1024);
+    code = new URLSearchParams(new TextDecoder("utf-8").decode(bytes)).get("code") ?? "";
+  } catch {
+    return new Response("Payload too large", { status: 413 });
+  }
   if (!account) return Response.redirect(new URL("/login?next=/app/connect", request.url), 303);
   const { result, host } = approveDeviceLoginDetail(code, account.email);
   const hostPart = result === "approved" && host ? `&host=${encodeURIComponent(host)}` : "";

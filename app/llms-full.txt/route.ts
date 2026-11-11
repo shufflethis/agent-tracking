@@ -1,6 +1,6 @@
 import { homeContent } from "@/lib/home-content";
-import { CONNECT_CLAUDE } from "@/lib/agents/format";
-import { claudeSetupPrompt, WRAP_CRON } from "@/lib/agents/setup";
+import { CONNECT_CLAUDE, DOCTOR_COMMAND } from "@/lib/agents/format";
+import { claudeSetupPrompt, GUARD_EXAMPLE, WRAP_CRON } from "@/lib/agents/setup";
 import { GITHUB_URL, SITE_HOST, SITE_ORIGIN } from "@/lib/site";
 import { snippetFor } from "@/lib/tracking/snippet";
 import { PLANS, RAW_RETENTION_DAYS } from "@/lib/tracking/plans";
@@ -24,12 +24,24 @@ Site: ${SITE_ORIGIN} · Docs: ${SITE_ORIGIN}/docs · Demo: ${SITE_ORIGIN}/demo �
 
 ## Monitor your own agents
 
-Claude Code sessions, cron jobs and your own agents on one list: stuck, missing and failed runs, session timelines, a morning briefing and alerts by email, Telegram, Slack, Discord or webhook. Only lifecycle events, tool names and success or failure are sent; no prompts, answers, tool input or output, file contents or full paths. Free during the beta. Full instructions: ${SITE_ORIGIN}/docs#agent-monitoring · Changelog: ${SITE_ORIGIN}/changelog
+Claude Code sessions, cron jobs and your own agents on one list: stuck, missing, failed and looping runs, session timelines, a morning briefing in your local IANA time zone and alerts by email, Telegram, Slack, Discord or webhook. Only lifecycle events, tool names and success or failure are sent; no prompts, answers, tool input or output, file contents or full paths. Free for 5 agents; Pro ($9/month or $90/year) covers 50 agents, every alert channel, configuration/new-tool/runaway-loop signals, OpenTelemetry and task checks. Full instructions: ${SITE_ORIGIN}/docs#agent-monitoring · Changelog: ${SITE_ORIGIN}/changelog
 
 Connect a machine (shows a code to confirm in the browser):
 
 \`\`\`sh
 ${CONNECT_CLAUDE}
+\`\`\`
+
+Inspect local hooks, MCP server count and unwrapped cron jobs (local check only, sends nothing):
+
+\`\`\`sh
+${DOCTOR_COMMAND}
+\`\`\`
+
+Optional local PreToolUse circuit breaker (stops failing loops locally without network calls):
+
+\`\`\`sh
+${GUARD_EXAMPLE}
 \`\`\`
 
 Wrap a cron job:
@@ -114,11 +126,12 @@ ${Object.values(PLANS)
 
 Free during the pilot; paid plans open with 30 days' notice. Self-hosting is free (Docker compose, one SQLite file).
 
-## Stats API and MCP
+## Fleet & Stats API and MCP
 
+- GET ${SITE_ORIGIN}/api/agents/fleet with Authorization: Bearer <token> returns health counts, latest run per monitored agent and recent signals as JSON.
 - GET ${SITE_ORIGIN}/api/stats/{domain}?days=30 with Authorization: Bearer <token> returns totals, previous period, day series, agents, tools, pages, bursts as JSON.
 - GET ${SITE_ORIGIN}/api/stats lists the token's sites; GET ${SITE_ORIGIN}/api/export/{domain} returns CSV.
-- MCP: POST ${SITE_ORIGIN}/api/mcp (streamable HTTP), tool get_agent_stats(domain, days, token).
+- MCP: POST ${SITE_ORIGIN}/api/mcp (streamable HTTP), tools get_fleet_status(token) and get_agent_stats(domain, days, token).
 
 ## ${c.faqTitle}
 

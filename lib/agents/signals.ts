@@ -4,26 +4,33 @@ import type { DashLang } from "../tracking/copy";
 import type { Snapshot } from "./snapshot";
 
 /**
- * Signals: things an agent did that are worth a look although nothing failed.
- * Pro only (AgentPlan.signals). Both kinds are derived from data that is
- * already stored, so no new data leaves the machine:
+ * Signals: things an agent did that are worth a look although the run itself
+ * has not crashed. Pro only (AgentPlan.signals). Derived solely from metadata
+ * already stored, so no prompts, arguments or outputs ever leave the machine:
  *
  * - config_change: the sanitized configuration snapshot differs from the
  *   previous one for the same agent (counts of MCP servers, plugins and
  *   permission rules; fingerprints of settings, .mcp.json and CLAUDE.md).
- * - new_tool: an agent with a history uses a tool it has not used within the
- *   event retention window. A learning period keeps new agents quiet.
+ * - new_tool: an agent with an established history uses a tool it has not used
+ *   within the event retention window.
+ * - thrashing: a single run fails 5 tool calls in a row, or fails the same
+ *   tool 8 times within 15 minutes (for example an edit-and-test death spiral
+ *   where Edit succeeds and Bash keeps failing). Alerted at most once per run.
  *
  * Each signal is stored once (unique per agent, kind and key) and alerted once.
  */
 
-export type SignalKind = "config_change" | "new_tool";
+export type SignalKind = "config_change" | "new_tool" | "thrashing";
 export type ConfigChange = { field: "mcpServers" | "plugins" | "allowRules" | "askRules" | "denyRules"; from: number; to: number } | { file: string; change: "changed" | "added" | "removed" };
-export type SignalPayload = { changes: ConfigChange[] } | { tool: string };
+export type ThrashingPayload = { tool: string; failures: number; streak: boolean };
+export type SignalPayload = { changes: ConfigChange[] } | { tool: string } | ThrashingPayload;
 
 /** An agent counts as established after this long and this many tool calls. */
 export const LEARNING_MS = 3 * 86_400_000;
 export const LEARNING_TOOL_CALLS = 20;
+export const THRASH_STREAK = 5;
+export const THRASH_REPEAT = 8;
+export const THRASH_WINDOW_MS = 15 * 60_000;
 
 const COUNTS = ["mcpServers", "plugins", "allowRules", "askRules", "denyRules"] as const;
 
@@ -69,6 +76,21 @@ export function checkNewTool(d: DatabaseSync, owner: string, agentId: string, to
   return insert(d, owner, agentId, "new_tool", tool, { tool }, at);
 }
 
+/** Called after a failed tool_end event. Detects runaway error loops once per run without reading prompts or output. */
+export function checkThrashing(d: DatabaseSync, owner: string, agentId: string, runId: string, tool: string, at: number): boolean {
+  const recent = d.prepare("select ok from agent_events where run_id = ? and type = 'tool_end' order by at desc, rowid desc limit ?")
+    .all(runId, THRASH_STREAK) as { ok: number | null }[];
+  if (recent.length >= THRASH_STREAK && recent.every((r) => r.ok === 0)) {
+    return insert(d, owner, agentId, "thrashing", runId, { tool, failures: THRASH_STREAK, streak: true }, at);
+  }
+  const repeated = (d.prepare("select count(*) as n from agent_events where run_id = ? and type = 'tool_end' and tool = ? and ok = 0 and at >= ?")
+    .get(runId, tool, at - THRASH_WINDOW_MS) as { n: number }).n;
+  if (repeated >= THRASH_REPEAT) {
+    return insert(d, owner, agentId, "thrashing", runId, { tool, failures: repeated, streak: false }, at);
+  }
+  return false;
+}
+
 const FILE = {
   en: { user_settings: "user settings", project_settings: "project settings", local_settings: "local settings", project_mcp: ".mcp.json", project_instructions: "CLAUDE.md" } as Record<string, string>,
   de: { user_settings: "Benutzer-Einstellungen", project_settings: "Projekt-Einstellungen", local_settings: "lokale Einstellungen", project_mcp: ".mcp.json", project_instructions: "CLAUDE.md" } as Record<string, string>,
@@ -80,6 +102,16 @@ const FIELD = {
 
 export function signalText(kind: SignalKind, payload: SignalPayload, lang: DashLang): string {
   const de = lang === "de";
+  if (kind === "thrashing" && "failures" in payload) {
+    if (payload.streak) {
+      return de
+        ? `Schleife vermutet: ${payload.failures} fehlgeschlagene Tool-Aufrufe in Folge (zuletzt ${payload.tool})`
+        : `suspected loop: ${payload.failures} failed tool calls in a row (last: ${payload.tool})`;
+    }
+    return de
+      ? `Schleife vermutet: ${payload.tool} ist ${payload.failures}× in 15 Minuten fehlgeschlagen`
+      : `suspected loop: ${payload.tool} failed ${payload.failures} times within 15 minutes`;
+  }
   if (kind === "new_tool" && "tool" in payload) return de ? `nutzt zum ersten Mal das Tool ${payload.tool}` : `used the tool ${payload.tool} for the first time`;
   if ("changes" in payload) {
     const parts = payload.changes.map((c) => "field" in c

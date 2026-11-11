@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { actionStrings, dashCopy, dashLang } from "./copy";
+import { agentCopy } from "../agents/copy";
 
 const shape = (v: unknown, path: string[] = []): string[] => {
   if (typeof v === "function") return [`${path.join(".")}:fn`];
@@ -11,6 +12,7 @@ const shape = (v: unknown, path: string[] = []): string[] => {
 describe("dashboard copy", () => {
   it("has the same keys and value kinds in both languages", () => {
     assert.deepEqual(shape(dashCopy("de")).sort(), shape(dashCopy("en")).sort());
+    assert.deepEqual(shape(agentCopy("de")).sort(), shape(agentCopy("en")).sort());
   });
   it("contains no em dash in any string", () => {
     for (const lang of ["en", "de"] as const) {
@@ -19,6 +21,7 @@ describe("dashboard copy", () => {
         else if (v && typeof v === "object") for (const [k, x] of Object.entries(v)) walk(x, `${path}.${k}`);
       };
       walk(dashCopy(lang), lang);
+      walk(agentCopy(lang), `agent.${lang}`);
     }
   });
   it("falls back to English for anything but de", () => {

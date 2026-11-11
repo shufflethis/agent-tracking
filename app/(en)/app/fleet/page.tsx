@@ -4,7 +4,7 @@ import CopyButton from "@/components/CopyButton";
 import DashboardShell from "@/components/DashboardShell";
 import AgentConnectionScope from "@/components/AgentConnectionScope";
 import { agentCopy } from "@/lib/agents/copy";
-import { CONNECT_CLAUDE, HEALTH_CHIP, WRAP_EXAMPLE, when } from "@/lib/agents/format";
+import { CONNECT_CLAUDE, DOCTOR_COMMAND, HEALTH_CHIP, WRAP_EXAMPLE, when } from "@/lib/agents/format";
 import { runLabel } from "@/lib/agents/run-display";
 import { listAgents } from "@/lib/agents/store";
 import { requireAccount } from "@/lib/tracking/auth";
@@ -42,7 +42,7 @@ export default async function Page() {
                       <span className={HEALTH_CHIP[a.health]}>{a.lastRun && a.health === "running" ? runLabel(a.lastRun, lang) : c.health[a.health]}</span>
                       {a.lastRun && a.health === "problem" ? <span style={{ marginLeft: 8, fontSize: 13, color: "var(--muted)" }}>{runLabel(a.lastRun, lang)}</span> : null}
                     </td>
-                    <td>{a.lastRun ? when(a.lastRun.startedAt, lang) : c.never}</td>
+                    <td>{a.lastRun ? when(a.lastRun.startedAt, lang, account.timezone) : c.never}</td>
                   </tr>
                 ))}
               </tbody>
@@ -52,7 +52,7 @@ export default async function Page() {
         <div className="card" style={{ padding: 28 }}>
           <h2 style={{ fontSize: 22, marginBottom: 6 }}>{agents.length ? c.connectMore : c.emptyTitle}</h2>
           <p style={{ color: "var(--ink-2)" }}>{c.emptyIntro}</p>
-          {[[c.claudeStep, CONNECT_CLAUDE], [c.cronStep, WRAP_EXAMPLE]].map(([label, command]) => (
+          {[[c.claudeStep, CONNECT_CLAUDE], [c.cronStep, WRAP_EXAMPLE], [c.doctorStep, DOCTOR_COMMAND]].map(([label, command]) => (
             <div key={command} style={{ marginTop: 16 }}>
               <p style={{ margin: "0 0 6px", fontSize: 14 }}>{label}</p>
               <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>

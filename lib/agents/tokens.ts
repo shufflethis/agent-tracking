@@ -1,4 +1,5 @@
 import { createHash, randomBytes, randomInt, randomUUID } from "node:crypto";
+import { openSecret, sealSecret } from "../secret-box";
 import { db } from "../tracking/db";
 
 /**
@@ -97,7 +98,7 @@ export function approveDeviceLoginDetail(code: string, owner: string, now = Date
   if (!row) return { result: "unknown" };
   if (row.expires_at < now || row.approved_by) return { result: "expired" };
   const { id, token } = mintAgentToken(owner, row.host_label, now);
-  db().prepare("update agent_device_codes set approved_by = ?, token_id = ?, token_plain_once = ? where device_code_hash = ?").run(owner, id, token, row.device_code_hash);
+  db().prepare("update agent_device_codes set approved_by = ?, token_id = ?, token_plain_once = ? where device_code_hash = ?").run(owner, id, sealSecret(token), row.device_code_hash);
   return { result: "approved", host: row.host_label };
 }
 
@@ -108,8 +109,10 @@ export function pollDeviceLogin(deviceCode: string, now = Date.now()): { status:
     | undefined;
   if (!row) return { status: "expired" };
   if (row.approved_by && row.token_plain_once) {
+    const token = openSecret(row.token_plain_once);
     db().prepare("delete from agent_device_codes where device_code_hash = ?").run(hash);
-    return { status: "approved", token: row.token_plain_once };
+    if (!token) return { status: "expired" };
+    return { status: "approved", token };
   }
   if (row.expires_at < now) return { status: "expired" };
   return { status: "pending" };

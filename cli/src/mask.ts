@@ -3,11 +3,16 @@
  * It is a safety net for `wrap --tail`, not a guarantee; the tail is opt-in.
  */
 const RULES: [RegExp, string][] = [
+  [/-----BEGIN [A-Z0-9 ]*PRIVATE KEY-----[\s\S]*?-----END [A-Z0-9 ]*PRIVATE KEY-----/g, "[masked]"],
+  [/-----BEGIN [A-Z0-9 ]*PRIVATE KEY-----[^\r\n]*/g, "[masked]"],
   [/\b(Bearer|Basic|Digest)\s+\S+/gi, "$1 [masked]"],
   [/(\w+:\/\/[^/\s:@]+:)[^@\s]+@/g, "$1[masked]@"],
   [/("[\w-]*(?:key|token|secret|password|passwd|auth)[\w-]*"\s*:\s*")[^"]*"/gi, '$1[masked]"'],
   [/(\s-p)(?=\S{4,})\S+/g, "$1[masked]"],
-  [/\b(?:sk|ghp|gho|ghs|ghu|github_pat|atk|wmt|xox[abprs])[-_][A-Za-z0-9_-]{8,}/g, "[masked]"],
+  [/\b(?:AKIA|ASIA|ABIA|ACCA)[A-Z0-9]{16}\b/g, "[masked]"],
+  [/\bAIza[A-Za-z0-9_-]{31,39}\b/g, "[masked]"],
+  [/\b\d{6,12}:[A-Za-z0-9_-]{30,}\b/g, "[masked]"],
+  [/\b(?:sk|rk|pk_live|whsec|ghp|gho|ghs|ghu|github_pat|glpat|npm|pypi|atk|wmt|xox[abprs])[-_][A-Za-z0-9_-]{8,}/g, "[masked]"],
   [/\b([\w-]*(?:key|token|secret|password|passwd|auth)[\w-]*)(\s*[=:]\s*)(["']?)[^\s"']+/gi, "$1$2$3[masked]"],
   [/\b[0-9a-fA-F]{32,}\b/g, "[masked]"],
   [/[A-Za-z0-9+/_-]{40,}={0,2}/g, "[masked]"],

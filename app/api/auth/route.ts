@@ -8,6 +8,7 @@ import { clientIp, take } from "@/lib/ratelimit";
 import { safeNext } from "@/lib/safe-next";
 import { loginUrl, mintLoginToken, mintSessionToken, readLoginToken, sessionCookieOptions, SESSION_COOKIE } from "@/lib/session";
 import { createHash } from "node:crypto";
+import { BodyLimitError, readLimitedBody } from "@/lib/tracking/request-body";
 import { ensureAccount, markTokenUsed, setLang } from "@/lib/tracking/db";
 
 export const runtime = "nodejs";
@@ -43,16 +44,35 @@ function confirmPage(email: string, token: string, next: string, lang: string): 
   );
 }
 
-async function readBody(request: Request): Promise<Record<string, unknown>> {
-  const type = request.headers.get("content-type") ?? "";
-  if (type.includes("form")) {
+const MAX_AUTH_BODY = 16 * 1024;
+
+async function readBody(request: Request): Promise<Record<string, unknown> | "too_large"> {
+  let bytes: Uint8Array;
+  try {
+    bytes = await readLimitedBody(request, MAX_AUTH_BODY);
+  } catch (err) {
+    return err instanceof BodyLimitError ? "too_large" : {};
+  }
+  if (!bytes.byteLength) return {};
+  const type = (request.headers.get("content-type") ?? "").toLowerCase();
+  if (type.includes("multipart/form-data")) {
     try {
-      return Object.fromEntries(await request.formData()) as Record<string, unknown>;
+      const form = await new Request(request.url, { method: "POST", headers: request.headers, body: Buffer.from(bytes) }).formData();
+      return Object.fromEntries(form) as Record<string, unknown>;
     } catch {
       return {};
     }
   }
-  return (await request.json().catch(() => ({}))) as Record<string, unknown>;
+  const text = new TextDecoder("utf-8").decode(bytes);
+  if (type.includes("form")) {
+    return Object.fromEntries(new URLSearchParams(text)) as Record<string, unknown>;
+  }
+  try {
+    const parsed = JSON.parse(text);
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? (parsed as Record<string, unknown>) : {};
+  } catch {
+    return {};
+  }
 }
 
 /** Only paths on this site, so a link cannot bounce a fresh session elsewhere. */
@@ -66,6 +86,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   const body = await readBody(request);
+  if (body === "too_large") return Response.json({ ok: false, detail: "Request too large." }, { status: 413 });
 
   // The interstitial's form: token in, session cookie out.
   const token = typeof body.k === "string" ? body.k.trim() : "";

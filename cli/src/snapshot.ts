@@ -9,7 +9,7 @@ export type Snapshot = {
   files: { scope: string; state: "present" | "missing" | "unreadable"; fingerprint?: string }[];
   mcpServers: number; plugins: number; allowRules: number; askRules: number; denyRules: number;
 };
-export const CLI_VERSION = "0.3.0";
+export const CLI_VERSION = "0.4.0";
 const MAX_BYTES = 256 * 1024;
 
 /** Fixed files only. No recursive scan, file contents, paths, commands, rules or environment values leave this function. */

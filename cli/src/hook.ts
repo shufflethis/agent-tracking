@@ -5,6 +5,7 @@ import { basename, dirname, join } from "node:path";
 import { tmpdir } from "node:os";
 import { configDir, readConfig, type Config } from "./config.js";
 import { label, type AgentEvent, type AgentEventType } from "./event.js";
+import { checkPreToolGuard, recordGuardOutcome } from "./guard.js";
 import { captureSnapshot } from "./snapshot.js";
 import { appendEvent } from "./spool.js";
 
@@ -83,16 +84,35 @@ function shouldFlush(home: string | undefined, type: AgentEventType, now: number
   return true;
 }
 
-export async function runHook(hookEvent: string, stdin: NodeJS.ReadableStream = process.stdin, opts: { home?: string; spawnFlush?: boolean } = {}): Promise<void> {
+export async function runHook(
+  hookEvent: string,
+  stdin: NodeJS.ReadableStream = process.stdin,
+  opts: { home?: string; spawnFlush?: boolean; stdout?: NodeJS.WritableStream } = {},
+): Promise<void> {
   try {
     const raw = await readStdin(stdin);
-    const cfg = readConfig(opts.home);
-    if (!cfg) return;
     let input: unknown;
     try { input = JSON.parse(raw); } catch { return; }
     const now = Date.now();
-    const event = eventFromHook(hookEvent, input, cfg, now);
+    const cfg = readConfig(opts.home);
+    const fallbackCfg: Config = cfg ?? { origin: "", token: "", secret: "local-guard", host: "local" };
+    const event = eventFromHook(hookEvent, input, fallbackCfg, now);
     if (!event) return;
+    if (hookEvent === "PreToolUse" && event.tool) {
+      const verdict = checkPreToolGuard(event.run, event.agent.name, event.tool, opts.home);
+      if (verdict.block) {
+        (opts.stdout ?? process.stdout).write(JSON.stringify({ decision: "block", reason: verdict.reason }) + "\n");
+        if (!cfg) return;
+        const waitingEvent: AgentEvent = { v: 1, id: event.id, type: "waiting", at: now, agent: event.agent, run: event.run };
+        appendEvent(waitingEvent, opts.home);
+        if (opts.spawnFlush !== false && shouldFlush(opts.home, waitingEvent.type, now)) {
+          spawn(process.execPath, [...process.execArgv, process.argv[1], "flush"], { detached: true, stdio: "ignore", env: process.env }).unref();
+        }
+        return;
+      }
+    }
+    recordGuardOutcome(event.run, event.type, event.ok, now, opts.home);
+    if (!cfg) return;
     if (event.type === "session_start" || event.type === "config_snapshot") {
       const cwd = (input as { cwd?: unknown }).cwd;
       event.snapshot = captureSnapshot(cfg, typeof cwd === "string" ? cwd : "");
