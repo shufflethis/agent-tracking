@@ -1,5 +1,6 @@
 import { assertPublicHost } from "@/lib/public-host";
 import { randomUUID } from "node:crypto";
+import { sameOriginFormPost } from "@/lib/agents/form-route";
 import { CONTACT_EMAIL } from "@/lib/site";
 import { snippetInstalled } from "@/lib/verify-snippet";
 import { fetchScore } from "@/lib/tracking/score";
@@ -8,6 +9,7 @@ import { currentAccount } from "@/lib/tracking/auth";
 import { normalizeDomain } from "@/lib/tracking/classify";
 import { addSite, finishScanAttempt, getSite, markVerified, recordSiteCheck, removeSite, setPublicShare, sitesFor, startScanAttempt } from "@/lib/tracking/db";
 import { planFor } from "@/lib/tracking/plans";
+import { BodyLimitError, readLimitedBody } from "@/lib/tracking/request-body";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -22,10 +24,18 @@ export const maxDuration = 30;
 const problem = (detail: string, status = 422) => Response.json({ ok: false, detail }, { status });
 
 export async function POST(request: Request) {
+  if (!sameOriginFormPost(request)) return problem("Forbidden.", 403);
   const account = await currentAccount();
   if (!account) return problem("Sign in first.", 401);
 
-  const body = (await request.json().catch(() => ({}))) as { action?: string; domain?: string; on?: boolean };
+  let body: { action?: string; domain?: string; on?: boolean } = {};
+  try {
+    const raw = new TextDecoder("utf-8", { fatal: true }).decode(await readLimitedBody(request, 16 * 1024));
+    body = raw ? (JSON.parse(raw) as { action?: string; domain?: string; on?: boolean }) : {};
+  } catch (err) {
+    if (err instanceof BodyLimitError) return problem("Request too large.", 413);
+    return problem("Invalid JSON.", 400);
+  }
   const domain = normalizeDomain(String(body.domain ?? ""));
   if (!domain) return problem("That is not a public hostname. Use the bare domain, for example example.com.");
 

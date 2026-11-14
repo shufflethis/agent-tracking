@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AGENT_PLANS, AGENT_PRO_PRICE } from "@/lib/agents/plans";
 import { alternatesFor } from "@/lib/i18n";
 import { CONTACT_EMAIL, LEGAL, SITE_HOST } from "@/lib/site";
 import { PLANS, RAW_RETENTION_DAYS } from "@/lib/tracking/plans";
@@ -40,9 +41,7 @@ export default function Page() {
       <div className="callout mid" style={{ maxWidth: "var(--measure)" }}>
         <span className="tag">The short version</span>
         <p>
-          You get a dashboard of what AI agents do on your site. Free is free and stays free during the pilot; paid plans come later, with 30 days&apos; notice before anything
-          about your account changes. You put one line of script on your own site and answer to your visitors for it. We run the service carefully but promise no uptime, and
-          our liability is capped at what you paid us in the last twelve months. Florida law, English text.
+          You get operational monitoring for your own AI agents (Claude Code, cron jobs, OpenTelemetry) and analytics for what AI agents do on your websites. Own-agent monitoring has a Free tier and a paid Pro plan (${AGENT_PRO_PRICE.month}/month or ${AGENT_PRO_PRICE.year}/year USD via Stripe); website analytics stays free during its pilot, with 30 days&apos; notice before existing accounts change. We run the service carefully without an uptime SLA, and our liability is capped at what you paid us in the last twelve months (or $100 for Free). Florida law, English text.
         </p>
       </div>
 
@@ -53,17 +52,16 @@ export default function Page() {
             (&ldquo;you&rdquo;). They govern the hosted service only. The source code is free software under the GNU Affero General Public License v3.0; that licence, not these
             terms, governs the software.
           </p>
-          <p>The service is for businesses, organisations and professionals in relation to websites they operate. It is not offered to consumers.</p>
+          <p>The service is for developers, businesses, organisations and professionals in relation to agents and websites they operate. It is not offered to consumers.</p>
         </Clause>
 
         <Clause n="2" title="The service">
           <p>
-            Agent Tracking records, for a site you register and verify, which AI assistants send visitors, which AI agents fetch pages, which WebMCP tools are called and whether
-            marked goals are reached, and shows daily totals in a dashboard, through an API and through an MCP tool. What is recorded and what is not is described in the{" "}
+            Agent Tracking provides two modules under one account: (a) <b>Own-Agent Monitoring</b>, which records operational run metadata, heartbeats, exit codes, OpenTelemetry spans and configured alerts/briefings for Claude Code hooks, wrapped cron jobs and connected workers; and (b) <b>Website Analytics</b>, which records, for a site you register and verify, which AI assistants send visitors, which AI agents fetch pages, which WebMCP tools are called and whether marked goals are reached. Totals and events are shown in the dashboard, through an API and through an MCP tool. What is recorded and what is not is described in the{" "}
             <Link href="/docs">documentation</Link> and the <Link href="/dpa">data processing agreement</Link>.
           </p>
           <p>
-            Agent identification rests on a published, versioned list of referrers and user agents and, for server logs, on address ranges the vendors publish. An agent that does
+            Website agent identification rests on a published, versioned list of referrers and user agents and, for server logs, on address ranges the vendors publish. An agent that does
             not announce itself is not counted. The numbers are a measurement with that limit, not a guarantee of completeness.
           </p>
         </Clause>
@@ -73,22 +71,22 @@ export default function Page() {
             An account is an email address. Signing in is by a link sent to it; whoever controls the mailbox controls the account, so keep it safe. You are responsible for
             everything done through your account and for keeping the address current.
           </p>
-          <p>You may register a site only if you operate it or the operator has authorised you. Verification checks that the snippet is installed, not who you are.</p>
+          <p>You may connect machines or register websites only if you operate them or the operator has authorised you. Website verification checks that the snippet is installed, not who you are.</p>
         </Clause>
 
         <Clause n="4" title="Plans, pilot and prices">
           <p>
-            The plans and their limits are listed in the documentation: Free covers {PLANS.free.domains} site, {PLANS.free.eventsPerMonth.toLocaleString("en-US")} agent events a
-            month and {PLANS.free.windowDays} days of history; Pro and Agency extend those limits. Plain page views are never counted against the limit.
+            The plans and their limits are listed in the documentation. For <b>Own-Agent Monitoring</b>, Free covers up to {AGENT_PLANS.free.agents} agents with daily briefings, email alerts and read-only API/MCP access; Pro covers up to {AGENT_PLANS.pro.agents} agents, Slack/Telegram/Discord/webhook alerts, drift and loop signals, OpenTelemetry ingest and task checks for ${AGENT_PRO_PRICE.month}/month or ${AGENT_PRO_PRICE.year}/year USD. For <b>Website Analytics</b>, Free covers {PLANS.free.domains} site, {PLANS.free.eventsPerMonth.toLocaleString("en-US")} agent events a
+            month and {PLANS.free.windowDays} days of history; plain page views are never counted against the limit.
           </p>
           <p>
-            During the pilot every account is on Free at no charge, and we may raise an account&apos;s limits by hand on request. Paid plans open when we announce prices. Nothing
-            about an existing account changes without 30 days&apos; notice by email; if a change is not acceptable to you, remove your sites before it takes effect and nothing is
+            Website analytics paid tiers remain in pilot at no charge, and we may raise an account&apos;s limits by hand on request. Nothing
+            about an existing account&apos;s free limits changes without 30 days&apos; notice by email; if a change is not acceptable to you, cancel or remove your resources before it takes effect and nothing is
             owed.
           </p>
           <p>
-            Once open, paid plans are billed in advance through Stripe for the chosen period and renew until cancelled from the dashboard. Prices are shown at checkout and exclude
-            taxes you may owe. A plan can be cancelled at any time and ends at the end of the paid period; there is no refund for the remainder, except where the law requires one.
+            Paid plans are billed in advance in US dollars through Stripe for the chosen period (monthly or yearly) and renew automatically until cancelled from the dashboard. Prices are shown at checkout and exclude
+            applicable taxes. A plan can be cancelled at any time and ends at the end of the paid billing period; there is no refund for the remainder, except where the law or § 6 requires one.
           </p>
         </Clause>
 

@@ -101,7 +101,7 @@ export default function Page() {
               src="/img/tracking/dashboard-overview.webp"
               alt="The overview: agent interactions per day, referrals, fetches, tool calls and conversions in one chart"
               loading="lazy"
-              style={{ width: "100%", aspectRatio: "16 / 11", objectFit: "cover", objectPosition: "top", borderRadius: 12, border: "1px solid var(--line, #e6e3dc)" }}
+              style={{ width: "100%", aspectRatio: "16 / 11", objectFit: "cover", objectPosition: "top", borderRadius: 12, border: "1px solid var(--rule-strong)" }}
             />
             <figcaption style={{ fontSize: 13, color: "var(--muted)", marginTop: 8 }}>Earlier overview with demo data. Insights adds evidence and next steps.</figcaption>
           </figure>
@@ -110,7 +110,7 @@ export default function Page() {
               src="/img/tracking/dashboard-tools.webp"
               alt="The tools view: calls, success rate, average duration and top errors per WebMCP tool"
               loading="lazy"
-              style={{ width: "100%", aspectRatio: "16 / 11", objectFit: "cover", objectPosition: "top", borderRadius: 12, border: "1px solid var(--line, #e6e3dc)" }}
+              style={{ width: "100%", aspectRatio: "16 / 11", objectFit: "cover", objectPosition: "top", borderRadius: 12, border: "1px solid var(--rule-strong)" }}
             />
             <figcaption style={{ fontSize: 13, color: "var(--muted)", marginTop: 8 }}>Tools: which ones are called, which fail, which nobody touches.</figcaption>
           </figure>

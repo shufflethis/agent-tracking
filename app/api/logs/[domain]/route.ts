@@ -1,4 +1,5 @@
 import { gunzipSync } from "node:zlib";
+import { sameOriginFormPost } from "@/lib/agents/form-route";
 import { clientIp, take } from "@/lib/ratelimit";
 import { accountForToken, bearerFrom } from "@/lib/tracking/api-token";
 import { currentAccount } from "@/lib/tracking/auth";
@@ -22,7 +23,9 @@ export const maxDuration = 60;
  * against its vendor's published ranges, and is gone when the request ends.
  */
 
-const MAX_BYTES = 64 * 1024 * 1024;
+const MAX_BYTES = 25 * 1024 * 1024;
+const MAX_UNCOMPRESSED_BYTES = 50 * 1024 * 1024;
+const MAX_LINES = 100_000;
 const GZIP_MAGIC = [0x1f, 0x8b];
 
 const problem = (detail: string, status = 422) => Response.json({ ok: false, detail }, { status });
@@ -31,7 +34,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ dom
   const budget = take(clientIp(request.headers), "requests");
   if (!budget.ok) return problem("Too many requests. Try again shortly.", 429);
 
-  const account = accountForToken(bearerFrom(request.headers)) ?? (await currentAccount());
+  const bearer = bearerFrom(request.headers);
+  if (!bearer && !sameOriginFormPost(request)) return problem("Forbidden.", 403);
+  const account = accountForToken(bearer) ?? (await currentAccount());
   if (!account) return problem("Sign in, or send the account's API token as a Bearer token.", 401);
   const domain = normalizeDomain(decodeURIComponent((await params).domain));
   if (!domain) return problem("Not a hostname.");
@@ -51,13 +56,14 @@ export async function POST(request: Request, { params }: { params: Promise<{ dom
   if (bytes.length === 0) return problem("The body is empty.");
   if (bytes[0] === GZIP_MAGIC[0] && bytes[1] === GZIP_MAGIC[1]) {
     try {
-      bytes = gunzipSync(bytes, { maxOutputLength: MAX_BYTES });
+      bytes = gunzipSync(bytes, { maxOutputLength: MAX_UNCOMPRESSED_BYTES });
     } catch {
-      return problem("The gzip body could not be decompressed.");
+      return problem(`The gzip body could not be decompressed or exceeds ${MAX_UNCOMPRESSED_BYTES / 1024 / 1024} MB uncompressed.`, 413);
     }
   }
   const text = bytes.toString("utf8");
   const lines = text.endsWith("\n") ? text.slice(0, -1).split("\n") : text.split("\n");
+  if (lines.length > MAX_LINES) return problem(`Too many lines in one upload (max ${MAX_LINES.toLocaleString("en-US")}). Split the log into smaller batches.`, 413);
   const source = request.headers.get("x-log-source-id");
   const generation = request.headers.get("x-log-generation");
   const startRaw = request.headers.get("x-log-start-record");

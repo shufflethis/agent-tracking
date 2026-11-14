@@ -2,7 +2,7 @@ import { spawn } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { constants } from "node:os";
 import { readConfig } from "./config.js";
-import { label, type AgentEvent } from "./event.js";
+import { AGENT_KINDS, label, type AgentEvent, type AgentKind } from "./event.js";
 import { flush } from "./flush.js";
 import { maskSecrets } from "./mask.js";
 import { appendEvent } from "./spool.js";
@@ -31,6 +31,9 @@ export async function wrap(argv: string[], opts: Options = {}): Promise<number> 
   const command = sep === -1 ? [] : argv.slice(sep + 1);
   const flag = (name: string) => { const i = flags.indexOf(name); return i === -1 ? undefined : flags[i + 1]; };
   const name = flag("--name");
+  const rawKind = flag("--kind");
+  const kind: AgentKind = rawKind && AGENT_KINDS.includes(rawKind as AgentKind) ? (rawKind as AgentKind) : "cron";
+  if (rawKind && !AGENT_KINDS.includes(rawKind as AgentKind)) { if (!opts.quiet) console.error(USAGE); return 2; }
   const checkName = flag("--check");
   const checkVersion = flag("--version");
   if ((checkName || checkVersion) && (!checkName || !checkVersion || !/^[A-Za-z0-9_.:-]{1,64}$/.test(checkName) || !/^[A-Za-z0-9_.:-]{1,64}$/.test(checkVersion))) { if (!opts.quiet) console.error(USAGE); return 2; }
@@ -42,7 +45,7 @@ export async function wrap(argv: string[], opts: Options = {}): Promise<number> 
 
   const cfg = readConfig(opts.home);
   if (!cfg && !opts.quiet) console.error("agenttracking: not logged in, running without reporting. Run: agenttracking login");
-  const base = cfg ? { v: 1 as const, agent: { kind: "cron" as const, name: label(name), host: label(cfg.host) }, run: randomUUID() } : null;
+  const base = cfg ? { v: 1 as const, agent: { kind, name: label(name), host: label(cfg.host) }, run: randomUUID() } : null;
   const report = (e: Omit<AgentEvent, "v" | "agent" | "run" | "id">) => {
     if (!base) return;
     try { appendEvent({ ...base, id: randomUUID(), ...e } as AgentEvent, opts.home); } catch { /* never fail the job */ }

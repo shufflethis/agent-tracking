@@ -14,6 +14,8 @@ test("sealSecret encrypts with AES-256-GCM and openSecret recovers plaintext", (
     assert.equal(sealSecret(sealed), sealed, "never double-encrypts");
     assert.equal(openSecret(`${sealed}tampered`), null, "authentication tag catches tampering");
     assert.equal(openSecret("https://hooks.slack.com/legacy-plaintext"), "https://hooks.slack.com/legacy-plaintext", "legacy rows remain readable");
+    delete process.env.UNLOCK_SECRET;
+    assert.throws(() => sealSecret("https://hooks.slack.com/never-store-plain"), /UNLOCK_SECRET/);
   } finally {
     if (prev === undefined) delete process.env.UNLOCK_SECRET;
     else process.env.UNLOCK_SECRET = prev;

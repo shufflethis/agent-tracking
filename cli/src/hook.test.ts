@@ -105,3 +105,38 @@ test("only actionable notifications indicate waiting; turn and child lifecycle i
   assert.equal(start.childId, end.childId);
   assert.doesNotMatch(JSON.stringify(start), /raw-child/);
 });
+
+test("Cursor, Gemini CLI and Codex CLI hooks produce valid server-accepted events without leaking payloads", () => {
+  const cursorEvt = eventFromHook("CursorBeforeShell", {
+    conversation_id: "conv-99",
+    workspace_roots: ["/work/cursor-app"],
+    command: "cat ~/.env # secret_key=123",
+  }, cfg, NOW)!;
+  assert.equal(cursorEvt.agent.kind, "cursor");
+  assert.equal(cursorEvt.agent.name, "cursor-app");
+  assert.equal(cursorEvt.tool, "Shell");
+
+  const geminiEvt = eventFromHook("GeminiAfterTool", {
+    session_id: "gem-42",
+    cwd: "/work/gemini-svc",
+    tool_name: "run_shell_command",
+    tool_response: { status: "error", output: "secret_output" },
+  }, cfg, NOW)!;
+  assert.equal(geminiEvt.agent.kind, "gemini");
+  assert.equal(geminiEvt.ok, false);
+
+  const codexEvt = eventFromHook("CodexNotify", {
+    type: "agent-turn-complete",
+    "thread-id": "th-77",
+    cwd: "/work/codex-api",
+    "input-messages": ["top secret prompt"],
+    "last-assistant-message": "top secret answer",
+  }, cfg, NOW)!;
+  assert.equal(codexEvt.agent.kind, "codex");
+  assert.equal(codexEvt.type, "turn_end");
+  assert.equal(codexEvt.agent.name, "codex-api");
+
+  const batch = [cursorEvt, geminiEvt, codexEvt];
+  assert.doesNotMatch(JSON.stringify(batch), /secret|conv-99|gem-42|th-77|\/work/);
+  assert.equal(parseAgentBatch({ events: batch }, NOW)?.events.length, 3);
+});

@@ -10,9 +10,9 @@ import { spoolSize } from "./spool.js";
 /**
  * Local-only machine discovery (`agenttracking doctor`).
  *
- * Inspects connection state, Claude Code hook installation, MCP server counts,
- * and crontab jobs on this machine. Nothing is sent over the network; MCP env
- * values and credentials are never read or printed.
+ * Inspects connection state, Claude Code / Cursor / Gemini CLI / Codex CLI
+ * hook installation, MCP server counts, and crontab jobs on this machine.
+ * Nothing is sent over the network; MCP env values and credentials stay local.
  */
 
 export type CronEntry = {
@@ -23,34 +23,52 @@ export type CronEntry = {
   preview: string;
 };
 
+export type HookState = "connected" | "not_connected" | "invalid_json";
+
 export type DoctorReport = {
   connected: { host: string; origin: string } | null;
   queuedEvents: number;
   authError: string | null;
   telemetryWarning: string | null;
   guard: string | null;
-  claudeUserHooks: "connected" | "not_connected" | "invalid_json";
-  claudeProjectHooks: "connected" | "not_connected" | "invalid_json";
+  claudeUserHooks: HookState;
+  claudeProjectHooks: HookState;
+  cursorUserHooks: HookState;
+  cursorProjectHooks: HookState;
+  geminiUserHooks: HookState;
+  geminiProjectHooks: HookState;
+  codexHooks: "connected" | "not_connected";
   mcpServersTotal: number;
   cronJobs: CronEntry[];
 };
 
-function hookState(file: string): "connected" | "not_connected" | "invalid_json" {
+function hookState(file: string): HookState {
   if (!existsSync(file)) return "not_connected";
   const raw = readFileSync(file, "utf8");
   if (!raw.trim()) return "not_connected";
   try {
-    const parsed = JSON.parse(raw) as { hooks?: Record<string, { hooks?: { command?: string }[] }[]> };
+    const parsed = JSON.parse(raw) as { hooks?: Record<string, { command?: string; hooks?: { command?: string }[] }[]> };
     if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return "invalid_json";
     const hooks = parsed.hooks ?? {};
     const found = Object.values(hooks).some((entries) =>
-      Array.isArray(entries) && entries.some((e) =>
-        (e.hooks ?? []).some((h) => typeof h.command === "string" && h.command.includes("agenttracking") && h.command.includes("hook")),
-      ),
+      Array.isArray(entries) && entries.some((e) => {
+        if (typeof e?.command === "string" && e.command.includes("agenttracking") && e.command.includes("hook")) return true;
+        return (e?.hooks ?? []).some((h) => typeof h.command === "string" && h.command.includes("agenttracking") && h.command.includes("hook"));
+      }),
     );
     return found ? "connected" : "not_connected";
   } catch {
     return "invalid_json";
+  }
+}
+
+function codexState(file: string): "connected" | "not_connected" {
+  if (!existsSync(file)) return "not_connected";
+  try {
+    const raw = readFileSync(file, "utf8");
+    return raw.split(/\r?\n/).some((l) => /^notify\s*=/.test(l.trim()) && l.includes("agenttracking")) ? "connected" : "not_connected";
+  } catch {
+    return "not_connected";
   }
 }
 
@@ -145,6 +163,7 @@ export function inspectMachine(opts: { home?: string; userHome?: string; cwd?: s
     join(userHome, ".claude.json"),
     join(cwd, ".mcp.json"),
     join(userHome, ".cursor", "mcp.json"),
+    join(userHome, ".gemini", "settings.json"),
   ];
   const cronText = opts.crontabText !== undefined ? opts.crontabText : readSystemCrontab();
   return {
@@ -155,12 +174,17 @@ export function inspectMachine(opts: { home?: string; userHome?: string; cwd?: s
     guard: describeGuard(home),
     claudeUserHooks: hookState(join(userHome, ".claude", "settings.json")),
     claudeProjectHooks: hookState(join(cwd, ".claude", "settings.json")),
+    cursorUserHooks: hookState(join(userHome, ".cursor", "hooks.json")),
+    cursorProjectHooks: hookState(join(cwd, ".cursor", "hooks.json")),
+    geminiUserHooks: hookState(join(userHome, ".gemini", "settings.json")),
+    geminiProjectHooks: hookState(join(cwd, ".gemini", "settings.json")),
+    codexHooks: codexState(join(userHome, ".codex", "config.toml")),
     mcpServersTotal: mcpFiles.reduce((sum, f) => sum + countMcpInFile(f), 0),
     cronJobs: parseCrontab(cronText),
   };
 }
 
-const DOWNLOAD_CLI = "npx --yes https://agenttracking.co/downloads/agenttracking-0.4.0.tgz";
+const DOWNLOAD_CLI = "npx --yes https://agenttracking.co/downloads/agenttracking-0.5.0.tgz";
 
 export function formatDoctorReport(r: DoctorReport): string {
   const lines: string[] = ["agenttracking doctor (local check only, nothing sent)", ""];
@@ -176,8 +200,18 @@ export function formatDoctorReport(r: DoctorReport): string {
       : r.claudeProjectHooks === "connected"
         ? "[ok]      Claude Code hooks (project): connected"
         : `[missing] Claude Code hooks: not installed. Run: ${DOWNLOAD_CLI} connect claude`);
+  if (r.cursorUserHooks === "connected" || r.cursorProjectHooks === "connected") {
+    lines.push(`[ok]      Cursor hooks (${r.cursorUserHooks === "connected" ? "user" : "project"}): connected`);
+  }
+  if (r.geminiUserHooks === "connected" || r.geminiProjectHooks === "connected") {
+    lines.push(`[ok]      Gemini CLI hooks (${r.geminiUserHooks === "connected" ? "user" : "project"}): connected`);
+  }
+  if (r.codexHooks === "connected") {
+    lines.push("[ok]      Codex CLI notify: connected");
+  }
+  lines.push(`[info]    Other supported harnesses: connect cursor | connect codex | connect gemini | connect all`);
   lines.push(`[info]    Local MCP servers configured: ${r.mcpServersTotal} (names and credentials stay local)`);
-  lines.push(`[info]    Local guard: ${r.guard ?? "inactive (optional: agenttracking guard --max-failures 5)"}`);
+  lines.push(`[info]    Local guard: ${r.guard ?? "inactive (optional: agenttracking guard --max-failures 5 --max-calls 80 --block-destructive on)"}`);
 
   const wrapped = r.cronJobs.filter((c) => c.wrapped);
   const unwrapped = r.cronJobs.filter((c) => !c.wrapped);

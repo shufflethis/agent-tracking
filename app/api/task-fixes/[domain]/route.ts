@@ -1,3 +1,4 @@
+import { sameOriginFormPost } from "@/lib/agents/form-route";
 import { currentAccount } from "@/lib/tracking/auth";
 import { normalizeDomain } from "@/lib/tracking/classify";
 import { getSite } from "@/lib/tracking/db";
@@ -17,6 +18,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ dom
   return Response.json({ ok: true, fixes: taskFixesFor(site.domain), versions: siteVersionsFor(site.domain) });
 }
 export async function POST(request: Request, { params }: { params: Promise<{ domain: string }> }) {
+  if (!sameOriginFormPost(request)) return problem("Forbidden.", 403);
   const site = await owned(params);
   if (!site) return problem("Site owner sign-in required.", 403);
   let body: Record<string, unknown>;

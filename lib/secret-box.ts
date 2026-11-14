@@ -16,13 +16,16 @@ const PREFIX = "enc:v1:";
 function derivedKey(): Buffer | null {
   const raw = process.env.UNLOCK_SECRET?.trim();
   if (!raw) return null;
+  if (Buffer.byteLength(raw, "utf8") < 16) {
+    throw new Error("UNLOCK_SECRET must be at least 16 bytes.");
+  }
   return Buffer.from(hkdfSync("sha256", raw, "agent-tracking-secret-box-salt", "secret-box:v1", 32));
 }
 
 export function sealSecret(plain: string): string {
   if (!plain || plain.startsWith(PREFIX)) return plain;
   const key = derivedKey();
-  if (!key) return plain;
+  if (!key) throw new Error("UNLOCK_SECRET is required to seal secrets.");
   const iv = randomBytes(12);
   const cipher = createCipheriv("aes-256-gcm", key, iv);
   const encrypted = Buffer.concat([cipher.update(plain, "utf8"), cipher.final()]);

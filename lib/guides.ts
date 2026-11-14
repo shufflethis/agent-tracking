@@ -267,11 +267,14 @@ const EN: Guide[] = [
       { h: "When you want both", p: ["If you publish WebMCP tools and also build agents, run an observability tool for the agents and Agent Tracking for the site. The stats API and the MCP tool make it easy to pull the site numbers into whatever dashboard your observability lives in."] },
     ],
     faq: [
-      { q: "Can Agent Tracking trace my own agent?", a: "No. It has no SDK, sees no prompts and no spans. Use AgentOps, LangSmith, Langfuse or OpenTelemetry for that." },
+      {
+        q: "Can Agent Tracking monitor my own agent?",
+        a: "Yes for operational run health: the CLI monitors your Claude Code sessions, cron jobs and OpenTelemetry traces (stuck, missing, failed and looping runs, morning briefings and alerts) without capturing prompts, answers or file contents. For full prompt and completion payload debugging, use AgentOps, LangSmith or Langfuse.",
+      },
       { q: "Can LangSmith see who visits my website?", a: "No. It has no presence on the page or in the server log; it only sees what your own code sends it." },
     ],
     related: ["can-google-analytics-track-ai-agents", "track-mcp-and-webmcp-tool-calls"],
-    updated: "2026-09-08",
+    updated: "2026-11-13",
   },
   {
     slug: "cloudflare-ai-audit-or-agent-tracking",
@@ -665,11 +668,14 @@ const DE: Guide[] = [
       { h: "Wenn du beides willst", p: ["Wenn du WebMCP-Tools veröffentlichst und auch Agenten baust, betreib ein Observability-Werkzeug für die Agenten und Agent Tracking für die Site. Stats-API und MCP-Tool machen es leicht, die Site-Zahlen in das Dashboard zu ziehen, in dem deine Observability lebt."] },
     ],
     faq: [
-      { q: "Kann Agent Tracking meinen eigenen Agenten tracen?", a: "Nein. Es hat kein SDK, sieht keine Prompts und keine Spans. Nimm dafür AgentOps, LangSmith, Langfuse oder OpenTelemetry." },
+      {
+        q: "Kann Agent Tracking meinen eigenen Agenten überwachen?",
+        a: "Ja für den operativen Laufstatus: Die CLI überwacht deine Claude-Code-Sessions, Cron-Jobs und OpenTelemetry-Traces (hängende, fehlende, gescheiterte Läufe und Fehlerschleifen, Morgen-Briefing und Alerts), ohne Prompts, Antworten oder Dateiinhalte zu senden. Für vollständiges Prompt- und Antwort-Debugging nimm AgentOps, LangSmith oder Langfuse.",
+      },
       { q: "Kann LangSmith sehen, wer meine Website besucht?", a: "Nein. Es ist weder auf der Seite noch im Server-Log; es sieht nur, was dein eigener Code ihm schickt." },
     ],
     related: ["kann-google-analytics-ki-agenten-messen", "mcp-und-webmcp-tool-aufrufe-erfassen"],
-    updated: "2026-09-08",
+    updated: "2026-11-13",
   },
   {
     slug: "cloudflare-ai-audit-oder-agent-tracking",

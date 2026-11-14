@@ -9,7 +9,7 @@ import { CLI_COMMAND, CONNECT_CLAUDE, DOCTOR_COMMAND } from "@/lib/agents/format
 
 export { DOCTOR_COMMAND };
 export const STATUS_COMMAND = `${CLI_COMMAND} status`;
-export const GUARD_EXAMPLE = `${CLI_COMMAND} guard --max-failures 5`;
+export const GUARD_EXAMPLE = `${CLI_COMMAND} guard --max-failures 5 --max-calls 80 --max-minutes 45 --block-destructive on`;
 export const PAUSE_COMMAND = `${CLI_COMMAND} pause --reason "maintenance"`;
 export const DISCONNECT_CLAUDE = `${CLI_COMMAND} disconnect claude`;
 export const WRAP_CRON = `# crontab, before

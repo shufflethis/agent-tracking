@@ -1,8 +1,10 @@
 import type { Snapshot } from "./snapshot";
 /** Shared shapes of the agent-monitoring subsystem. The CLI keeps a copy in cli/src/event.ts; a test checks they agree. */
 
-export type AgentKind = "claude" | "cron" | "custom";
-export const AGENT_KINDS: readonly AgentKind[] = ["claude", "cron", "custom"];
+export type AgentKind = "claude" | "cursor" | "codex" | "gemini" | "cron" | "custom";
+export const AGENT_KINDS: readonly AgentKind[] = ["claude", "cursor", "codex", "gemini", "cron", "custom"];
+export const isSessionAgentKind = (kind: AgentKind): boolean =>
+  kind === "claude" || kind === "cursor" || kind === "codex" || kind === "gemini";
 
 export type AgentEventType =
   | "session_start" | "tool_start" | "tool_end" | "turn_end" | "subagent_end" | "notification" | "session_end"

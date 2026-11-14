@@ -8,16 +8,25 @@ import { AGENT_EVENT_RETENTION_DAYS, AGENT_TAIL_RETENTION_DAYS, RAW_RETENTION_DA
 
 const CMD = {
   login: `${CLI_COMMAND} login`,
-  claude: `${CLI_COMMAND} connect claude`,
+  claude: `${CLI_COMMAND} connect claude
+# Also supported on the same machine (Node >= 18):
+${CLI_COMMAND} connect cursor
+${CLI_COMMAND} connect codex
+${CLI_COMMAND} connect gemini
+${CLI_COMMAND} connect all`,
   doctor: DOCTOR_COMMAND,
   wrap: `# crontab: before
 0 7 * * * /opt/backup.sh
 # after
-0 7 * * * ${CLI_COMMAND} wrap --name backup --every 24h --tail 20 -- /opt/backup.sh`,
-  guard: `${CLI_COMMAND} guard --max-failures 5
+0 7 * * * ${CLI_COMMAND} wrap --name backup --every 24h --tail 20 -- /opt/backup.sh
+
+# GitHub Actions / headless CI agent run:
+AGENTTRACKING_ORIGIN=${SITE_ORIGIN} ${CLI_COMMAND} login --token "$AGENTTRACKING_TOKEN" --host github-actions
+${CLI_COMMAND} wrap --kind codex --name nightly-review --tail 20 -- codex exec "check diff"`,
+  guard: `${CLI_COMMAND} guard --max-failures 5 --max-calls 80 --max-minutes 45 --block-destructive on
 ${CLI_COMMAND} pause --reason "deploy freeze"
 ${CLI_COMMAND} resume`,
-  off: `${CLI_COMMAND} disconnect claude`,
+  off: `${CLI_COMMAND} disconnect all`,
 };
 
 const LIVE = () => pricingActive();
@@ -34,7 +43,7 @@ const COPY = {
     get intro() { return `The other side of agent traffic: what your own Claude Code loops and cron jobs did while you were away. ${PRICE_EN()}`; },
     steps: [
       ["1. Connect this machine", "Shows a code and opens the browser; confirm it while signed in. Each machine gets its own token you can revoke in the settings.", CMD.login],
-      ["2. Track Claude Code", "Adds hooks to ~/.claude/settings.json (a backup is written next to it, your own hooks stay). Use --project for .claude/settings.json in the current folder.", CMD.claude],
+      ["2. Track Claude Code, Cursor, Codex CLI or Gemini CLI", "Adds non-destructive hooks to ~/.claude/settings.json, ~/.cursor/hooks.json, ~/.codex/config.toml or ~/.gemini/settings.json (a backup is written next to each file, your own hooks stay). Add --project for project-scoped hooks.", CMD.claude],
       ["3. Inspect local hooks and cron jobs", "Scans connection state, Claude hooks, local MCP server counts and unwrapped crontab schedules on this machine without sending data.", CMD.doctor],
       ["4. Wrap cron jobs", "Output and exit code of the job stay exactly as they were. --every tells us when the next run is due, so a missing run is noticed. --tail sends the last stderr lines, with tokens and keys masked.", CMD.wrap],
     ],
@@ -50,7 +59,7 @@ const COPY = {
     get intro() { return `Die andere Seite von Agent-Traffic: was deine eigenen Claude-Code-Loops und Cron-Jobs gemacht haben, während du weg warst. ${PRICE_DE()}`; },
     steps: [
       ["1. Maschine verbinden", "Zeigt einen Code und öffnet den Browser; bestätige ihn, während du angemeldet bist. Jede Maschine bekommt ein eigenes Token, das du in den Einstellungen widerrufen kannst.", CMD.login],
-      ["2. Claude Code tracken", "Trägt Hooks in ~/.claude/settings.json ein (daneben entsteht ein Backup, deine eigenen Hooks bleiben). Mit --project für .claude/settings.json im aktuellen Ordner.", CMD.claude],
+      ["2. Claude Code, Cursor, Codex CLI oder Gemini CLI verbinden", "Trägt schonend Hooks in ~/.claude/settings.json, ~/.cursor/hooks.json, ~/.codex/config.toml oder ~/.gemini/settings.json ein (daneben entsteht jeweils ein Backup, eigene Hooks bleiben). Mit --project projektbezogen im aktuellen Ordner.", CMD.claude],
       ["3. Lokale Hooks und Cron-Jobs prüfen", "Prüft Verbindungsstatus, Claude-Hooks, lokale MCP-Anzahl und noch nicht umschlossene Crontab-Einträge rein lokal, ohne Daten zu senden.", CMD.doctor],
       ["4. Cron-Jobs umschließen", "Ausgabe und Exit-Code des Jobs bleiben genau wie vorher. --every sagt uns, wann der nächste Lauf fällig ist, damit ein fehlender Lauf auffällt. --tail schickt die letzten stderr-Zeilen mit, Tokens und Schlüssel maskiert.", CMD.wrap],
     ],
@@ -88,10 +97,10 @@ export default function AgentMonitoringDocs({ lang }: { lang: "en" | "de" }) {
       <ul>{c.sent.map((s) => <li key={s}>{s}</li>)}</ul>
       <p>{c.never}</p>
       <p>{c.retention}</p>
-      <h3>{lang === "de" ? "Lokale Bremse (PreToolUse-Guard)" : "Local circuit breaker (PreToolUse guard)"}</h3>
+      <h3>{lang === "de" ? "Lokale Sicherheits- & Kostenbremse (PreToolUse-Guard)" : "Local safety & spend fuse (PreToolUse guard)"}</h3>
       <p>{lang === "de"
-        ? "Optional kannst du in ~/.agenttracking/guard.json eine rein lokale Schutzregel setzen. Ist sie aktiv, stoppt der PreToolUse-Hook neue Tool-Aufrufe direkt auf deiner Maschine, ohne Netzwerkaufruf und ohne Prompts oder Argumente zu lesen. Ein neuer Prompt im Terminal setzt Fehlerserien automatisch zurück:"
-        : "Optionally configure a purely local rule in ~/.agenttracking/guard.json. When active, the PreToolUse hook blocks new tool calls directly on your machine with no network round-trip and without reading prompts or arguments. Submitting a fresh prompt resets consecutive failure streaks automatically:"}</p>
+        ? "Optional kannst du in ~/.agenttracking/guard.json rein lokale Schutzregeln setzen: maximale Fehlerserien, maximale Tool-Aufrufe oder Minuten pro autonomem Turn sowie eine lokale Sperre gegen destruktive Befehle (rm -rf, git push --force, git reset --hard, DROP TABLE). Der Check läuft in unter 1 ms im lokalen Arbeitsspeicher, ohne Netzwerkaufruf und ohne Befehle oder Prompts zu speichern oder hochzuladen:"
+        : "Optionally configure purely local rules in ~/.agenttracking/guard.json: max consecutive failures, max tool calls or minutes per autonomous turn, and a local fuse against destructive shell commands (rm -rf, git push --force, git reset --hard, DROP TABLE). Checks run in under 1 ms in local RAM with no network round-trip and without storing or uploading commands or prompts:"}</p>
       <pre className="code">{CMD.guard}</pre>
       <h3 id="fleet-api">{lang === "de" ? "Flotten-API und MCP (get_fleet_status)" : "Fleet API and MCP (get_fleet_status)"}</h3>
       <p>{lang === "de"

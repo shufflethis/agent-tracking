@@ -1,42 +1,56 @@
-# Agent Tracking CLI 0.4.0
+# agenttracking (CLI 0.5.0)
 
-Monitor Claude Code sessions and cron jobs using agenttracking.co.
-Requires Node.js 22.13 or later.
+Operational monitoring and a local-only safety fuse for **Claude Code, Cursor, OpenAI Codex CLI, Gemini CLI, cron jobs and GitHub Actions** via [agenttracking.co](https://agenttracking.co).
+
+- **Zero code or prompt capture**: only lifecycle events, hashed session/call IDs, exit codes and tool names leave your machine.
+- **Zero runtime dependencies**: pure Node.js (`>=18`).
+- **Local safety & spend fuse (`guard`)**: cap tool calls per autonomous turn, cap runtime per turn, stop consecutive failure loops, and block catastrophic shell commands (`rm -rf`, `git push --force`, `git reset --hard`, `DROP TABLE`) **100% locally** in `<1 ms` without sending commands or prompts over the network.
+
+## Quick start
 
 ```sh
-npx --yes https://agenttracking.co/downloads/agenttracking-0.4.0.tgz connect claude
+# Once published to npm:
+npx agenttracking@latest connect all
+
+# Or directly from the signed release tarball:
+npx --yes https://agenttracking.co/downloads/agenttracking-0.5.0.tgz connect all
 ```
 
-This versioned package is distributed directly by agenttracking.co, not via the
-npm registry. See https://agenttracking.co/docs for connection instructions.
+Supported harnesses:
+- `agenttracking connect claude [--project]`
+- `agenttracking connect cursor [--project]`
+- `agenttracking connect codex`
+- `agenttracking connect gemini [--project]`
+- `agenttracking connect all`
 
-Only lifecycle metadata, hashed session/call/child IDs and tool status are sent.
-No prompts, tool arguments or responses are collected by Claude hooks. Cron jobs
-can opt into masked stderr with `--tail`.
+## Local safety & spend circuit breaker
 
-`doctor` inspects local connection state, Claude Code hooks, MCP server counts
-and crontab schedules without sending data over the network.
+```sh
+# Stop runaway overnight loops and block destructive commands locally:
+agenttracking guard --max-failures 5 --max-calls 80 --max-minutes 45 --block-destructive on
 
-`pause`, `resume` and `guard` configure an opt-in local `PreToolUse` circuit
-breaker (`~/.agenttracking/guard.json`) to pause sessions or stop consecutive
-failing tool loops locally without network calls.
+# Pause and resume all connected agents on this machine:
+agenttracking pause --reason "deploy freeze"
+agenttracking resume
+```
 
-`wrap --name evaluation --check booking --version v1 -- ./check-booking.sh`
-reports a named check using the script's exit code. The script must assert its
-expected result. Completed sessions without a check remain unchecked.
+## Cron jobs & GitHub Actions
 
-CLI 0.4.0 also captures configuration fingerprints and counts on SessionStart and
-ConfigChange. Preview with `agenttracking snapshot`. Configuration contents,
-commands, rules, secrets and full paths stay local. These are partial snapshots,
-not a determination of effective permissions.
+```sh
+# Linux/macOS crontab (alerts if exit != 0, stuck, or missed schedule):
+0 7 * * * agenttracking wrap --name backup --every 24h --tail 20 -- /opt/backup.sh
 
-`agenttracking observe --pid <PID> --name linux-agent --seconds 60` optionally
-uses bpftrace on Linux. It needs kernel/BPF privileges and observes only the selected
-process and new descendants. It sends operation types and hashed process IDs,
-never filenames, addresses or payloads. This module does not enforce policies.
+# Headless CI / GitHub Actions agent job:
+agenttracking login --token "$AGENTTRACKING_TOKEN" --host github-actions
+agenttracking wrap --kind codex --name pr-review --tail 20 -- codex exec "review diff"
+```
 
-OpenTelemetry traces can be sent to `/api/agents/otlp/v1/traces` using OTLP/HTTP
-JSON and an agent token. Setup: https://agenttracking.co/app/fleet/telemetry
+## Machine diagnostics & OpenTelemetry
+
+- `agenttracking doctor` inspects connection status, installed hooks, MCP server count and unwrapped cron jobs locally without network calls.
+- `agenttracking snapshot` previews sanitized configuration fingerprints and rule counts.
+- `agenttracking observe --pid <PID> --name worker --seconds 60` runs optional Linux eBPF syscall-kind observation (`bpftrace`).
+- OTLP/HTTP traces: `POST https://agenttracking.co/api/agents/otlp/v1/traces` with `Authorization: Bearer atk_...`.
 
 Source: https://github.com/shufflethis/agent-tracking/tree/main/cli
-License: AGPL-3.0-only (included).
+License: AGPL-3.0-only

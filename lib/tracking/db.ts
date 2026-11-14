@@ -122,6 +122,8 @@ export function db(): DatabaseSync {
   instance.exec("pragma busy_timeout = 5000;");
   instance.exec(SCHEMA);
   migrate(instance);
+  instance.exec("create index if not exists events_t on events(t);");
+  instance.exec("create index if not exists log_records_imported on log_records(imported_at);");
   handle = { path, db: instance };
   return instance;
 }
@@ -1137,6 +1139,7 @@ export function pruneRaw(now = Date.now()): number {
   d.prepare("update content_captures set html_snapshot='' where captured_at < ? and html_snapshot <> ''").run(cutoff);
   d.prepare("delete from event_receipts where received_at < ?").run(cutoff);
   d.prepare("delete from tool_session_receipts where day < ?").run(dayKey(cutoff));
+  d.prepare("delete from log_records where imported_at < ?").run(cutoff);
   // Server-reported calls and receipts are raw data too: they have no daily aggregate and expire with the rest.
   d.prepare("delete from server_tool_calls where received_at < ?").run(cutoff);
   d.prepare("delete from server_outcomes where received_at < ?").run(cutoff);

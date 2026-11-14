@@ -166,7 +166,7 @@ export default function Page() {
           <p>Independently of this agreement, raw data is deleted automatically {RAW_RETENTION_DAYS} days after it was collected. Daily totals remain as long as the site is in the account.</p>
           <p>
             When the Controller removes the site from the account, the Processor deletes all raw data, daily totals, the tool registry and the settings belonging to it without
-            delay and permanently. The same applies to all sites of an account when the account is deleted. Encrypted backup copies expire within 30 days.
+            delay and permanently. The same applies to all sites of an account when the account is deleted. Encrypted backup snapshots (7 daily, 4 weekly, 12 monthly) expire within at most 12 months.
           </p>
           <p>The daily totals of a site can be exported from the dashboard as CSV at any time before removal.</p>
           <p>Statutory retention duties remain unaffected; to the Processor&apos;s knowledge none apply to the data described here.</p>
@@ -196,8 +196,8 @@ export default function Page() {
           <p>
             <b>Collected and stored</b> per page view: the page path without query string and fragment; the referrer host and the <code>utm_source</code> parameter, only to
             attribute the visit to an AI assistant; the result of that attribution (referrer and user agent matched against a published, versioned list); a session id. For WebMCP
-            tools in addition: the tool name, a hash of its description and schema, the duration and outcome of a call (success or failure, error class), the names of the input
-            keys; the name of an element marked as a goal when it is clicked or submitted; a hash of the manifest at <code>/.well-known/webmcp</code>.
+            tools in addition: the tool name, a hash of its description and schema, the duration and outcome of a call (success or failure, error class), but no arbitrary input field names or values;
+            the name of an element marked as a goal when it is clicked or submitted; a hash of the manifest at <code>/.well-known/webmcp</code>.
           </p>
           <p>
             <b>The session id</b> is a SHA-256 hash of a random value generated afresh every day, the domain, a coarse browser class (mobile or desktop, or the id of a known

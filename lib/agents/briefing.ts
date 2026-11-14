@@ -3,7 +3,7 @@ import { button, heading, layout, paragraph } from "../email-layout";
 import type { DashLang } from "../tracking/copy";
 import { agentCopy } from "./copy";
 import { eventCountsBetween, medianDurationMs, runsBetween, safeTimeZone, type BriefingRun } from "./store";
-import type { AgentKind, RunStatus } from "./types";
+import { isSessionAgentKind, type AgentKind, type RunStatus } from "./types";
 
 /**
  * The morning briefing: "what happened while you slept", from rules only.
@@ -66,7 +66,7 @@ export function problemLine(a: BriefingAgent, lang: DashLang, timeZone = TIME_ZO
 
 function quietLine(a: BriefingAgent, lang: DashLang): string {
   const c = agentCopy(lang).briefing;
-  const summary = a.kind === "claude" ? c.sessions(a.runs, a.toolCalls) : c.runsOk(a.ok);
+  const summary = isSessionAgentKind(a.kind) ? c.sessions(a.runs, a.toolCalls) : c.runsOk(a.ok);
   const slow = a.durationVsMedian && a.durationVsMedian >= 2 ? ` · ${c.slower(a.durationVsMedian)}` : "";
   return `${label(a)} ${summary}${slow}`;
 }

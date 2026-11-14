@@ -10,6 +10,7 @@ import { dashLang } from "@/lib/tracking/copy";
 import { db } from "@/lib/tracking/db";
 import { effectiveAgentPlan } from "@/lib/agents/plans";
 import { agentSignals, signalText, type SignalPayload } from "@/lib/agents/signals";
+import { isSessionAgentKind } from "@/lib/agents/types";
 
 export const metadata: Metadata = { title: "Agent", robots: { index: false, follow: false } };
 export const runtime = "nodejs";
@@ -54,7 +55,7 @@ export default async function Page({ params }: { params: Promise<{ agentId: stri
                   <td>{checkLabel(r, lang)}{r.checkName ? <small style={{ display: "block" }}>{r.checkName} · {r.checkVersion}</small> : null}</td>
                   <td>
                     {r.dataLoss ? <p className="chip partial">{de ? "Datenlücke gemeldet" : "Data loss reported"}</p> : null}
-                    {agent.kind === "claude" ? c.detail(r.turns, r.toolCalls, r.toolErrors) : c.exit(r.exitCode)}
+                    {isSessionAgentKind(agent.kind) && r.exitCode === null ? c.detail(r.turns, r.toolCalls, r.toolErrors) : r.exitCode !== null ? c.exit(r.exitCode) : c.detail(r.turns, r.toolCalls, r.toolErrors)}
                     {r.tail && PROBLEM.has(r.status) ? <pre className="code" style={{ marginTop: 8, whiteSpace: "pre-wrap", fontSize: 12 }}>{r.tail}</pre> : null}
                   </td>
                 </tr>

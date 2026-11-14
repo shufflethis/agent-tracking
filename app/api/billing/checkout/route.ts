@@ -1,3 +1,4 @@
+import { sameOriginFormPost } from "@/lib/agents/form-route";
 import { SITE_ORIGIN } from "@/lib/site";
 import { createCheckout } from "@/lib/billing";
 import { currentAccount } from "@/lib/tracking/auth";
@@ -7,6 +8,7 @@ export const runtime = "nodejs";
 
 /** Starts a Checkout Session for the signed-in account and answers with its URL. */
 export async function POST(request: Request) {
+  if (!sameOriginFormPost(request)) return Response.json({ ok: false, detail: "Forbidden." }, { status: 403 });
   const account = await currentAccount();
   if (!account) return Response.json({ ok: false, detail: "Sign in first." }, { status: 401 });
   const body = (await request.json().catch(() => ({}))) as { plan?: string };

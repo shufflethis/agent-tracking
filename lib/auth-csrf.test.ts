@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { POST } from "../app/api/auth/route";
+import { DELETE as signOut, POST } from "../app/api/auth/route";
 import { POST as approveDevice } from "../app/api/agents/device/approve/route";
+import { POST as addSiteRoute } from "../app/api/sites/route";
 import { mintLoginToken } from "./session";
 
 process.env.UNLOCK_SECRET ||= "test-secret-for-csrf-check-0123456789";
@@ -48,4 +49,19 @@ test("the connect page takes no code from the URL, so a sent link cannot preload
   assert.doesNotMatch(page, /searchParams[^\n]*\b(code|typed)\b/, "no code-like search param is read");
   assert.match(page, /<form method="post" action="\/api\/agents\/device\/approve">/);
   assert.match(page, /name="code"[^>]*required|required[^>]*name="code"/s);
+});
+
+test("cross-site mutations on cookie-authenticated API routes are refused with 403", async () => {
+  const r1 = await addSiteRoute(new Request("https://agenttracking.co/api/sites", {
+    method: "POST",
+    headers: { "content-type": "application/json", origin: "https://evil.example" },
+    body: JSON.stringify({ domain: "victim.example" }),
+  }));
+  assert.equal(r1.status, 403);
+
+  const r2 = await signOut(new Request("https://agenttracking.co/api/auth", {
+    method: "DELETE",
+    headers: { "sec-fetch-site": "cross-site" },
+  }));
+  assert.equal(r2.status, 403);
 });

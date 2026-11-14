@@ -1,3 +1,4 @@
+import { sameOriginFormPost } from "@/lib/agents/form-route";
 import { accountForToken, bearerFrom } from "@/lib/tracking/api-token";
 import { currentAccount } from "@/lib/tracking/auth";
 import { normalizeDomain } from "@/lib/tracking/classify";
@@ -14,6 +15,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ doma
   return Response.json({ ok: true, findings: findingsFor(domain) }, { headers: { "cache-control": "private, no-store" } });
 }
 export async function POST(request: Request, { params }: { params: Promise<{ domain: string }> }) {
+  if (!sameOriginFormPost(request)) return problem("Forbidden.", 403);
   const account = await currentAccount();
   const domain = normalizeDomain(decodeURIComponent((await params).domain));
   if (!account || !domain || siteRole(domain, account.email) !== "owner") return problem("Site owner sign-in required.", 403);

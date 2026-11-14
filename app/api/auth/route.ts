@@ -141,8 +141,12 @@ export async function POST(request: Request) {
   return Response.json({ ok: true });
 }
 
-/** Sign out: clear the cookie. POST only, so a link cannot log someone out. */
-export async function DELETE() {
+/** Sign out: clear the cookie. Same-origin DELETE only, so a third-party site cannot force sign-out. */
+export async function DELETE(request: Request) {
+  const origin = request.headers.get("origin");
+  if ((origin && origin !== SITE_ORIGIN && origin !== new URL(request.url).origin) || request.headers.get("sec-fetch-site") === "cross-site") {
+    return new Response("Forbidden", { status: 403 });
+  }
   (await cookies()).set({ ...sessionCookieOptions(), value: "", maxAge: 0 });
-  return new Response(null, { status: 204, headers: { "set-cookie": `${SESSION_COOKIE}=; Path=/; Max-Age=0` } });
+  return new Response(null, { status: 204 });
 }

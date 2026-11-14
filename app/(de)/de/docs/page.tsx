@@ -32,9 +32,9 @@ const API_MCP = `{
 }`;
 
 export const metadata: Metadata = {
-  title: "Agent Tracking: Was KI-Agenten auf deiner Site tun",
+  title: "Dokumentation: Eigene Agents überwachen & Website-KI-Analytics",
   description:
-    "Das Snippet beobachtet erkannte Referrals und unterstützte Browser-WebMCP-Aktionen. Optionale Logs und Site-Serverbelege liefern getrennte Nachweise. Messgrenzen und Datenauswahl erklärt.",
+    "Claude-Code-Hooks, Cron-Jobs, lokale Schutzbremse und OpenTelemetry ohne Prompts anbinden, oder KI-Referrals und WebMCP-Aktionen auf deinen Websites messen.",
   alternates: alternatesForLocale("/docs", "de"),
 };
 
@@ -69,20 +69,23 @@ export default function Page() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(DOCS_LD) }} />
       <section className="shell section" style={{ paddingTop: 56, paddingBottom: 10 }}>
         <div className="pagehead">
-          <p className="eyebrow">Agent Tracking</p>
-          <h1>Was KI-Agenten auf deiner Site tun</h1>
+          <p className="eyebrow">Dokumentation</p>
+          <h1>Eigene Agents überwachen und KI-Traffic auf Websites messen</h1>
           <p className="dek" style={{ maxWidth: "62ch" }}>
-            Sieh erkannte Assistenten-Referrals und unterstützte Browser-WebMCP-Aktionen. Optionale Origin-Logs und Site-Serverbelege ergänzen getrennte Crawler- und Abschlussnachweise. Das Snippet setzt keine Cookies.
+            Überwache Claude-Code-Loops, umschlossene Cron-Jobs, OpenTelemetry-Spans und lokale Schutzregeln ohne Prompts oder Code zu senden. Dazu cookielose Website-Analytics für KI-Referrals, verifizierte Crawler und WebMCP-Aktionen.
           </p>
           <p style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 22 }}>
-            <Link className="btn" href="/login?lang=de">Anmelden oder Konto anlegen</Link>
-            <Link className="btn ghost" href="/demo">Demo-Seite ansehen</Link>
+            <a className="btn" href="#agent-monitoring">Eigene Agents überwachen</a>
+            <a className="btn ghost" href="#websites">Website-Analytics</a>
+            <Link className="btn ghost" href="/demo">Demo ansehen</Link>
           </p>
         </div>
       </section>
 
-      <section className="shell section">
-        <h2>Einbauen</h2>
+      <AgentMonitoringDocs lang="de" />
+
+      <section className="shell section" id="websites">
+        <h2>Website-Analytics: Snippet einbauen</h2>
         <p className="dek" style={{ maxWidth: "62ch" }}>
           Lege deine Site im Dashboard an und setze diese Zeile auf jede Seite. Die Domain in <code>data-domain</code> muss die registrierte sein; Ereignisse für jede andere Domain werden an
           der Tür verworfen.
@@ -251,8 +254,6 @@ export default function Page() {
         <p className="dek">Vergib pro echter Anfrage eine neue Beleg-ID und wiederhole bei Netzfehlern dieselbe ID. Wiederholungen liefern <code>duplicate</code>, geänderte Nutzdaten zur selben ID HTTP 409. Sende keine Kontakt-, Zahlungs- oder Bestellinhalte. Task- und Invocation-ID verknüpfen Beobachtungen, belegen aber keinen Akteur.</p>
         <p className="dek">Für externe MCP-Server nutze den separaten Zugang und <code>/api/server-tools/example.com</code> mit Invocation-ID, optionaler Task-ID, Toolname, Zeitpunkt, technischem Ausgang und Akteurstyp. Ein Agentenakteur ist eine Aussage deines Servers, keine unabhängige Verifikation. Das Browser-Snippet sieht nicht jeden externen MCP-Aufruf. Das ausführbare TypeScript-Beispiel liegt im Repository unter <code>examples/inquiry-app</code>.</p>
       </section>
-
-      <AgentMonitoringDocs lang="de" />
 
       <section className="shell section" id="private-workflow">
         <h2>Private Aufgabentests, Korrekturen und Kundenberichte</h2>

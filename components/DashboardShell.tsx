@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { effectiveAgentPlan } from "@/lib/agents/plans";
 import { agentUsage } from "@/lib/agents/store";
 import { AGENT_EVENTS_PER_MONTH } from "@/lib/agents/types";
 import { agentCopy } from "@/lib/agents/copy";
@@ -31,16 +32,23 @@ export default function DashboardShell({ account, site, view, title, area, child
     { slug: "report", label: lang === "de" ? "Bericht" : "Report" },
     ...(site?.owner === account.email ? [{ slug: "settings", label: c.shell.views.settings }] : []),
   ];
+  const activeArea: "sites" | "fleet" | null = site ? "sites" : area ?? null;
+  const agentTier = effectiveAgentPlan(account.agent_plan).id === "pro" ? "Pro" : "Free";
   return (
     <>
       <section className="shell" style={{ paddingTop: 40, paddingBottom: 0 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16, flexWrap: "wrap" }}>
           <div>
             <p className="eyebrow" style={{ marginBottom: 8 }}>
-              <Link href="/app" style={{ color: "inherit" }}>
+              <Link href="/app/fleet" style={{ color: "inherit" }}>
                 {c.shell.brand}
               </Link>
-              {site ? <span style={{ color: "var(--muted)" }}> / </span> : null}
+              {site ? (
+                <>
+                  <span style={{ color: "var(--muted)" }}> / </span>
+                  <Link href="/app" style={{ color: "inherit" }}>{fleetNav.navSites}</Link>
+                </>
+              ) : null}
             </p>
             <h1 style={{ fontSize: "clamp(24px,3.6vw,36px)", margin: 0, wordBreak: "break-word" }}>{site ? site.domain : title ?? c.shell.yourSites}</h1>
             {site && !site.verified_at ? (
@@ -51,7 +59,7 @@ export default function DashboardShell({ account, site, view, title, area, child
           </div>
           <div style={{ textAlign: "right", fontSize: 13, color: "var(--muted)" }}>
             <p style={{ margin: "0 0 8px" }}>
-              <Link href="/app/account" style={{ color: "inherit" }}>{account.email}</Link> · {c.shell.planLine(area === "fleet" ? (account.agent_plan === "pro" ? "Pro" : "Free") : plan.name, used.toLocaleString(numberLocale(lang)), allowance.toLocaleString(numberLocale(lang)))}
+              <Link href="/app/account" style={{ color: "inherit" }}>{account.email}</Link> · {c.shell.planLine(area === "fleet" ? agentTier : plan.name, used.toLocaleString(numberLocale(lang)), allowance.toLocaleString(numberLocale(lang)))}
             </p>
             <p style={{ margin: 0, display: "flex", gap: 10, justifyContent: "flex-end", alignItems: "center" }}>
               <LangSwitch lang={lang} labelEn={c.actions.langEn} labelDe={c.actions.langDe} />
@@ -60,17 +68,15 @@ export default function DashboardShell({ account, site, view, title, area, child
             </p>
           </div>
         </div>
-        {!site && area ? (
-          <nav aria-label="Dashboard areas" style={{ display: "flex", gap: 4, marginTop: 24, borderBottom: "1px solid var(--rule)", overflowX: "auto" }}>
-            {([["sites", "/app", fleetNav.navSites], ["fleet", "/app/fleet", fleetNav.navAgents]] as const).map(([key, href, label]) => (
-              <Link key={key} href={href} style={{ padding: "10px 14px", fontSize: 14, fontWeight: 600, color: area === key ? "var(--ink)" : "var(--muted)", borderBottom: area === key ? "2px solid var(--cyan)" : "2px solid transparent", textDecoration: "none", whiteSpace: "nowrap" }}>
-                {label}
-              </Link>
-            ))}
-          </nav>
-        ) : null}
+        <nav aria-label="Dashboard areas" style={{ display: "flex", gap: 4, marginTop: 24, borderBottom: "1px solid var(--rule)", overflowX: "auto" }}>
+          {([["fleet", "/app/fleet", fleetNav.navAgents], ["sites", "/app", fleetNav.navSites]] as const).map(([key, href, label]) => (
+            <Link key={key} href={href} style={{ padding: "10px 14px", fontSize: 14, fontWeight: 600, color: activeArea === key ? "var(--ink)" : "var(--muted)", borderBottom: activeArea === key ? "2px solid var(--cyan)" : "2px solid transparent", textDecoration: "none", whiteSpace: "nowrap" }}>
+              {label}
+            </Link>
+          ))}
+        </nav>
         {site ? (
-          <nav aria-label="Dashboard views" style={{ display: "flex", gap: 4, marginTop: 24, borderBottom: "1px solid var(--rule)", overflowX: "auto" }}>
+          <nav aria-label="Dashboard views" style={{ display: "flex", gap: 4, marginTop: 8, borderBottom: "1px solid var(--rule)", overflowX: "auto" }}>
             {views.map((v) => {
               const active = (view ?? "") === v.slug;
               return (

@@ -101,10 +101,13 @@ function structuredAddress(lines: string[]) {
 export const LEGAL_ADDRESS_SCHEMA = structuredAddress(LEGAL.addressLines);
 
 /** The person behind the installation, for bylines and Article authorship. Empty means the organisation is the author. */
+const cloudAuthor = cloudEntity || LEGAL.name === "FINAL MASTER LLC";
 export const AUTHOR = {
-  name: trim(process.env.AUTHOR_NAME),
-  url: trim(process.env.AUTHOR_URL),
-  sameAs: trim(process.env.AUTHOR_SAMEAS).split(",").map((s) => s.trim()).filter(Boolean),
+  name: trim(process.env.AUTHOR_NAME) || (cloudAuthor ? "Gorden Wuebbe" : ""),
+  url: trim(process.env.AUTHOR_URL) || (cloudAuthor ? "https://x.com/wuebbe" : ""),
+  sameAs: trim(process.env.AUTHOR_SAMEAS)
+    ? trim(process.env.AUTHOR_SAMEAS).split(",").map((s) => s.trim()).filter(Boolean)
+    : cloudAuthor ? ["https://x.com/wuebbe", GITHUB_URL] : [],
 };
 
 /** Site verification codes for the search consoles, printed as meta tags when set. Bing also gets /BingSiteAuth.xml. */

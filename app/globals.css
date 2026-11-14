@@ -1956,15 +1956,27 @@ td.num {
 .hteam h3 span { font-family: var(--mono); font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--cyan); margin-left: 10px; }
 .hteam p { margin: 0; color: var(--ink-2); line-height: 1.6; }
 
-/* Plain text inputs on dashboard forms (account, connect a machine). */
+/* Plain text inputs on dashboard forms (account, connect a machine, fleet settings, tools). */
+:where(
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="submit"]):not([type="button"]):not([type="hidden"]),
+  select,
+  textarea
+),
 .field {
   font-family: var(--body);
   font-size: 15px;
-  padding: 12px 14px;
+  padding: 10px 12px;
   border: 1px solid var(--rule-strong);
   border-radius: 8px;
   background: var(--void);
   color: var(--ink);
+  color-scheme: dark;
   outline: none;
 }
+.field { padding: 12px 14px; }
+:where(
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="submit"]):not([type="button"]):not([type="hidden"]),
+  select,
+  textarea
+):focus,
 .field:focus { border-color: var(--cyan); }

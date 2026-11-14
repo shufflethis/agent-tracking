@@ -21,15 +21,23 @@ type Tool = {
 };
 
 const lookupTool: Tool = {
-  name: "lookup_score",
-  description: "Look up the Agent Readiness Score of a public website by hostname.",
-  inputSchema: { type: "object", properties: { host: { type: "string", description: "Hostname, for example example.com" } }, required: ["host"] },
+  name: "lookup_public_stats",
+  description: "Look up published 30-day AI agent statistics of a public website by hostname.",
+  inputSchema: { type: "object", properties: { host: { type: "string", description: "Hostname, for example agenttracking.co" } }, required: ["host"] },
   annotations: { readOnlyHint: true },
   execute: async ({ host }, ctx) => {
     if (typeof host !== "string" || !host.includes(".")) throw new TypeError("host must be a hostname");
-    const res = await fetch(`/api/scan?url=${encodeURIComponent(host)}`, { signal: ctx?.signal });
-    const data = await res.json();
-    return { content: [{ type: "text", text: `${data.host ?? host}: ${data.score ?? "n/a"}/100` }] };
+    const res = await fetch(`/api/public-stats/${encodeURIComponent(host)}`, { signal: ctx?.signal });
+    if (res.ok) {
+      const data = await res.json();
+      const interactions = data?.totals?.interactions ?? 0;
+      const verified = data?.totals?.verifiedFetches ?? 0;
+      return { content: [{ type: "text", text: `${data.domain ?? host}: ${interactions} observed interactions (${verified} IP-verified fetches, 30d)` }] };
+    }
+    const cardRes = await fetch("/.well-known/mcp.json", { signal: ctx?.signal });
+    if (!cardRes.ok) throw new Error(`HTTP ${res.status}`);
+    const card = await cardRes.json();
+    return { content: [{ type: "text", text: `${host}: MCP server ${card.name ?? "ready"} (v${card.version ?? "1.0"})` }] };
   },
 };
 
@@ -47,7 +55,9 @@ export default function DemoTools() {
   useEffect(() => {
     let tries = 0;
     const poll = setInterval(() => {
-      const mc = (document as unknown as { modelContext?: { registerTool: (t: Tool) => Promise<void> | void } }).modelContext;
+      const mc =
+        (navigator as unknown as { modelContext?: { registerTool: (t: Tool) => Promise<void> | void } }).modelContext ??
+        (document as unknown as { modelContext?: { registerTool: (t: Tool) => Promise<void> | void } }).modelContext;
       if (mc) {
         clearInterval(poll);
         // After agent.js wrapped registerTool, so this registration is recorded.
@@ -66,22 +76,22 @@ export default function DemoTools() {
     if (!window.__wmtSimulate) return say("agent.js is not loaded on this page");
     try {
       const r = (await window.__wmtSimulate(lookupTool, args)) as { content: { text: string }[] };
-      say(`lookup_score ok: ${r.content[0].text}`);
+      say(`lookup_public_stats ok: ${r.content[0].text}`);
     } catch (err) {
-      say(`lookup_score failed: ${err instanceof Error ? err.name : "error"}`);
+      say(`lookup_public_stats failed: ${err instanceof Error ? err.name : "error"}`);
     }
   }
 
   return (
     <div style={{ display: "grid", gap: 18 }}>
       <div className="card" style={{ padding: 26 }}>
-        <p className="smallcaps" style={{ marginBottom: 8 }}>Imperative tool: lookup_score</p>
+        <p className="smallcaps" style={{ marginBottom: 8 }}>Imperative tool: lookup_public_stats</p>
         <p style={{ color: "var(--ink-2)", margin: "0 0 14px", maxWidth: "62ch" }}>
-          Registered with document.modelContext.registerTool when a WebMCP client is present.{" "}
+          Registered with navigator.modelContext.registerTool when a WebMCP client is present.{" "}
           {registered === "waiting" ? "Looking for a client." : registered === "native" ? "A client is present and the tool is registered." : "No WebMCP client in this browser, so the tool is not registered natively; the simulate buttons still run it through the snippet's wrapper."}
         </p>
         <p style={{ display: "flex", gap: 10, flexWrap: "wrap", margin: 0 }}>
-          <button type="button" className="btn ghost" onClick={() => simulate({ host: "example.com" })}>
+          <button type="button" className="btn ghost" onClick={() => simulate({ host: typeof location !== "undefined" ? location.hostname : "agenttracking.co" })}>
             Simulate a successful call
           </button>
           <button type="button" className="btn ghost" onClick={() => simulate({ host: "nope" })}>
@@ -93,7 +103,7 @@ export default function DemoTools() {
       <div className="card" style={{ padding: 26 }}>
         <p className="smallcaps" style={{ marginBottom: 8 }}>Declarative tool: a form with toolname</p>
         <p style={{ color: "var(--ink-2)", margin: "0 0 14px", maxWidth: "62ch" }}>
-          A plain form carrying <code>toolname</code> and <code>tooldescription</code>. Submitting it is recorded as a declarative tool call with the field names, never the values.
+          A plain form carrying <code>toolname</code> and <code>tooldescription</code>. Submitting it is recorded as a declarative tool call without field names or values.
         </p>
         <form
           className="scanform"

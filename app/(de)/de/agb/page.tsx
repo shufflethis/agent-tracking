@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AGENT_PLANS, AGENT_PRO_PRICE } from "@/lib/agents/plans";
 import { alternatesForLocale } from "@/lib/i18n";
 import { CONTACT_EMAIL, LEGAL, SITE_HOST } from "@/lib/site";
 import { PLANS, RAW_RETENTION_DAYS } from "@/lib/tracking/plans";
@@ -42,10 +43,7 @@ export default function Page() {
       <div className="callout mid" style={{ maxWidth: "var(--measure)" }}>
         <span className="tag">Die Kurzfassung</span>
         <p>
-          Sie bekommen ein Dashboard darüber, was KI-Agenten auf Ihrer Site tun. Free ist kostenlos und bleibt es in der Pilotphase; bezahlte Pläne kommen später, mit 30 Tagen
-          Vorlauf, bevor sich an Ihrem Konto etwas ändert. Sie setzen eine Zeile Script auf Ihre eigene Site und stehen dafür gegenüber Ihren Besuchern ein. Wir betreiben den
-          Dienst sorgfältig, versprechen aber keine Verfügbarkeit, und unsere Haftung ist auf das begrenzt, was Sie uns in den letzten zwölf Monaten gezahlt haben. Recht von
-          Florida, englischer Text.
+          Sie erhalten operatives Monitoring für Ihre eigenen KI-Agents (Claude Code, Cron-Jobs, OpenTelemetry) sowie Analytics darüber, was KI-Agenten auf Ihren Websites tun. Für das eigene Agent-Monitoring gibt es Free sowie Pro ({AGENT_PRO_PRICE.month} $/Monat oder {AGENT_PRO_PRICE.year} $/Jahr USD über Stripe); Website-Analytics bleibt in der Pilotphase kostenlos, mit 30 Tagen Vorlauf vor Änderungen an bestehenden Konten. Wir betreiben den Dienst sorgfältig ohne Verfügbarkeitsgarantie, und unsere Haftung ist auf das begrenzt, was Sie uns in den letzten zwölf Monaten gezahlt haben (bzw. 100 USD bei Free). Recht von Florida, englischer Text.
         </p>
       </div>
 
@@ -56,17 +54,16 @@ export default function Page() {
             anlegt („Sie“). Sie regeln nur den gehosteten Dienst. Der Quellcode ist freie Software unter der GNU Affero General Public License v3.0; für die Software gilt diese
             Lizenz, nicht diese Bedingungen.
           </p>
-          <p>Der Dienst richtet sich an Unternehmen, Organisationen und Freiberufler für Websites, die sie betreiben. Er wird Verbrauchern nicht angeboten.</p>
+          <p>Der Dienst richtet sich an Entwickler, Unternehmen, Organisationen und Freiberufler für Agents und Websites, die sie betreiben. Er wird Verbrauchern nicht angeboten.</p>
         </Clause>
 
         <Clause n="2" title="Der Dienst">
           <p>
-            Agent Tracking erfasst für eine Site, die Sie registrieren und verifizieren, welche KI-Assistenten Besucher schicken, welche KI-Agenten Seiten abrufen, welche
-            WebMCP-Tools aufgerufen werden und ob markierte Ziele erreicht werden, und zeigt Tagessummen in einem Dashboard, über eine API und über ein MCP-Tool. Was erfasst wird
+            Agent Tracking bietet unter einem Konto zwei Module: (a) <b>Überwachung eigener Agents</b>, die Lauf-Metadaten, Heartbeats, Exit-Codes, OpenTelemetry-Spans sowie konfigurierte Meldungen und Briefings für Claude-Code-Hooks, umschlossene Cron-Jobs und verbundene Worker erfasst; und (b) <b>Website-Analytics</b>, die für eine registrierte und verifizierte Site erfasst, welche KI-Assistenten Besucher schicken, welche KI-Agenten Seiten abrufen, welche WebMCP-Tools aufgerufen werden und ob markierte Ziele erreicht werden. Summen und Ereignisse erscheinen im Dashboard, über eine API und über ein MCP-Tool. Was erfasst wird
             und was nicht, beschreiben die <Link href="/de/docs">Dokumentation</Link> und der <Link href="/de/avv">Auftragsverarbeitungsvertrag</Link>.
           </p>
           <p>
-            Die Erkennung von Agenten beruht auf einer veröffentlichten, versionierten Liste von Referrern und User-Agents und, für Server-Logs, auf den von den Anbietern
+            Die Erkennung von Website-Agenten beruht auf einer veröffentlichten, versionierten Liste von Referrern und User-Agents und, für Server-Logs, auf den von den Anbietern
             veröffentlichten Adressbereichen. Ein Agent, der sich nicht zu erkennen gibt, wird nicht gezählt. Die Zahlen sind eine Messung mit dieser Grenze, keine Garantie für
             Vollständigkeit.
           </p>
@@ -77,23 +74,22 @@ export default function Page() {
             Ein Konto ist eine E-Mail-Adresse. Angemeldet wird über einen Link an diese Adresse; wer das Postfach kontrolliert, kontrolliert das Konto, halten Sie es also sicher.
             Sie sind für alles verantwortlich, was über Ihr Konto geschieht, und dafür, dass die Adresse aktuell bleibt.
           </p>
-          <p>Sie dürfen eine Site nur registrieren, wenn Sie sie betreiben oder der Betreiber Sie ermächtigt hat. Die Verifikation prüft, ob das Snippet installiert ist, nicht, wer Sie sind.</p>
+          <p>Sie dürfen Maschinen nur verbinden und Sites nur registrieren, wenn Sie sie betreiben oder der Betreiber Sie ermächtigt hat. Die Website-Verifikation prüft, ob das Snippet installiert ist, nicht, wer Sie sind.</p>
         </Clause>
 
         <Clause n="4" title="Pläne, Pilotphase und Preise">
           <p>
-            Die Pläne und ihre Grenzen stehen in der Dokumentation: Free umfasst {PLANS.free.domains} Site, {PLANS.free.eventsPerMonth.toLocaleString("de-DE")} Agenten-Ereignisse
-            im Monat und {PLANS.free.windowDays} Tage Verlauf; Pro und Agency erweitern diese Grenzen. Reine Seitenaufrufe werden nie auf das Kontingent angerechnet.
+            Die Pläne und ihre Grenzen stehen in der Dokumentation. Beim <b>Monitoring eigener Agents</b> umfasst Free bis zu {AGENT_PLANS.free.agents} Agents mit täglichem Briefing, E-Mail-Meldungen sowie Lese-API und MCP; Pro umfasst bis zu {AGENT_PLANS.pro.agents} Agents, Slack-/Telegram-/Discord-/Webhook-Meldungen, Konfigurations- und Fehlerschleifen-Signale, OpenTelemetry-Ingest und Task-Checks für {AGENT_PRO_PRICE.month} $/Monat oder {AGENT_PRO_PRICE.year} $/Jahr USD. Bei <b>Website-Analytics</b> umfasst Free {PLANS.free.domains} Site, {PLANS.free.eventsPerMonth.toLocaleString("de-DE")} Agenten-Ereignisse
+            im Monat und {PLANS.free.windowDays} Tage Verlauf; reine Seitenaufrufe werden nie auf das Kontingent angerechnet.
           </p>
           <p>
-            In der Pilotphase ist jedes Konto kostenlos auf Free, und wir können die Grenzen eines Kontos auf Anfrage von Hand anheben. Bezahlte Pläne öffnen, wenn wir Preise
-            bekanntgeben. An einem bestehenden Konto ändert sich nichts ohne 30 Tage Vorlauf per E-Mail; ist Ihnen eine Änderung nicht recht, entfernen Sie Ihre Sites vor dem
+            Bezahlte Website-Pläne befinden sich noch kostenlos in der Pilotphase, und wir können Kontogrenzen auf Anfrage von Hand anheben. An bestehenden kostenlosen Kontogrenzen ändert sich nichts ohne 30 Tage Vorlauf per E-Mail; ist Ihnen eine Änderung nicht recht, kündigen oder entfernen Sie Ihre Ressourcen vor dem
             Stichtag, und es ist nichts geschuldet.
           </p>
           <p>
-            Sobald geöffnet, werden bezahlte Pläne über Stripe im Voraus für den gewählten Zeitraum abgerechnet und verlängern sich, bis sie im Dashboard gekündigt werden. Preise
-            werden beim Checkout angezeigt und verstehen sich ohne Steuern, die Sie schulden können. Ein Plan kann jederzeit gekündigt werden und endet mit dem bezahlten Zeitraum;
-            eine Erstattung des Rests gibt es nicht, außer wo das Gesetz sie verlangt.
+            Bezahlte Pläne werden über Stripe in US-Dollar im Voraus für den gewählten Zeitraum (monatlich oder jährlich) abgerechnet und verlängern sich automatisch, bis sie im Dashboard gekündigt werden. Preise
+            werden beim Checkout angezeigt und verstehen sich ohne anfallende Steuern. Ein Plan kann jederzeit gekündigt werden und endet mit dem bezahlten Zeitraum;
+            eine Erstattung des Rests gibt es nicht, außer wo das Gesetz oder § 6 sie verlangt.
           </p>
         </Clause>
 

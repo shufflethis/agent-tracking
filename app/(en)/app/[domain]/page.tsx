@@ -77,7 +77,7 @@ export default async function Page({ params }: Params) {
   const legend = [
     { label: c.referrals, color: "var(--cyan)" },
     { label: c.fetches, color: "var(--soft-violet)" },
-    { label: c.verifiedFetches, color: "var(--cyan)" },
+    { label: c.verifiedFetches, color: "#60a5fa" },
     { label: c.calls, color: "var(--good)" },
     { label: c.conversions, color: "var(--warn)" },
   ];
@@ -100,7 +100,7 @@ export default async function Page({ params }: Params) {
             series={[
               { key: "referrals", label: c.referrals, color: "var(--cyan)", values: o.days.map((d) => d.referrals) },
               { key: "fetches", label: c.fetches, color: "var(--soft-violet)", values: o.days.map((d) => d.fetches) },
-              { key: "verifiedFetches", label: c.verifiedFetches, color: "var(--cyan)", values: o.days.map((d) => d.verifiedFetches) },
+              { key: "verifiedFetches", label: c.verifiedFetches, color: "#60a5fa", values: o.days.map((d) => d.verifiedFetches) },
               { key: "calls", label: c.calls, color: "var(--good)", values: o.days.map((d) => d.calls) },
               { key: "conversions", label: c.conversions, color: "var(--warn)", values: o.days.map((d) => d.conversions) },
             ]}

@@ -18,14 +18,21 @@ for (const [net, prefix] of [
   ["0.0.0.0", 8], ["10.0.0.0", 8], ["100.64.0.0", 10], ["127.0.0.0", 8], ["169.254.0.0", 16], ["172.16.0.0", 12],
   ["192.0.0.0", 24], ["192.0.2.0", 24], ["192.168.0.0", 16], ["198.18.0.0", 15], ["198.51.100.0", 24], ["203.0.113.0", 24], ["224.0.0.0", 3],
 ] as const) blocked.addSubnet(net, prefix, "ipv4");
-for (const [net, prefix] of [["::", 128], ["::1", 128], ["fc00::", 7], ["fe80::", 10], ["ff00::", 8], ["64:ff9b::", 96], ["2001:db8::", 32]] as const) blocked.addSubnet(net, prefix, "ipv6");
+for (const [net, prefix] of [["::", 128], ["::1", 128], ["fc00::", 7], ["fe80::", 10], ["ff00::", 8], ["64:ff9b::", 96], ["2001:db8::", 32], ["2002::", 16]] as const) blocked.addSubnet(net, prefix, "ipv6");
 
 export function isPublicAddress(ip: string): boolean {
-  const mapped = /^::ffff:(\d+\.\d+\.\d+\.\d+)$/i.exec(ip);
-  if (mapped) return isPublicAddress(mapped[1]);
-  const family = isIP(ip);
+  const clean = ip.trim().replace(/^\[|\]$/g, "");
+  const mappedDec = /^::ffff:(\d+\.\d+\.\d+\.\d+)$/i.exec(clean);
+  if (mappedDec) return isPublicAddress(mappedDec[1]);
+  const mappedHex = /^::ffff:([0-9a-f]{1,4}):([0-9a-f]{1,4})$/i.exec(clean);
+  if (mappedHex) {
+    const hi = parseInt(mappedHex[1], 16);
+    const lo = parseInt(mappedHex[2], 16);
+    return isPublicAddress(`${(hi >> 8) & 0xff}.${hi & 0xff}.${(lo >> 8) & 0xff}.${lo & 0xff}`);
+  }
+  const family = isIP(clean);
   if (!family) return false;
-  return !blocked.check(ip, family === 4 ? "ipv4" : "ipv6");
+  return !blocked.check(clean, family === 4 ? "ipv4" : "ipv6");
 }
 
 const HOSTS: Record<string, string[]> = { slack: ["hooks.slack.com"], discord: ["discord.com", "discordapp.com"] };
@@ -62,7 +69,11 @@ export async function postJsonPinned(raw: string, body: string, timeoutMs = 5000
         method: "POST", host: target.host, servername: isIP(target.host) ? undefined : target.host, port: 443,
         path: `${url.pathname}${url.search}`,
         headers: { "content-type": "application/json", "content-length": Buffer.byteLength(body) },
-        lookup: (_host, _opts, cb) => cb(null, target.address, target.family),
+        lookup: (_host, opts, cb) => {
+          const all = typeof opts === "object" && opts !== null && "all" in opts && Boolean((opts as { all?: boolean }).all);
+          if (all) (cb as (err: NodeJS.ErrnoException | null, addresses: { address: string; family: number }[]) => void)(null, [{ address: target.address, family: target.family }]);
+          else (cb as (err: NodeJS.ErrnoException | null, address: string, family: number) => void)(null, target.address, target.family);
+        },
         timeout: timeoutMs,
       },
       (res) => { res.resume(); done((res.statusCode ?? 0) >= 200 && (res.statusCode ?? 0) < 300); },

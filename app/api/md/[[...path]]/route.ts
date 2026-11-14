@@ -1,8 +1,8 @@
 import { ENTRIES } from "@/lib/changelog";
 import { guideBySlug, guides } from "@/lib/guides";
 import { homeContent } from "@/lib/home-content";
-import { CONNECT_CLAUDE } from "@/lib/agents/format";
-import { claudeSetupPrompt } from "@/lib/agents/setup";
+import { CONNECT_CLAUDE, DOCTOR_COMMAND } from "@/lib/agents/format";
+import { claudeSetupPrompt, GUARD_EXAMPLE, WRAP_CRON } from "@/lib/agents/setup";
 import { GITHUB_URL, SITE_HOST, SITE_ORIGIN } from "@/lib/site";
 import type { DashLang } from "@/lib/tracking/copy";
 import { snippetFor } from "@/lib/tracking/snippet";
@@ -84,12 +84,27 @@ function guideIndex(lang: DashLang): string {
 
 function docs(lang: DashLang): string {
   const c = homeContent(lang);
+  const de = lang === "de";
   return [
-    `# ${lang === "de" ? "Agent Tracking Dokumentation" : "Agent Tracking documentation"}`, "",
-    `> ${c.definition}`, "",
-    `Full text: ${SITE_ORIGIN}${lang === "de" ? "/de/docs" : "/docs"} · Everything on one page: ${SITE_ORIGIN}/llms-full.txt`, "",
-    `## ${lang === "de" ? "Installation" : "Install"}`, "", "```html", snippetFor("example.com"), "```", "",
-    lang === "de"
+    `# ${de ? "Agent Tracking Dokumentation" : "Agent Tracking documentation"}`, "",
+    de
+      ? "> Eigene KI-Agenten überwachen (Claude Code, Cron-Jobs, OpenTelemetry-Traces, lokale Loop-Bremse) und KI-Agenten auf deiner Website messen."
+      : "> Monitor your own AI agents (Claude Code sessions, cron jobs, OpenTelemetry traces, local loop circuit breaker) and measure AI agents on your website.",
+    "",
+    `Full text: ${SITE_ORIGIN}${de ? "/de/docs" : "/docs"} · Everything on one page: ${SITE_ORIGIN}/llms-full.txt`, "",
+    `## ${de ? "Eigene Agents überwachen (#agent-monitoring)" : "Monitor your own agents (#agent-monitoring)"}`, "",
+    "```sh",
+    CONNECT_CLAUDE,
+    DOCTOR_COMMAND,
+    GUARD_EXAMPLE,
+    WRAP_CRON,
+    "```", "",
+    de
+      ? "Sendet nur Lebenszyklus-Events, Tool-Namen und Erfolg/Fehlschlag — niemals Prompts, Antworten, Tool-Ein-/Ausgaben oder Dateiinhalte. Kostenlos bis 5 Agents; Pro ($9/Monat oder $90/Jahr) für bis zu 50 Agents, Slack/Discord/Telegram/Webhook-Alerts, Loop-/Drift-Signale und OTLP."
+      : "Sends lifecycle events, tool names and pass/fail only — never prompts, completions, tool inputs/outputs or file contents. Free for up to 5 agents; Pro ($9/month or $90/year) adds up to 50 agents, Slack/Discord/Telegram/webhook alerts, loop/drift signals and OTLP.",
+    "",
+    `## ${de ? "Website-Installation" : "Website installation"}`, "", "```html", snippetFor("example.com"), "```", "",
+    de
       ? "Site im Dashboard anlegen, Snippet installieren und prüfen. Unterstützte Browser-WebMCP-Aufrufe werden beobachtet; data-agent-goal markiert nur einen Versuch. Server-Logs liefern getrennte Crawler-Belege, Server-Abschlussbelege brauchen eine eigene Integration und einen Site-Schreibzugang."
       : "Add the site in the dashboard, install and verify the snippet. Supported browser WebMCP calls are observed; data-agent-goal marks an attempt only. Server logs provide separate crawler evidence, and confirmed outcomes require a site-server integration with its own write credential.",
     "",
@@ -123,7 +138,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ pat
   const { path: segments } = await params;
   const path = "/" + (segments ?? []).join("/");
   let body: string | null = null;
-  if (path === "/home") body = home("en");
+  if (path === "/" || path === "/home") body = home("en");
   else if (path === "/de") body = home("de");
   else if (path === "/websites") body = websites("en");
   else if (path === "/de/websites") body = websites("de");

@@ -14,7 +14,7 @@ export function GET() {
   const rows = (r: { k: string; t: string; d: string }[]) => r.map((x) => `- **${x.k}: ${x.t}.** ${x.d}`).join("\n");
   const body = `# Agent Tracking (${SITE_HOST})
 
-Category: agent monitoring for your own agents, and ${c.category.charAt(0).toLowerCase() + c.category.slice(1)}.
+Category: agent monitoring for your own agents, and ${c.category}.
 
 > ${c.definition}
 
@@ -124,7 +124,7 @@ ${Object.values(PLANS)
   .map((p) => `- ${p.name}: ${p.domains === Infinity ? "unlimited" : p.domains} site(s), ${p.eventsPerMonth.toLocaleString("en-US")} agent events a month, ${p.windowDays} days of history${p.manifestAlerts ? ", manifest alerts" : ""}${p.whiteLabelBadge ? ", white-label badge" : ""}`)
   .join("\n")}
 
-Free during the pilot; paid plans open with 30 days' notice. Self-hosting is free (Docker compose, one SQLite file).
+Agent monitoring plans: Free (5 agents, morning briefing, email alerts) and Pro ($9/month or $90/year USD, 50 agents, Slack/Discord/Telegram/webhook alerts, OpenTelemetry, task checks and loop/drift signals). Website analytics plans above remain free during the website pilot (paid website tiers open only with 30 days' notice). Self-hosting is free (Docker compose, one SQLite file).
 
 ## Fleet & Stats API and MCP
 

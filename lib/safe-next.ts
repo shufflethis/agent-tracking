@@ -7,5 +7,11 @@
  */
 export function safeNext(raw: unknown): string {
   const value = typeof raw === "string" ? raw : "";
-  return /^\/(?!\/)[^\s]*$/.test(value) ? value : "/app";
+  if (!/^\/(?!\/|\\)[^\s\\\x00-\x1f\x7f]*$/.test(value)) return "/app";
+  try {
+    const parsed = new URL(value, "https://agenttracking.invalid");
+    return parsed.origin === "https://agenttracking.invalid" ? value : "/app";
+  } catch {
+    return "/app";
+  }
 }

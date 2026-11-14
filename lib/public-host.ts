@@ -1,4 +1,6 @@
 import { lookup } from "node:dns/promises";
+import { isIP } from "node:net";
+import { isPublicAddress } from "@/lib/agents/safe-url";
 
 /**
  * A site we track must be a public host. Whatever the name resolves to has to
@@ -6,30 +8,18 @@ import { lookup } from "node:dns/promises";
  * server's own neighbours and have the verifier fetch them.
  */
 export function isPrivateAddress(ip: string): boolean {
-  if (ip.includes(":")) {
-    const v6 = ip.toLowerCase();
-    if (v6 === "::1" || v6 === "::") return true;
-    if (/^f[cd]/.test(v6)) return true; // unique local
-    if (/^fe[89ab]/.test(v6)) return true; // link local
-    const mapped = /^::ffff:(\d+\.\d+\.\d+\.\d+)$/.exec(v6);
-    if (mapped) return isPrivateAddress(mapped[1]);
-    return false;
-  }
-  const [a, b] = ip.split(".").map(Number);
-  if (Number.isNaN(a) || Number.isNaN(b)) return true;
-  if (a === 10 || a === 127 || a === 0) return true;
-  if (a === 172 && b >= 16 && b <= 31) return true;
-  if (a === 192 && b === 168) return true;
-  if (a === 169 && b === 254) return true; // link local / cloud metadata
-  if (a === 100 && b >= 64 && b <= 127) return true; // carrier-grade NAT
-  if (a >= 224) return true; // multicast and reserved
-  return false;
+  return !isPublicAddress(ip);
 }
 
-export async function assertPublicHost(hostname: string): Promise<void> {
-  let addresses: { address: string }[];
+export async function resolvePublicHost(hostname: string): Promise<{ address: string; family: number }> {
+  const clean = hostname.trim().toLowerCase().replace(/\.$/, "").replace(/^\[|\]$/g, "");
+  if (isIP(clean)) {
+    if (isPrivateAddress(clean)) throw new Error(`${hostname} resolves to a private address. Only public sites can be tracked.`);
+    return { address: clean, family: isIP(clean) };
+  }
+  let addresses: { address: string; family: number }[];
   try {
-    addresses = await lookup(hostname, { all: true });
+    addresses = await lookup(clean, { all: true, verbatim: true });
   } catch {
     throw new Error(`${hostname} does not resolve.`);
   }
@@ -37,4 +27,9 @@ export async function assertPublicHost(hostname: string): Promise<void> {
   if (addresses.some((a) => isPrivateAddress(a.address))) {
     throw new Error(`${hostname} resolves to a private address. Only public sites can be tracked.`);
   }
+  return { address: addresses[0].address, family: addresses[0].family };
+}
+
+export async function assertPublicHost(hostname: string): Promise<void> {
+  await resolvePublicHost(hostname);
 }

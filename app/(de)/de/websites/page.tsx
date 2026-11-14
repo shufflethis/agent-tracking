@@ -91,7 +91,7 @@ export default function Page() {
               src="/img/tracking/dashboard-overview.webp"
               alt="Der Überblick: Agenten-Interaktionen pro Tag, Referrals, Abrufe, Tool-Aufrufe und Conversions in einem Diagramm"
               loading="lazy"
-              style={{ width: "100%", aspectRatio: "16 / 11", objectFit: "cover", objectPosition: "top", borderRadius: 12, border: "1px solid var(--line, #e6e3dc)" }}
+              style={{ width: "100%", aspectRatio: "16 / 11", objectFit: "cover", objectPosition: "top", borderRadius: 12, border: "1px solid var(--rule-strong)" }}
             />
             <figcaption style={{ fontSize: 13, color: "var(--muted)", marginTop: 8 }}>Frühere Übersicht mit Demodaten. Insights ergänzt Belege und nächste Schritte.</figcaption>
           </figure>
@@ -100,7 +100,7 @@ export default function Page() {
               src="/img/tracking/dashboard-tools.webp"
               alt="Die Tools-Ansicht: Aufrufe, Erfolgsquote, mittlere Dauer und häufigste Fehler je WebMCP-Tool"
               loading="lazy"
-              style={{ width: "100%", aspectRatio: "16 / 11", objectFit: "cover", objectPosition: "top", borderRadius: 12, border: "1px solid var(--line, #e6e3dc)" }}
+              style={{ width: "100%", aspectRatio: "16 / 11", objectFit: "cover", objectPosition: "top", borderRadius: 12, border: "1px solid var(--rule-strong)" }}
             />
             <figcaption style={{ fontSize: 13, color: "var(--muted)", marginTop: 8 }}>Tools: welche aufgerufen werden, welche scheitern, welche niemand anfasst.</figcaption>
           </figure>

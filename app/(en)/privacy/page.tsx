@@ -135,7 +135,7 @@ export default function Page() {
 
         <h2 id="payment">Payment</h2>
         <p>
-          Paid plans, once they open, are billed through Stripe, Inc. (354 Oyster Point Boulevard, South San Francisco, CA 94080, USA). Stripe receives your email address and the
+          Paid plans (such as Agent Monitoring Pro) are billed through Stripe, Inc. (354 Oyster Point Boulevard, South San Francisco, CA 94080, USA). Stripe receives your email address and the
           plan and handles the card itself; we never see card data. Stripe tells us the subscription state and a customer id, which we store with the account (Art. 6 (1) (b)
           GDPR). Stripe&apos;s own notice governs what it does with the payment data.
         </p>
@@ -174,8 +174,8 @@ export default function Page() {
 
         <h2 id="backup">Backups</h2>
         <p>
-          Once a day a consistent copy of the database is encrypted on the server and stored in a private repository (see above). Backups are kept for 30 days and are used only
-          to restore the service after a fault. A record deleted from the live database can therefore survive in a backup for up to 30 days.
+          Once a day a consistent copy of the database is encrypted with AES-256 on the server and stored in a private repository (see above) on a rolling schedule of 7 daily, 4 weekly and 12 monthly snapshots, used only
+          to restore the service after a fault. A record deleted from the live database is removed immediately from active queries and expires from encrypted backup snapshots after at most 12 months.
         </p>
 
         <h2 id="rights">Your rights</h2>

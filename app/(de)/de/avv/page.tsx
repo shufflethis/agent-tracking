@@ -166,7 +166,7 @@ export default function Page() {
           <p>Unabhängig von diesem Vertrag werden Rohdaten automatisch {RAW_RETENTION_DAYS} Tage nach Erhebung gelöscht. Tagessummen bleiben, solange die Site im Konto ist.</p>
           <p>
             Entfernt der Verantwortliche die Site aus dem Konto, löscht der Auftragsverarbeiter alle Rohdaten, Tagessummen, das Tool-Register und die zugehörigen Einstellungen
-            unverzüglich und dauerhaft. Dasselbe gilt für alle Sites eines Kontos, wenn das Konto gelöscht wird. Verschlüsselte Backup-Kopien laufen innerhalb von 30 Tagen ab.
+            unverzüglich und dauerhaft. Dasselbe gilt für alle Sites eines Kontos, wenn das Konto gelöscht wird. Verschlüsselte Backup-Snapshots (7 tägliche, 4 wöchentliche, 12 monatliche) laufen spätestens nach 12 Monaten ab.
           </p>
           <p>Die Tagessummen einer Site lassen sich vor dem Entfernen jederzeit im Dashboard als CSV exportieren.</p>
           <p>Gesetzliche Aufbewahrungspflichten bleiben unberührt; nach Kenntnis des Auftragsverarbeiters gelten für die hier beschriebenen Daten keine.</p>

@@ -1,6 +1,7 @@
 import type { Snapshot } from "./snapshot.js";
 /** Copy of lib/agents/types.ts AgentEvent. cli/src/hook.test.ts checks the server accepts what the CLI builds. */
-export type AgentKind = "claude" | "cron" | "custom";
+export type AgentKind = "claude" | "cursor" | "codex" | "gemini" | "cron" | "custom";
+export const AGENT_KINDS: readonly AgentKind[] = ["claude", "cursor", "codex", "gemini", "cron", "custom"];
 export type AgentEventType =
   | "session_start" | "tool_start" | "tool_end" | "turn_end" | "subagent_end" | "notification" | "session_end"
   | "cron_start" | "cron_end" | "turn_start" | "turn_error" | "waiting" | "subagent_start" | "config_snapshot" | "kernel_event";

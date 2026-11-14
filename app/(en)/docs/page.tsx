@@ -32,9 +32,9 @@ const API_MCP = `{
 }`;
 
 export const metadata: Metadata = {
-  title: "Agent Tracking: what AI agents do on your site",
+  title: "Documentation: own-agent monitoring & website AI analytics",
   description:
-    "The snippet observes recognized referrals and supported browser WebMCP actions. Optional logs and site-server receipts add separate evidence. Measurement limits and data selection explained.",
+    "Connect Claude Code hooks, cron jobs, local circuit breakers and OpenTelemetry spans without sending prompts, or measure AI referrals and WebMCP actions on your websites.",
   alternates: alternatesFor("/docs"),
 };
 
@@ -68,20 +68,23 @@ export default function Page() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(DOCS_LD) }} />
       <section className="shell section" style={{ paddingTop: 56, paddingBottom: 10 }}>
         <div className="pagehead">
-          <p className="eyebrow">Agent Tracking</p>
-          <h1>What AI agents do on your site</h1>
+          <p className="eyebrow">Documentation</p>
+          <h1>Monitor your own agents, and measure AI traffic on your sites</h1>
           <p className="dek" style={{ maxWidth: "62ch" }}>
-            See recognized assistant referrals and supported browser WebMCP actions. Optional origin logs and site-server receipts add separate crawler and outcome evidence. The snippet sets no cookies.
+            Track Claude Code loops, wrapped cron jobs, OpenTelemetry spans and local circuit-breaker rules without sending prompts or code. Plus cookieless website analytics for AI referrals, verified crawlers and WebMCP actions.
           </p>
           <p style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 22 }}>
-            <Link className="btn" href="/login">Sign in or create an account</Link>
-            <Link className="btn ghost" href="/demo">See the demo page</Link>
+            <a className="btn" href="#agent-monitoring">Own-agent monitoring</a>
+            <a className="btn ghost" href="#websites">Website analytics</a>
+            <Link className="btn ghost" href="/demo">Live demo</Link>
           </p>
         </div>
       </section>
 
-      <section className="shell section">
-        <h2>Install</h2>
+      <AgentMonitoringDocs lang="en" />
+
+      <section className="shell section" id="websites">
+        <h2>Website analytics: install the snippet</h2>
         <p className="dek" style={{ maxWidth: "62ch" }}>
           Add your site in the dashboard, then put this line on every page. The domain in <code>data-domain</code> has to be the one you registered; events for any other domain are dropped
           at the door.
@@ -249,8 +252,6 @@ export default function Page() {
         <p className="dek">Use a new receipt ID per actual inquiry and retry the same ID after network failure. A repeated receipt returns <code>duplicate</code>; a changed payload for the same ID returns 409. Do not send contact, payment or order content. Optional task and invocation IDs link observations without proving the actor.</p>
         <p className="dek">For external MCP servers, send a separate credential to <code>/api/server-tools/example.com</code> with an invocation ID, optional task ID, tool name, time, technical outcome and actor kind. An agent actor is reported by your server, not independently verified. The browser snippet does not observe every remote MCP call. The runnable TypeScript example is in <code>examples/inquiry-app</code> in the repository.</p>
       </section>
-
-      <AgentMonitoringDocs lang="en" />
 
       <section className="shell section" id="private-workflow">
         <h2>Private task checks, fixes and client reports</h2>

@@ -94,7 +94,7 @@ export default async function Page({ params }: Params) {
             series={[
               { key: "referrals", label: "AI referrals", color: "var(--cyan)", values: o.days.map((d) => d.referrals) },
               { key: "fetches", label: "Legacy fetch claims", color: "var(--soft-violet)", values: o.days.map((d) => d.fetches) },
-              { key: "verifiedFetches", label: "IP-confirmed fetches", color: "var(--cyan)", values: o.days.map((d) => d.verifiedFetches) },
+              { key: "verifiedFetches", label: "IP-confirmed fetches", color: "#60a5fa", values: o.days.map((d) => d.verifiedFetches) },
               { key: "calls", label: "Tool calls", color: "var(--good)", values: o.days.map((d) => d.calls) },
               { key: "conversions", label: "Unverified goal signals", color: "var(--warn)", values: o.days.map((d) => d.conversions) },
             ]}

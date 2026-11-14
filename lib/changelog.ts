@@ -30,6 +30,33 @@ const SNIPPET_PROMPT: L = {
 
 export const ENTRIES: Entry[] = [
   {
+    date: "2026-11-13",
+    tag: "agents",
+    title: {
+      en: "CLI 0.5.0: Cursor, Codex CLI & Gemini CLI hooks, Node 18+, and local safety & spend fuse",
+      de: "CLI 0.5.0: Cursor-, Codex-CLI- & Gemini-CLI-Hooks, Node 18+ und lokale Sicherheits- & Kostenbremse",
+    },
+    body: {
+      en: "CLI 0.5.0 expands own-agent monitoring across your whole dev-agent stack on Node 18+: connect Cursor (`~/.cursor/hooks.json`), OpenAI Codex CLI (`~/.codex/config.toml`), Gemini CLI (`~/.gemini/settings.json`) and Claude Code with a single `connect all` command, or tag headless CI/GitHub Actions jobs with `wrap --kind codex`. The local `guard` circuit breaker gains per-turn call and runtime fuses (`--max-calls`, `--max-minutes`) plus an in-memory destructive-command fuse (`--block-destructive on`) that stops `rm -rf`, `git push --force`, `git reset --hard` and `DROP TABLE` locally without ever storing or uploading commands.",
+      de: "CLI 0.5.0 öffnet das eigene Agent-Monitoring für den gesamten Dev-Agent-Stack ab Node 18+: Verbinde Cursor (`~/.cursor/hooks.json`), OpenAI Codex CLI (`~/.codex/config.toml`), Gemini CLI (`~/.gemini/settings.json`) und Claude Code mit einem einzigen `connect all`-Befehl oder markiere Headless-Läufe in GitHub Actions per `wrap --kind codex`. Die lokale `guard`-Schutzbremse erhält Turn-Budgets (`--max-calls`, `--max-minutes`) sowie eine reine In-Memory-Sperre gegen destruktive Befehle (`--block-destructive on`), die `rm -rf`, `git push --force`, `git reset --hard` und `DROP TABLE` lokal abfängt, ohne Befehle zu speichern oder hochzuladen.",
+    },
+    points: {
+      en: [
+        `Connect every supported harness at once: ${CLI_COMMAND} connect all`,
+        `Enable local runaway & destructive-command fuse: ${GUARD_EXAMPLE}`,
+        `Headless CI / GitHub Actions: ${CLI_COMMAND} wrap --kind codex --name pr-review -- codex exec "check diff"`,
+      ],
+      de: [
+        `Alle unterstützten Agent-Tools verbinden: ${CLI_COMMAND} connect all`,
+        `Lokale Schleifen- & Sicherheitsbremse aktivieren: ${GUARD_EXAMPLE}`,
+        `Headless CI / GitHub Actions: ${CLI_COMMAND} wrap --kind codex --name pr-review -- codex exec "check diff"`,
+      ],
+    },
+    how: {
+      terminal: `${CLI_COMMAND} connect all\n${GUARD_EXAMPLE}`,
+    },
+  },
+  {
     date: "2026-11-11",
     tag: "agents",
     title: {
@@ -225,11 +252,6 @@ export const PLANNED: Planned[] = [
       en: "Today: every tool call shows up by name and result, and changes to your Claude Code hooks and settings show up as configuration changes. Which rule do you want first? Tell @wuebbe on X.",
       de: "Heute schon: Jeder Tool-Aufruf erscheint mit Name und Ergebnis, und Änderungen an deinen Claude-Code-Hooks und -Einstellungen erscheinen als Konfigurationsänderung. Welche Regel willst du zuerst? Schreib @wuebbe auf X.",
     },
-  },
-  {
-    title: { en: "Your time zone", de: "Deine Zeitzone" },
-    body: { en: "Briefing hour and dashboard times in your own time zone, including US time zones.", de: "Briefing-Stunde und Zeiten im Dashboard in deiner eigenen Zeitzone, auch US-Zeitzonen." },
-    today: { en: "Today: times are Central European Time. Pick the briefing hour in the settings accordingly; 13:00 CET is 7 AM Eastern.", de: "Heute: Zeiten sind mitteleuropäische Zeit. Wähl die Briefing-Stunde in den Einstellungen entsprechend." },
   },
   {
     title: { en: "OpenAI Codex", de: "OpenAI Codex" },

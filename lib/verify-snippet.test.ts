@@ -120,3 +120,23 @@ test("agent.js served from a stranger is refused", async () => {
   const found = await snippetInstalled("geo-tool.com", { fetchImpl: impl, assertHost: publicHost });
   assert.equal(found.ok, false);
 });
+
+test("streaming homepage bodies stop reading at 600 KB without buffering endless streams", async () => {
+  let pulls = 0;
+  let cancelled = false;
+  const chunk = new TextEncoder().encode("x".repeat(100_000));
+  const stream = new ReadableStream<Uint8Array>({
+    pull(controller) {
+      pulls++;
+      controller.enqueue(pulls === 1 ? new TextEncoder().encode(`<html>${TAG}`) : chunk);
+    },
+    cancel() {
+      cancelled = true;
+    },
+  });
+  const impl = (async () => new Response(stream, { status: 200 })) as unknown as typeof fetch;
+  const found = await snippetInstalled("geo-tool.com", { fetchImpl: impl, assertHost: publicHost });
+  assert.deepEqual(found, { ok: true });
+  assert.equal(cancelled, true, "stream cancelled once cap reached");
+  assert.ok(pulls <= 8, `stopped early after ${pulls} chunks`);
+});

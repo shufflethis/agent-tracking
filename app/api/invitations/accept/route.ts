@@ -1,9 +1,11 @@
+import { sameOriginFormPost } from "@/lib/agents/form-route";
 import { currentAccount } from "@/lib/tracking/auth";
 import { acceptSiteInvite } from "@/lib/tracking/site-access";
 import { BodyLimitError, readLimitedBody } from "@/lib/tracking/request-body";
 
 export const runtime = "nodejs";
 export async function POST(request: Request) {
+  if (!sameOriginFormPost(request)) return Response.json({ ok: false, detail: "Forbidden." }, { status: 403 });
   const account = await currentAccount();
   if (!account) return Response.json({ ok: false, detail: "Sign in first." }, { status: 401 });
   let body: { token?: unknown } | null;

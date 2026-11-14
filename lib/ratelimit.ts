@@ -72,11 +72,23 @@ export function clientIp(headers: Headers): string {
   return "unknown";
 }
 
+function windowForKey(key: string): number {
+  if (key.startsWith("crawls:")) return CRAWLS.windowMs;
+  if (key.startsWith("ingest:")) return INGEST.windowMs;
+  return REQUESTS.windowMs;
+}
+
 function prune(now: number) {
   if (hits.size <= MAX_KEYS) return;
   for (const [key, times] of hits) {
-    if (times.length === 0 || now - times[times.length - 1] > CRAWLS.windowMs) hits.delete(key);
-    if (hits.size <= MAX_KEYS) break;
+    const windowMs = windowForKey(key);
+    if (times.length === 0 || now - times[times.length - 1] >= windowMs) hits.delete(key);
+    if (hits.size <= MAX_KEYS) return;
+  }
+  while (hits.size > MAX_KEYS) {
+    const oldestKey = hits.keys().next().value;
+    if (oldestKey === undefined) break;
+    hits.delete(oldestKey);
   }
 }
 
