@@ -200,3 +200,22 @@ export function previousConfiguration(owner: string, agentId: string, startedAt:
     where a.owner = ? and a.id = ? and r.started_at < ? and r.config_json is not null order by r.started_at desc limit 1`).get(owner, agentId, startedAt) as { json: string } | undefined;
   return row?.json ?? null;
 }
+
+export function deleteAgent(owner: string, agentId: string): boolean {
+  const d = db();
+  const row = d.prepare("select id from agents where id = ? and owner = ?").get(agentId, owner) as { id: string } | undefined;
+  if (!row) return false;
+  d.exec("begin");
+  try {
+    d.prepare("delete from agent_signals where agent_id = ?").run(agentId);
+    d.prepare("delete from agent_events where run_id in (select id from agent_runs where agent_id = ?)").run(agentId);
+    d.prepare("delete from agent_daily where agent_id = ?").run(agentId);
+    d.prepare("delete from agent_runs where agent_id = ?").run(agentId);
+    d.prepare("delete from agents where id = ? and owner = ?").run(agentId, owner);
+    d.exec("commit");
+    return true;
+  } catch (e) {
+    d.exec("rollback");
+    throw e;
+  }
+}

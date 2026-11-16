@@ -30,15 +30,15 @@ const SNIPPET_PROMPT: L = {
 
 export const ENTRIES: Entry[] = [
   {
-    date: "2026-11-13",
+    date: "2026-11-16",
     tag: "agents",
     title: {
-      en: "CLI 0.5.0: Cursor, Codex CLI & Gemini CLI hooks, Node 18+, and local safety & spend fuse",
-      de: "CLI 0.5.0: Cursor-, Codex-CLI- & Gemini-CLI-Hooks, Node 18+ und lokale Sicherheits- & Kostenbremse",
+      en: "CLI 0.6.0: Google Antigravity (agy), Cursor, Codex & Gemini hooks, unlimited Pro agents, and local safety fuse",
+      de: "CLI 0.6.0: Google Antigravity (agy), Cursor, Codex & Gemini-Hooks, unbegrenzte Pro-Agents und lokale Sicherheitsbremse",
     },
     body: {
-      en: "CLI 0.5.0 expands own-agent monitoring across your whole dev-agent stack on Node 18+: connect Cursor (`~/.cursor/hooks.json`), OpenAI Codex CLI (`~/.codex/config.toml`), Gemini CLI (`~/.gemini/settings.json`) and Claude Code with a single `connect all` command, or tag headless CI/GitHub Actions jobs with `wrap --kind codex`. The local `guard` circuit breaker gains per-turn call and runtime fuses (`--max-calls`, `--max-minutes`) plus an in-memory destructive-command fuse (`--block-destructive on`) that stops `rm -rf`, `git push --force`, `git reset --hard` and `DROP TABLE` locally without ever storing or uploading commands.",
-      de: "CLI 0.5.0 öffnet das eigene Agent-Monitoring für den gesamten Dev-Agent-Stack ab Node 18+: Verbinde Cursor (`~/.cursor/hooks.json`), OpenAI Codex CLI (`~/.codex/config.toml`), Gemini CLI (`~/.gemini/settings.json`) und Claude Code mit einem einzigen `connect all`-Befehl oder markiere Headless-Läufe in GitHub Actions per `wrap --kind codex`. Die lokale `guard`-Schutzbremse erhält Turn-Budgets (`--max-calls`, `--max-minutes`) sowie eine reine In-Memory-Sperre gegen destruktive Befehle (`--block-destructive on`), die `rm -rf`, `git push --force`, `git reset --hard` und `DROP TABLE` lokal abfängt, ohne Befehle zu speichern oder hochzuladen.",
+      en: "CLI 0.6.0 expands own-agent monitoring across your whole dev-agent stack on Node 18+: connect Google Antigravity (`~/.gemini/config/hooks.json`), Cursor (`~/.cursor/hooks.json`), OpenAI Codex CLI (`~/.codex/config.toml`), Gemini CLI (`~/.gemini/settings.json`) and Claude Code with a single `connect all` command via the SHA-256 verified `/install.sh` installer. Pro now includes unlimited agents, individual agents can be deleted in the dashboard, and the local `guard` circuit breaker adds per-turn call/runtime fuses (`--max-calls`, `--max-minutes`) plus an in-memory destructive-command fuse (`--block-destructive on`).",
+      de: "CLI 0.6.0 öffnet das eigene Agent-Monitoring für den gesamten Dev-Agent-Stack ab Node 18+: Verbinde Google Antigravity (`~/.gemini/config/hooks.json`), Cursor (`~/.cursor/hooks.json`), OpenAI Codex CLI (`~/.codex/config.toml`), Gemini CLI (`~/.gemini/settings.json`) und Claude Code mit einem einzigen `connect all`-Befehl über den SHA-256-geprüften `/install.sh`-Installer. Pro enthält jetzt unbegrenzte Agents, einzelne Agents lassen sich im Dashboard löschen, und die lokale `guard`-Schutzbremse erhält Turn-Budgets (`--max-calls`, `--max-minutes`) sowie eine lokale Sperre gegen destruktive Befehle (`--block-destructive on`).",
     },
     points: {
       en: [

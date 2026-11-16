@@ -109,12 +109,12 @@ test("cron_end sets status from exit code", () => withDb(() => {
   assert.deepEqual({ ...(db().prepare("select runs, failed from agent_daily").get() as object) }, { runs: 2, failed: 1 });
 }));
 
-test("51st agent is rejected", () => withDb(() => {
+test("agent safety ceiling is enforced", () => withDb(() => {
   const o = owner();
-  for (let i = 0; i < 50; i++) recordAgentEvents(o, [ev("session_start", { agent: { kind: "claude", name: `p${i}`, host: "h" } })], NOW);
-  const r = recordAgentEvents(o, [ev("session_start", { agent: { kind: "claude", name: "p50", host: "h" } })], NOW);
+  for (let i = 0; i < 500; i++) recordAgentEvents(o, [ev("session_start", { agent: { kind: "claude", name: `p${i}`, host: "h" } })], NOW);
+  const r = recordAgentEvents(o, [ev("session_start", { agent: { kind: "claude", name: "p500", host: "h" } })], NOW);
   assert.equal(r.rejected, "agent_limit");
-  assert.equal((db().prepare("select count(*) as n from agents").get() as { n: number }).n, 50);
+  assert.equal((db().prepare("select count(*) as n from agents").get() as { n: number }).n, 500);
   assert.equal(recordAgentEvents(o, [ev("turn_end", { agent: { kind: "claude", name: "p3", host: "h" } })], NOW).rejected, null);
 }));
 

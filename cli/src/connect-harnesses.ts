@@ -193,3 +193,41 @@ export function disconnectCodex(opts: { configPath: string }): ConnectResult {
   saveWithBackup(opts.configPath, raw, kept.join("\n"));
   return "disconnected";
 }
+
+/* ----------------------------------------------------- Google Antigravity */
+
+/**
+ * Antigravity (agy) hooks.json format:
+ * Top-level keys are named hook groups (e.g. "agenttracking"), so our group
+ * coexists cleanly beside any user-defined hook groups ("lint-checker", etc.).
+ * Global path: ~/.gemini/config/hooks.json; workspace path: .agents/hooks.json.
+ */
+export function agyPathFor(scope: "user" | "project", userHome = homedir(), cwd = process.cwd()): string {
+  if (scope === "user") return join(userHome, ".gemini", "config", "hooks.json");
+  return existsSync(join(cwd, ".agent", "hooks.json")) ? join(cwd, ".agent", "hooks.json") : join(cwd, ".agents", "hooks.json");
+}
+
+export function connectAgy(opts: { settingsPath: string; command: (event: string) => string }): ConnectResult {
+  const loaded = loadJson(opts.settingsPath);
+  if (loaded === "invalid_json") return "invalid_json";
+  const group = {
+    SessionStart: [{ type: "command", command: opts.command("AgySessionStart"), timeout: 5 }],
+    PreInvocation: [{ type: "command", command: opts.command("AgyPreInvocation"), timeout: 5 }],
+    PostToolUse: [{ matcher: "*", hooks: [{ type: "command", command: opts.command("AgyPostToolUse"), timeout: 5 }] }],
+    Stop: [{ type: "command", command: opts.command("AgyStop"), timeout: 5 }],
+  };
+  const next: Json = { ...loaded.data, agenttracking: group };
+  if (JSON.stringify(next) === JSON.stringify(loaded.data)) return "already";
+  saveWithBackup(opts.settingsPath, loaded.raw, JSON.stringify(next, null, 2) + "\n");
+  return "connected";
+}
+
+export function disconnectAgy(opts: { settingsPath: string }): ConnectResult {
+  const loaded = loadJson(opts.settingsPath);
+  if (loaded === "invalid_json") return "invalid_json";
+  if (!("agenttracking" in loaded.data)) return "not_connected";
+  const next: Json = { ...loaded.data };
+  delete next.agenttracking;
+  saveWithBackup(opts.settingsPath, loaded.raw, JSON.stringify(next, null, 2) + "\n");
+  return "disconnected";
+}

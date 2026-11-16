@@ -76,7 +76,7 @@ export default function Page() {
 
         <Clause n="4" title="Plans, pilot and prices">
           <p>
-            The plans and their limits are listed in the documentation. For <b>Own-Agent Monitoring</b>, Free covers up to {AGENT_PLANS.free.agents} agents with daily briefings, email alerts and read-only API/MCP access; Pro covers up to {AGENT_PLANS.pro.agents} agents, Slack/Telegram/Discord/webhook alerts, drift and loop signals, OpenTelemetry ingest and task checks for ${AGENT_PRO_PRICE.month}/month or ${AGENT_PRO_PRICE.year}/year USD. For <b>Website Analytics</b>, Free covers {PLANS.free.domains} site, {PLANS.free.eventsPerMonth.toLocaleString("en-US")} agent events a
+            The plans and their limits are listed in the documentation. For <b>Own-Agent Monitoring</b>, Free covers up to {AGENT_PLANS.free.agents} agents with daily briefings, email alerts and read-only API/MCP access; Pro covers unlimited agents (subject to a fair-use safety ceiling of {AGENT_PLANS.pro.agents} agents and monthly event limits), Slack/Telegram/Discord/webhook alerts, drift and loop signals, OpenTelemetry ingest and task checks for ${AGENT_PRO_PRICE.month}/month or ${AGENT_PRO_PRICE.year}/year USD. For <b>Website Analytics</b>, Free covers {PLANS.free.domains} site, {PLANS.free.eventsPerMonth.toLocaleString("en-US")} agent events a
             month and {PLANS.free.windowDays} days of history; plain page views are never counted against the limit.
           </p>
           <p>

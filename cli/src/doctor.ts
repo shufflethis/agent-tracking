@@ -33,6 +33,8 @@ export type DoctorReport = {
   guard: string | null;
   claudeUserHooks: HookState;
   claudeProjectHooks: HookState;
+  agyUserHooks: HookState;
+  agyProjectHooks: HookState;
   cursorUserHooks: HookState;
   cursorProjectHooks: HookState;
   geminiUserHooks: HookState;
@@ -57,6 +59,19 @@ function hookState(file: string): HookState {
       }),
     );
     return found ? "connected" : "not_connected";
+  } catch {
+    return "invalid_json";
+  }
+}
+
+function agyState(file: string): HookState {
+  if (!existsSync(file)) return "not_connected";
+  const raw = readFileSync(file, "utf8");
+  if (!raw.trim()) return "not_connected";
+  try {
+    const parsed = JSON.parse(raw) as Record<string, unknown>;
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return "invalid_json";
+    return parsed.agenttracking && typeof parsed.agenttracking === "object" ? "connected" : "not_connected";
   } catch {
     return "invalid_json";
   }
@@ -174,6 +189,8 @@ export function inspectMachine(opts: { home?: string; userHome?: string; cwd?: s
     guard: describeGuard(home),
     claudeUserHooks: hookState(join(userHome, ".claude", "settings.json")),
     claudeProjectHooks: hookState(join(cwd, ".claude", "settings.json")),
+    agyUserHooks: agyState(join(userHome, ".gemini", "config", "hooks.json")),
+    agyProjectHooks: agyState(existsSync(join(cwd, ".agent", "hooks.json")) ? join(cwd, ".agent", "hooks.json") : join(cwd, ".agents", "hooks.json")),
     cursorUserHooks: hookState(join(userHome, ".cursor", "hooks.json")),
     cursorProjectHooks: hookState(join(cwd, ".cursor", "hooks.json")),
     geminiUserHooks: hookState(join(userHome, ".gemini", "settings.json")),
@@ -200,6 +217,9 @@ export function formatDoctorReport(r: DoctorReport): string {
       : r.claudeProjectHooks === "connected"
         ? "[ok]      Claude Code hooks (project): connected"
         : `[missing] Claude Code hooks: not installed. Run: ${DOWNLOAD_CLI} connect claude`);
+  if (r.agyUserHooks === "connected" || r.agyProjectHooks === "connected") {
+    lines.push(`[ok]      Antigravity (agy) hooks (${r.agyUserHooks === "connected" ? "user" : "project"}): connected`);
+  }
   if (r.cursorUserHooks === "connected" || r.cursorProjectHooks === "connected") {
     lines.push(`[ok]      Cursor hooks (${r.cursorUserHooks === "connected" ? "user" : "project"}): connected`);
   }
@@ -209,7 +229,7 @@ export function formatDoctorReport(r: DoctorReport): string {
   if (r.codexHooks === "connected") {
     lines.push("[ok]      Codex CLI notify: connected");
   }
-  lines.push(`[info]    Other supported harnesses: connect cursor | connect codex | connect gemini | connect all`);
+  lines.push(`[info]    Supported harnesses: connect claude | connect agy | connect cursor | connect codex | connect gemini | connect all`);
   lines.push(`[info]    Local MCP servers configured: ${r.mcpServersTotal} (names and credentials stay local)`);
   lines.push(`[info]    Local guard: ${r.guard ?? "inactive (optional: agenttracking guard --max-failures 5 --max-calls 80 --block-destructive on)"}`);
 

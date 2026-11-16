@@ -12,7 +12,7 @@ import { appendEvent } from "./spool.js";
 /**
  * Multi-harness hook entry point: `agenttracking hook <Event>`.
  *
- * Supports Claude Code, Cursor, Gemini CLI and OpenAI Codex CLI.
+ * Supports Claude Code, Google Antigravity (agy), Cursor, Gemini CLI and OpenAI Codex CLI.
  * Reads the hook JSON from stdin (or trailing argv JSON for Codex notify),
  * keeps only operational metadata, spools one event and starts a detached
  * sender. Tool inputs, prompts, responses and paths are never stored or sent.
@@ -25,6 +25,13 @@ const CLAUDE_MAP: Record<string, AgentEventType> = {
   SubagentStop: "subagent_end", Notification: "notification", SessionEnd: "session_end",
 };
 export const HOOK_EVENTS = Object.keys(CLAUDE_MAP);
+
+const AGY_MAP: Record<string, AgentEventType> = {
+  AgySessionStart: "session_start",
+  AgyPreInvocation: "turn_start",
+  AgyPostToolUse: "tool_end",
+  AgyStop: "turn_end",
+};
 
 const GEMINI_MAP: Record<string, AgentEventType> = {
   GeminiSessionStart: "session_start",
@@ -48,14 +55,14 @@ const FLUSH_EVERY_MS = 5000;
 
 /**
  * The agent is named after its working folder. A throwaway temp folder (mkdtemp style,
- * "tool-k4tvbmnm" directly in the temp dir) loses its random suffix, so one tool's
- * many runs count as one agent instead of filling the agent limit.
+ * e.g. GNU mktemp "tool-k4tvbmnm" or Python tempfile.mkdtemp "tool-vx1rd7_5" / "tool-tfcyyzaz"
+ * directly in the temp dir) loses its random suffix, so one tool's many runs count as one agent.
  */
 export function agentName(cwd: string): string {
   const base = basename(cwd);
   const parent = dirname(cwd);
-  if (parent !== tmpdir() && parent !== "/tmp") return base;
-  return base.replace(/-(?=[A-Za-z0-9]*\d)[A-Za-z0-9]{6,8}$/, "") || base;
+  if (parent !== tmpdir() && parent !== "/tmp" && parent !== "/private/tmp" && !/^\/var\/folders\//.test(parent)) return base;
+  return base.replace(/-[A-Za-z0-9_]{6,12}$/, "") || base;
 }
 
 function cleanTool(raw: unknown, fallback = "unknown"): string {
@@ -80,7 +87,11 @@ export function eventFromHook(hookEvent: string, input: unknown, cfg: Config, no
 
   let kind: AgentKind = "claude";
   let type: AgentEventType | undefined = CLAUDE_MAP[hookEvent];
-  if (!type && hookEvent in GEMINI_MAP) {
+  if (!type && hookEvent in AGY_MAP) {
+    kind = "agy";
+    type = AGY_MAP[hookEvent];
+    if (hookEvent === "AgyStop" && i.terminationReason === "ERROR") type = "turn_error";
+  } else if (!type && hookEvent in GEMINI_MAP) {
     kind = "gemini";
     type = GEMINI_MAP[hookEvent];
   } else if (!type && hookEvent in CURSOR_MAP) {
@@ -96,12 +107,15 @@ export function eventFromHook(hookEvent: string, input: unknown, cfg: Config, no
 
   const rawSession =
     (typeof i.session_id === "string" && i.session_id) ||
+    (typeof i.conversationId === "string" && i.conversationId) ||
     (typeof i.conversation_id === "string" && i.conversation_id) ||
     (typeof i.generation_id === "string" && i.generation_id) ||
     "unknown-session";
 
-  const roots = Array.isArray(i.workspace_roots) ? i.workspace_roots : [];
-  const rawCwd = typeof i.cwd === "string" ? i.cwd : typeof roots[0] === "string" ? roots[0] : "";
+  const roots = Array.isArray(i.workspace_roots)
+    ? i.workspace_roots
+    : Array.isArray(i.workspacePaths) ? i.workspacePaths : [];
+  const rawCwd = typeof i.cwd === "string" && i.cwd ? i.cwd : typeof roots[0] === "string" ? roots[0] : "";
 
   const event: AgentEvent = {
     v: 1, id: randomUUID(), type, at: now,
@@ -109,13 +123,18 @@ export function eventFromHook(hookEvent: string, input: unknown, cfg: Config, no
     run: createHmac("sha256", cfg.secret).update(kind === "claude" ? rawSession : `${kind}:${rawSession}`).digest("hex"),
   };
   const hash = (value: string) => createHmac("sha256", cfg.secret).update(rawSession + ":" + value).digest("hex");
-  if (typeof i.tool_use_id === "string" && i.tool_use_id) event.callId = hash(i.tool_use_id);
+  const agyTool = kind === "agy" && i.toolCall && typeof i.toolCall === "object" ? (i.toolCall as Record<string, unknown>) : null;
+  const rawCallId = typeof i.tool_use_id === "string" && i.tool_use_id
+    ? i.tool_use_id
+    : typeof agyTool?.id === "string" && agyTool.id ? agyTool.id : "";
+  if (rawCallId && (type === "tool_start" || type === "tool_end")) event.callId = hash(rawCallId);
   if ((type === "subagent_start" || type === "subagent_end") && typeof i.agent_id === "string") event.childId = hash(i.agent_id);
   if (type === "tool_start" || type === "tool_end") {
     const defaultTool = hookEvent === "CursorBeforeShell" ? "Shell" : hookEvent === "CursorAfterEdit" ? "Edit" : "unknown";
-    event.tool = cleanTool(i.tool_name, defaultTool);
+    event.tool = cleanTool(agyTool?.name ?? i.tool_name, defaultTool);
     if (type === "tool_end") {
       if (hookEvent === "CursorAfterEdit") event.ok = true;
+      else if (kind === "agy") event.ok = !(typeof i.error === "string" && i.error.length > 0);
       else {
         const r = i.tool_response as Record<string, unknown> | undefined;
         event.ok = hookEvent !== "PostToolUseFailure" && !(r && typeof r === "object" && (r.is_error === true || r.success === false || r.status === "error"));
@@ -146,6 +165,9 @@ function shouldFlush(home: string | undefined, type: AgentEventType, now: number
 }
 
 function formatBlockReply(hookEvent: string, reason: string): string {
+  if (hookEvent === "AgyPreInvocation") {
+    return JSON.stringify({ injectSteps: [{ errorMessage: { userMessage: reason } }], terminationBehavior: "terminate" }) + "\n";
+  }
   if (hookEvent.startsWith("Cursor")) {
     return JSON.stringify({ permission: "deny", user_message: reason, agent_message: reason }) + "\n";
   }
@@ -153,6 +175,10 @@ function formatBlockReply(hookEvent: string, reason: string): string {
     return JSON.stringify({ decision: "deny", reason }) + "\n";
   }
   return JSON.stringify({ decision: "block", reason }) + "\n";
+}
+
+function defaultAgyReply(hookEvent: string): string {
+  return hookEvent === "AgyStop" ? JSON.stringify({ decision: "stop" }) + "\n" : "{}\n";
 }
 
 function extractGuardInput(hookEvent: string, input: Record<string, unknown>): unknown {
@@ -165,16 +191,40 @@ export async function runHook(
   stdin: NodeJS.ReadableStream = process.stdin,
   opts: { home?: string; spawnFlush?: boolean; stdout?: NodeJS.WritableStream; extraArgs?: string[] } = {},
 ): Promise<void> {
+  const out = opts.stdout ?? process.stdout;
+  const isAgy = hookEvent.startsWith("Agy");
+  let agyReplied = false;
+  const replyAgy = (payload: string) => {
+    if (!isAgy || agyReplied) return;
+    agyReplied = true;
+    out.write(payload);
+  };
   try {
     const argJson = (opts.extraArgs ?? []).find((a) => a.trim().startsWith("{"));
     const raw = argJson ?? (await readStdin(stdin));
     let input: unknown;
-    try { input = JSON.parse(raw); } catch { return; }
+    try { input = JSON.parse(raw); } catch { replyAgy(defaultAgyReply(hookEvent)); return; }
     const now = Date.now();
     const cfg = readConfig(opts.home);
     const fallbackCfg: Config = cfg ?? { origin: "", token: "", secret: "local-guard", host: "local" };
     const event = eventFromHook(hookEvent, input, fallbackCfg, now);
-    if (!event) return;
+    if (!event) { replyAgy(defaultAgyReply(hookEvent)); return; }
+
+    if (hookEvent === "AgyPreInvocation") {
+      const verdict = checkPreToolGuard(event.run, event.agent.name, "invocation", opts.home, { now });
+      if (verdict.block) {
+        replyAgy(formatBlockReply(hookEvent, verdict.reason));
+        if (cfg) {
+          const waitingEvent: AgentEvent = { v: 1, id: event.id, type: "waiting", at: now, agent: event.agent, run: event.run };
+          appendEvent(waitingEvent, opts.home);
+          if (opts.spawnFlush !== false && shouldFlush(opts.home, waitingEvent.type, now)) {
+            spawn(process.execPath, [...process.execArgv, process.argv[1], "flush"], { detached: true, stdio: "ignore", env: process.env }).unref();
+          }
+        }
+        return;
+      }
+    }
+
     const isPreTool = hookEvent === "PreToolUse" || hookEvent === "GeminiBeforeTool" || hookEvent === "CursorBeforeShell" || hookEvent === "CursorBeforeMCP";
     if (isPreTool && event.tool) {
       const verdict = checkPreToolGuard(event.run, event.agent.name, event.tool, opts.home, {
@@ -182,7 +232,7 @@ export async function runHook(
         toolInput: extractGuardInput(hookEvent, input as Record<string, unknown>),
       });
       if (verdict.block) {
-        (opts.stdout ?? process.stdout).write(formatBlockReply(hookEvent, verdict.reason));
+        out.write(formatBlockReply(hookEvent, verdict.reason));
         if (!cfg) return;
         const waitingEvent: AgentEvent = { v: 1, id: event.id, type: "waiting", at: now, agent: event.agent, run: event.run };
         appendEvent(waitingEvent, opts.home);
@@ -192,7 +242,9 @@ export async function runHook(
         return;
       }
     }
+    if (hookEvent === "AgyPostToolUse") recordGuardOutcome(event.run, "tool_start", undefined, now, opts.home);
     recordGuardOutcome(event.run, event.type, event.ok, now, opts.home);
+    replyAgy(defaultAgyReply(hookEvent));
     if (!cfg) return;
     if ((event.type === "session_start" || event.type === "config_snapshot") && event.agent.kind === "claude") {
       const cwd = (input as { cwd?: unknown }).cwd;
@@ -203,6 +255,6 @@ export async function runHook(
       spawn(process.execPath, [...process.execArgv, process.argv[1], "flush"], { detached: true, stdio: "ignore", env: process.env }).unref();
     }
   } catch {
-    // A tracking problem must never become the agent's problem.
+    replyAgy(defaultAgyReply(hookEvent));
   }
 }

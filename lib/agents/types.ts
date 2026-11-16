@@ -1,10 +1,10 @@
 import type { Snapshot } from "./snapshot";
 /** Shared shapes of the agent-monitoring subsystem. The CLI keeps a copy in cli/src/event.ts; a test checks they agree. */
 
-export type AgentKind = "claude" | "cursor" | "codex" | "gemini" | "cron" | "custom";
-export const AGENT_KINDS: readonly AgentKind[] = ["claude", "cursor", "codex", "gemini", "cron", "custom"];
+export type AgentKind = "claude" | "agy" | "cursor" | "codex" | "gemini" | "cron" | "custom";
+export const AGENT_KINDS: readonly AgentKind[] = ["claude", "agy", "cursor", "codex", "gemini", "cron", "custom"];
 export const isSessionAgentKind = (kind: AgentKind): boolean =>
-  kind === "claude" || kind === "cursor" || kind === "codex" || kind === "gemini";
+  kind === "claude" || kind === "agy" || kind === "cursor" || kind === "codex" || kind === "gemini";
 
 export type AgentEventType =
   | "session_start" | "tool_start" | "tool_end" | "turn_end" | "subagent_end" | "notification" | "session_end"
@@ -41,7 +41,7 @@ export type AgentEvent = {
   tail?: string;
 };
 
-/** Agents on the largest plan; per-plan limits are in ./plans.ts. */
-export const AGENT_LIMIT = 50;
+/** Fair-use safety ceiling on Pro; per-plan limits are in ./plans.ts. */
+export const AGENT_LIMIT = 500;
 export const AGENT_EVENTS_PER_MONTH = 50_000;
 export const MAX_BATCH = 100;

@@ -84,6 +84,20 @@ export default async function Page({ params }: { params: Promise<{ agentId: stri
           <tbody>{comparisons.map(row => <tr key={`${row.name}:${row.version}`}><td>{row.name}</td><td>{row.version}</td><td>{row.passed} / {row.samples}</td><td>{duration(row.durationMs) || "—"}</td><td>{row.incomplete}</td></tr>)}</tbody>
         </table></div> : <p>{de ? "Noch keine benannten Prüfungen. Ein Prüfskript muss das erwartete Ergebnis kontrollieren und bei Abweichungen mit einem Fehlercode enden." : "No named checks yet. A check script must assert the expected result and exit nonzero on a mismatch."}</p>}
         <pre className="code" style={{ whiteSpace: "pre-wrap" }}>{`${CLI_COMMAND} wrap --name evaluation --check booking --version v1 -- ./check-booking.sh`}</pre>
+        <details style={{ marginTop: 40, paddingTop: 20, borderTop: "1px solid var(--rule)" }}>
+          <summary style={{ cursor: "pointer", color: "var(--muted)", fontSize: 14 }}>
+            {de ? "Diesen Agent und seinen Verlauf entfernen" : "Remove this agent and its run history"}
+          </summary>
+          <p style={{ color: "var(--ink-2)", fontSize: 14, maxWidth: "58ch" }}>
+            {de
+              ? "Löscht diesen Agent samt Läufen, Tageszählern und Signalen dauerhaft aus deinem Konto. Sendet die Maschine später erneut Events für denselben Namen, wird er neu angelegt."
+              : "Permanently deletes this agent with its runs, daily counters and signals from your account. If the machine sends new events for the same name later, it will be created again."}
+          </p>
+          <form method="post" action="/api/agents/delete">
+            <input type="hidden" name="agentId" value={agent.id} />
+            <button className="btn ghost" type="submit">{de ? "Endgültig entfernen" : "Remove permanently"}</button>
+          </form>
+        </details>
       </section>
     </DashboardShell>
   );

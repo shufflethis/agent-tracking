@@ -78,6 +78,8 @@ test("throwaway temp folders of one tool count as one agent", () => {
   const name = (cwd: string) => eventFromHook("Stop", { session_id: "s", cwd }, cfg, NOW)?.agent.name;
   assert.equal(name(join(tmpdir(), "remember-summarizer-cwd-k4tvbmnm")), "remember-summarizer-cwd");
   assert.equal(name(join(tmpdir(), "remember-summarizer-cwd-Ab12Cd")), "remember-summarizer-cwd");
+  assert.equal(name(join(tmpdir(), "remember-summarizer-cwd-vx1rd7_5")), "remember-summarizer-cwd");
+  assert.equal(name(join(tmpdir(), "remember-summarizer-cwd-tfcyyzaz")), "remember-summarizer-cwd");
   assert.equal(name("/tmp/tool-x7Kq2p/sub"), "tool-x7Kq2p/sub".split("/").pop());
   assert.equal(name("/root/my-project-2026"), "my-project-2026");
   assert.equal(name("/root/agent-tracking"), "agent-tracking");
@@ -139,4 +141,30 @@ test("Cursor, Gemini CLI and Codex CLI hooks produce valid server-accepted event
   const batch = [cursorEvt, geminiEvt, codexEvt];
   assert.doesNotMatch(JSON.stringify(batch), /secret|conv-99|gem-42|th-77|\/work/);
   assert.equal(parseAgentBatch({ events: batch }, NOW)?.events.length, 3);
+});
+
+test("Google Antigravity (agy) hooks emit valid JSON stdout and sanitized server-accepted events", async () => {
+  const agyTool = eventFromHook("AgyPostToolUse", {
+    conversationId: "conv-agy-1",
+    workspacePaths: ["/work/agy-project"],
+    cwd: "/work/agy-project",
+    lastUserInput: "top secret prompt",
+    toolCall: { id: "toolu_01", name: "run_command", args: { CommandLine: "echo secret_token" } },
+    error: "exit status 1",
+  }, cfg, NOW)!;
+  assert.equal(agyTool.agent.kind, "agy");
+  assert.equal(agyTool.agent.name, "agy-project");
+  assert.equal(agyTool.tool, "run_command");
+  assert.equal(agyTool.ok, false);
+  assert.doesNotMatch(JSON.stringify(agyTool), /secret|conv-agy-1|toolu_01|\/work/);
+  assert.equal(parseAgentBatch({ events: [agyTool] }, NOW)?.events.length, 1);
+
+  const { Writable } = await import("node:stream");
+  let out = "";
+  const stdout = new Writable({ write(c, _e, cb) { out += String(c); cb(); } });
+  const home = mkdtempSync(join(tmpdir(), "at-agy-hook-"));
+  await runHook("AgyStop", Readable.from([JSON.stringify({ conversationId: "c1", cwd: "/work/agy-project", terminationReason: "NO_TOOL_CALL" })]), {
+    home, spawnFlush: false, stdout,
+  });
+  assert.deepEqual(JSON.parse(out), { decision: "stop" });
 });

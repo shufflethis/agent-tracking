@@ -79,7 +79,7 @@ export default function Page() {
 
         <Clause n="4" title="Pläne, Pilotphase und Preise">
           <p>
-            Die Pläne und ihre Grenzen stehen in der Dokumentation. Beim <b>Monitoring eigener Agents</b> umfasst Free bis zu {AGENT_PLANS.free.agents} Agents mit täglichem Briefing, E-Mail-Meldungen sowie Lese-API und MCP; Pro umfasst bis zu {AGENT_PLANS.pro.agents} Agents, Slack-/Telegram-/Discord-/Webhook-Meldungen, Konfigurations- und Fehlerschleifen-Signale, OpenTelemetry-Ingest und Task-Checks für {AGENT_PRO_PRICE.month} $/Monat oder {AGENT_PRO_PRICE.year} $/Jahr USD. Bei <b>Website-Analytics</b> umfasst Free {PLANS.free.domains} Site, {PLANS.free.eventsPerMonth.toLocaleString("de-DE")} Agenten-Ereignisse
+            Die Pläne und ihre Grenzen stehen in der Dokumentation. Beim <b>Monitoring eigener Agents</b> umfasst Free bis zu {AGENT_PLANS.free.agents} Agents mit täglichem Briefing, E-Mail-Meldungen sowie Lese-API und MCP; Pro umfasst unbegrenzte Agents (vorbehaltlich einer Fair-Use-Schutzgrenze von {AGENT_PLANS.pro.agents} Agents und monatlichen Event-Grenzen), Slack-/Telegram-/Discord-/Webhook-Meldungen, Konfigurations- und Fehlerschleifen-Signale, OpenTelemetry-Ingest und Task-Checks für {AGENT_PRO_PRICE.month} $/Monat oder {AGENT_PRO_PRICE.year} $/Jahr USD. Bei <b>Website-Analytics</b> umfasst Free {PLANS.free.domains} Site, {PLANS.free.eventsPerMonth.toLocaleString("de-DE")} Agenten-Ereignisse
             im Monat und {PLANS.free.windowDays} Tage Verlauf; reine Seitenaufrufe werden nie auf das Kontingent angerechnet.
           </p>
           <p>

@@ -84,7 +84,7 @@ function copy(lang: "en" | "de") {
       stepsMore: "Lokale Schutzregeln, Konfigurations-Snapshots, MCP-Abfragen und OpenTelemetry stehen in der Doku.",
       todayTitle: "Heute verbunden, als Nächstes geplant",
       today: [
-        { k: "Heute", t: "Claude Code, Cursor, Codex & Gemini CLI", d: "Über Hooks mit einem Befehl verbunden, inklusive optionaler lokaler Sicherheits- und Schleifen-Bremse." },
+        { k: "Heute", t: "Claude Code, Antigravity (agy), Cursor, Codex & Gemini", d: "Über Hooks mit einem Befehl verbunden, inklusive optionaler lokaler Sicherheits- und Schleifen-Bremse." },
         { k: "Heute", t: "Cron-Jobs & GitHub Actions", d: "doctor erkennt bestehende Crontab-Einträge; jeder Cron- oder CI-Befehl lässt sich mit wrap umschließen." },
         { k: "Heute", t: "OpenTelemetry & MCP", d: "OTLP/HTTP-JSON-Traces senden und den eigenen Flottenstatus per MCP (get_fleet_status) direkt in Claude oder Cursor abfragen." },
         { k: "Als Nächstes", t: "Hermes, OpenClaw & Team-Policies", d: "Weitere Runner und zentrale Team-Leitplanken sind geplant. Den Stand findest du im Changelog." },
@@ -101,7 +101,7 @@ function copy(lang: "en" | "de") {
       plansTitle: live ? `Kostenlos starten, ${pm} $ wenn du mehr brauchst` : "Kostenlos in der Beta, selbst hostbar für immer",
       tiers: [
         { id: "free", name: "Free", price: "0 $", per: "für immer", note: "Ohne Kreditkarte", cta: "Kostenlos starten", features: [`${freeN} Agents`, "Claude Code, Cron-Jobs und Skripte", "Tägliches Briefing in deiner lokalen Zeitzone", "Sofort-Meldungen per E-Mail", "Lese-API und MCP (get_fleet_status)", `${AGENT_EVENT_RETENTION_DAYS} Tage Verlauf`] },
-        { id: "pro", name: "Pro", price: `${pm} $`, per: "pro Monat", note: `oder ${py} $ im Jahr, zwei Monate geschenkt`, cta: "Mit Pro starten", features: [`${proN} Agents`, "Alles aus Free", "Meldungen an Telegram, Slack, Discord und Webhooks", "Meldung bei Fehlerschleifen (wiederholt scheiternde Tool-Aufrufe)", "Meldung bei Konfigurationsänderungen und neuen Tools", "OpenTelemetry und Task-Checks"] },
+        { id: "pro", name: "Pro", price: `${pm} $`, per: "pro Monat", note: `oder ${py} $ im Jahr, zwei Monate geschenkt`, cta: "Mit Pro starten", features: ["Unbegrenzte Agents", "Alles aus Free", "Meldungen an Telegram, Slack, Discord und Webhooks", "Meldung bei Fehlerschleifen (wiederholt scheiternde Tool-Aufrufe)", "Meldung bei Konfigurationsänderungen und neuen Tools", "OpenTelemetry und Task-Checks"] },
         { id: "self", name: "Selbst gehostet", price: "0 $", per: "auf deinem Server", note: "Open Source unter AGPL-3.0", cta: "Auf GitHub ansehen", features: ["Der komplette Code: CLI, Ingest, Dashboard, Meldungen", "Ein Node-Prozess, eine SQLite-Datei", "Deine Daten verlassen deinen Server nie"] },
       ],
       team: { name: "Team", price: "Auf Anfrage", text: "Für Unternehmen, die Agents auf vielen Rechnern laufen lassen. Geplant: mehrere Mitglieder mit einer gemeinsamen Flotte, Audit-Log zum Export, Leitplanken zentral für alle Maschinen, Rechnung statt Karte. Erzähl uns, was du brauchst, dann bauen wir es mit dir.", cta: "Team anfragen" },
@@ -111,7 +111,7 @@ function copy(lang: "en" | "de") {
         ...(live
           ? [
               { k: "Cloud · Free", t: "Kostenlos", d: `Bis ${freeN} Agents, tägliches Briefing und E-Mail-Meldungen. Ohne Kreditkarte.` },
-              { k: "Cloud · Pro", t: `${pm} $/Monat oder ${py} $/Jahr`, d: `Bis ${proN} Agents, Meldungen an Telegram, Slack, Discord und Webhooks, OpenTelemetry und Task-Checks. Jederzeit zum Periodenende kündbar.` },
+              { k: "Cloud · Pro", t: `${pm} $/Monat oder ${py} $/Jahr`, d: `Unbegrenzte Agents, Meldungen an Telegram, Slack, Discord und Webhooks, OpenTelemetry und Task-Checks. Jederzeit zum Periodenende kündbar.` },
             ]
           : [
               { k: "Cloud · Beta", t: "Kostenlos", d: `Bis ${AGENT_LIMIT} Agents und ${n(AGENT_EVENTS_PER_MONTH)} Events im Monat, alle Funktionen. Ohne Kreditkarte.` },
@@ -128,10 +128,10 @@ function copy(lang: "en" | "de") {
       faq: [
         { q: "Liest Agent Tracking meine Prompts oder meinen Code?", a: "Nein. Die Claude-Code-Anbindung sendet nur Lebenszyklus-Events, Tool-Namen und Erfolg oder Fehler. Prompts, Antworten, Tool-Ein- und -Ausgaben, Dateiinhalte und volle Pfade verlassen die Maschine nicht." },
         { q: "Was passiert mit meinen bestehenden Claude-Code-Hooks?", a: "Sie bleiben. connect claude ergänzt nur eigene Einträge und legt neben ~/.claude/settings.json ein Backup an. disconnect claude entfernt genau diese Einträge wieder." },
-        { q: "Funktioniert das mit Cursor, Codex CLI oder Gemini CLI?", a: "Ja. Mit connect cursor, connect codex, connect gemini oder connect all richtet die CLI die passenden Hooks ein. Jeden weiteren Agent-Lauf kannst du per wrap umschließen oder über OpenTelemetry anbinden." },
+        { q: "Funktioniert das mit Antigravity (agy), Cursor, Codex CLI oder Gemini CLI?", a: "Ja. Mit connect agy, connect cursor, connect codex, connect gemini oder connect all richtet die CLI die passenden Hooks ein. Jeden weiteren Agent-Lauf kannst du per wrap umschließen oder über OpenTelemetry anbinden." },
         { q: "Für wen ist es nicht gedacht?", a: "Wenn du Prompts debuggen, Modellantworten vergleichen oder Token-Kosten messen willst, nimm eine LLM-Tracing-Plattform. Agent Tracking sieht Prompts absichtlich nie." },
         { q: "Wo liegen meine Daten, und wer steht dahinter?", a: `Die gehostete Version läuft auf Servern in ${LEGAL.hostingCountry === "Germany" ? "Deutschland" : LEGAL.hostingCountry} und wird von ${LEGAL.name} betrieben. Gespeichert werden nur Lauf-Metadaten. Lieber auf eigener Infrastruktur? Selbst hosten geht überall, wo Node läuft.` },
-        { q: "Was kostet es?", a: live ? `Free kostet nichts (${freeN} Agents). Pro kostet ${pm} $ im Monat oder ${py} $ im Jahr (${proN} Agents, alle Kanäle). Selbst gehostet ist es dauerhaft kostenlos.` : `Während der Beta nichts: bis ${AGENT_LIMIT} Agents und ${n(AGENT_EVENTS_PER_MONTH)} Events im Monat. Danach gibt es Free (${freeN} Agents) und Pro für ${pm} $ im Monat, mit 30 Tagen Vorankündigung. Selbst gehostet ist es dauerhaft kostenlos.` },
+        { q: "Was kostet es?", a: live ? `Free kostet nichts (${freeN} Agents). Pro kostet ${pm} $ im Monat oder ${py} $ im Jahr (unbegrenzte Agents, alle Kanäle). Selbst gehostet ist es dauerhaft kostenlos.` : `Während der Beta nichts: bis ${AGENT_LIMIT} Agents und ${n(AGENT_EVENTS_PER_MONTH)} Events im Monat. Danach gibt es Free (${freeN} Agents) und Pro für ${pm} $ im Monat, mit 30 Tagen Vorankündigung. Selbst gehostet ist es dauerhaft kostenlos.` },
         { q: "Wie aktualisiere ich die CLI?", a: "Führ den Verbindungsbefehl mit der neuen Version noch einmal aus. Die Hooks zeigen danach auf die neue Version." },
         { q: "Kann ich einen Agent lokal stoppen oder per MCP abfragen?", a: "Ja. Mit agenttracking pause oder guard --max-failures 5 stoppt der lokale Hook neue Tool-Aufrufe direkt auf deiner Maschine, ohne Netzwerkaufruf. Und über POST /api/mcp (Tool get_fleet_status) können Claude oder Cursor den Status deiner Flotte mit einem Lese-Token abfragen." },
       ],
@@ -191,7 +191,7 @@ function copy(lang: "en" | "de") {
     stepsMore: "Local guardrails, configuration snapshots, MCP fleet queries and OpenTelemetry are in the docs.",
     todayTitle: "Connected today, planned next",
     today: [
-      { k: "Today", t: "Claude Code, Cursor, Codex & Gemini CLI", d: "Connected through hooks with one command, including an optional local safety and runaway-loop circuit breaker." },
+      { k: "Today", t: "Claude Code, Antigravity (agy), Cursor, Codex & Gemini", d: "Connected through hooks with one command, including an optional local safety and runaway-loop circuit breaker." },
       { k: "Today", t: "Cron jobs & GitHub Actions", d: "doctor discovers existing crontab entries; any cron or CI command can be wrapped." },
       { k: "Today", t: "OpenTelemetry & MCP", d: "Send OTLP/HTTP JSON traces, and ask Claude or Cursor how your fleet did via MCP (get_fleet_status)." },
       { k: "Next", t: "Hermes, OpenClaw & Team policies", d: "Additional runners and shared team guardrails are next. Follow them in the changelog." },
@@ -208,7 +208,7 @@ function copy(lang: "en" | "de") {
     plansTitle: live ? `Free to start, $${pm} when you need more` : "Free during the beta, self-hostable for good",
     tiers: [
       { id: "free", name: "Free", price: "$0", per: "forever", note: "No credit card", cta: "Start free", features: [`${freeN} agents`, "Claude Code, cron jobs and scripts", "Daily briefing in your local time zone", "Instant alerts by email", "Read-only API and MCP (get_fleet_status)", `${AGENT_EVENT_RETENTION_DAYS} days of history`] },
-      { id: "pro", name: "Pro", price: `$${pm}`, per: "per month", note: `or $${py} a year, two months free`, cta: "Start with Pro", features: [`${proN} agents`, "Everything in Free", "Telegram, Slack, Discord and webhook alerts", "Alerts on runaway error loops (repeated failing tool calls)", "Alerts on configuration changes and first-time tools", "OpenTelemetry and task checks"] },
+      { id: "pro", name: "Pro", price: `$${pm}`, per: "per month", note: `or $${py} a year, two months free`, cta: "Start with Pro", features: ["Unlimited agents", "Everything in Free", "Telegram, Slack, Discord and webhook alerts", "Alerts on runaway error loops (repeated failing tool calls)", "Alerts on configuration changes and first-time tools", "OpenTelemetry and task checks"] },
       { id: "self", name: "Self-hosted", price: "$0", per: "on your server", note: "Open source under AGPL-3.0", cta: "View on GitHub", features: ["All of the code: CLI, ingest, dashboard, alerts", "One Node process, one SQLite file", "Your data never leaves your server"] },
     ],
     team: { name: "Team", price: "On request", text: "For companies running agents on many machines. Planned: several members on one shared fleet, an audit log to export, guardrails set once for every machine, invoice instead of card. Tell us what you need and we build it with you.", cta: "Ask about Team" },
@@ -218,7 +218,7 @@ function copy(lang: "en" | "de") {
       ...(live
         ? [
             { k: "Cloud · Free", t: "Free", d: `Up to ${freeN} agents, daily briefing and email alerts. No card.` },
-            { k: "Cloud · Pro", t: `$${pm}/month or $${py}/year`, d: `Up to ${proN} agents, Telegram, Slack, Discord and webhook alerts, OpenTelemetry and task checks. Cancel any time, effective at the end of the period.` },
+            { k: "Cloud · Pro", t: `$${pm}/month or $${py}/year`, d: `Unlimited agents, Telegram, Slack, Discord and webhook alerts, OpenTelemetry and task checks. Cancel any time, effective at the end of the period.` },
           ]
         : [
             { k: "Cloud · Beta", t: "Free", d: `Up to ${AGENT_LIMIT} agents and ${n(AGENT_EVENTS_PER_MONTH)} events a month, every feature. No card.` },
@@ -235,10 +235,10 @@ function copy(lang: "en" | "de") {
     faq: [
       { q: "Does Agent Tracking read my prompts or code?", a: "No. The Claude Code integration sends lifecycle events, tool names and success or failure only. Prompts, answers, tool input and output, file contents and full paths stay on your machine." },
       { q: "What happens to my existing Claude Code hooks?", a: "They stay. connect claude only adds its own entries and writes a backup next to ~/.claude/settings.json. disconnect claude removes exactly those entries again." },
-      { q: "Does it work with Cursor, Codex CLI or Gemini CLI?", a: "Yes. Run connect cursor, connect codex, connect gemini or connect all to install the corresponding hooks. Any other scripted or CI agent run can be wrapped with agenttracking wrap or sent via OpenTelemetry." },
+      { q: "Does it work with Antigravity (agy), Cursor, Codex CLI or Gemini CLI?", a: "Yes. Run connect agy, connect cursor, connect codex, connect gemini or connect all to install the corresponding hooks. Any other scripted or CI agent run can be wrapped with agenttracking wrap or sent via OpenTelemetry." },
       { q: "Who is it not for?", a: "If you need to debug prompts, compare model output or track token cost, use an LLM tracing platform. Agent Tracking deliberately never sees prompts." },
       { q: "Where is my data, and who is behind this?", a: `The hosted version runs on servers in ${LEGAL.hostingCountry}, operated by ${LEGAL.name}. Only run metadata is stored. Prefer your own infrastructure? Self-host it anywhere Node runs.` },
-      { q: "What does it cost?", a: live ? `Free costs nothing (${freeN} agents). Pro is $${pm} a month or $${py} a year (${proN} agents, every channel). Self-hosted it is free for good.` : `Nothing during the beta: up to ${AGENT_LIMIT} agents and ${n(AGENT_EVENTS_PER_MONTH)} events a month. After that there is Free (${freeN} agents) and Pro for $${pm} a month, with 30 days' notice. Self-hosted it is free for good.` },
+      { q: "What does it cost?", a: live ? `Free costs nothing (${freeN} agents). Pro is $${pm} a month or $${py} a year (unlimited agents, every channel). Self-hosted it is free for good.` : `Nothing during the beta: up to ${AGENT_LIMIT} agents and ${n(AGENT_EVENTS_PER_MONTH)} events a month. After that there is Free (${freeN} agents) and Pro for $${pm} a month, with 30 days' notice. Self-hosted it is free for good.` },
       { q: "How do I update the CLI?", a: "Run the connect command with the new version again. The hooks then point at the new version." },
       { q: "Can I pause an agent locally or query my fleet through MCP?", a: "Yes. With agenttracking pause or guard --max-failures 5, the local hook blocks new tool calls right on your machine without a network round-trip. And with POST /api/mcp (tool get_fleet_status), Claude or Cursor can check your monitored agents using a read-only token." },
     ],

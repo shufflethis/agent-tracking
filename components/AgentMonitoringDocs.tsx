@@ -11,6 +11,7 @@ const CMD = {
 ${CLI_COMMAND} login`,
   claude: `${CLI_COMMAND} connect claude
 # Also supported on the same machine (Node >= 18):
+${CLI_COMMAND} connect agy
 ${CLI_COMMAND} connect cursor
 ${CLI_COMMAND} connect codex
 ${CLI_COMMAND} connect gemini
@@ -32,10 +33,10 @@ ${CLI_COMMAND} resume`,
 
 const LIVE = () => pricingActive();
 const PRICE_EN = () => LIVE()
-  ? `Free: ${AGENT_PLANS.free.agents} agents with local-timezone morning briefing, email alerts and read-only API/MCP. Pro: ${AGENT_PLANS.pro.agents} agents, every channel, alerts on configuration changes, first-time tools and runaway error loops, OpenTelemetry and task checks, $${AGENT_PRO_PRICE.month}/month or $${AGENT_PRO_PRICE.year}/year.`
+  ? `Free: ${AGENT_PLANS.free.agents} agents with local-timezone morning briefing, email alerts and read-only API/MCP. Pro: unlimited agents, every channel, alerts on configuration changes, first-time tools and runaway error loops, OpenTelemetry and task checks, $${AGENT_PRO_PRICE.month}/month or $${AGENT_PRO_PRICE.year}/year.`
   : `Free during the beta, up to ${AGENT_PLANS.pro.agents} agents and 50,000 events a month.`;
 const PRICE_DE = () => LIVE()
-  ? `Free: ${AGENT_PLANS.free.agents} Agents mit Morgen-Briefing in deiner Zeitzone, E-Mail-Meldungen sowie Lese-API und MCP. Pro: ${AGENT_PLANS.pro.agents} Agents, alle Kanäle, Meldungen bei Konfigurationsänderungen, neuen Tools und Fehlerschleifen, OpenTelemetry und Task-Checks, ${AGENT_PRO_PRICE.month} $/Monat oder ${AGENT_PRO_PRICE.year} $/Jahr.`
+  ? `Free: ${AGENT_PLANS.free.agents} Agents mit Morgen-Briefing in deiner Zeitzone, E-Mail-Meldungen sowie Lese-API und MCP. Pro: unbegrenzte Agents, alle Kanäle, Meldungen bei Konfigurationsänderungen, neuen Tools und Fehlerschleifen, OpenTelemetry und Task-Checks, ${AGENT_PRO_PRICE.month} $/Monat oder ${AGENT_PRO_PRICE.year} $/Jahr.`
   : `Kostenlos während der Beta, bis ${AGENT_PLANS.pro.agents} Agents und 50.000 Events im Monat.`;
 
 const COPY = {

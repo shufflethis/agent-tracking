@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { db } from "../tracking/db";
 import { recordAgentEvents } from "./ingest";
-import { agentRuns, getNotifySettings, listAgents, medianDurationMs, saveNotifySettings } from "./store";
+import { agentRuns, deleteAgent, getNotifySettings, listAgents, medianDurationMs, saveNotifySettings } from "./store";
 import type { AgentEvent } from "./types";
 import { owner, withDb } from "./test-db";
 
@@ -75,4 +75,19 @@ test("slack and discord webhooks must point at their own hosts, generic not at o
   assert.equal(save("discord", "https://discord.com.evil.example/api/webhooks/1"), "invalid_url");
   assert.equal(save("generic", "https://localhost:3200/api/admin/x"), "invalid_url");
   assert.equal(save("slack", "https://hooks.slack.com/services/T/B/x"), "ok");
+}));
+
+test("deleteAgent removes only the owner's chosen agent and its runs/daily rows", () => withDb(() => {
+  const a = owner("del-a@example.com");
+  const b = owner("del-b@example.com");
+  recordAgentEvents(a, cronRun("keep", T, 0), T);
+  recordAgentEvents(a, cronRun("drop", T + 100, 1), T + 100);
+  recordAgentEvents(b, cronRun("other", T, 0), T);
+  const dropId = listAgents(a).find((x) => x.name === "drop")!.id;
+  const otherId = listAgents(b)[0].id;
+  assert.equal(deleteAgent(a, otherId), false, "cannot delete another owner's agent");
+  assert.equal(deleteAgent(a, dropId), true);
+  assert.deepEqual(listAgents(a).map((x) => x.name), ["keep"]);
+  assert.equal((db().prepare("select count(*) as n from agent_runs where agent_id = ?").get(dropId) as { n: number }).n, 0);
+  assert.equal((db().prepare("select count(*) as n from agent_daily where agent_id = ?").get(dropId) as { n: number }).n, 0);
 }));

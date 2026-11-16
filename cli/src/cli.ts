@@ -3,7 +3,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { configDir, readConfig } from "./config.js";
 import { connectClaude, defaultCommand, disconnectClaude, installRuntime, settingsPathFor } from "./connect-claude.js";
-import { codexPathFor, connectCodex, connectCursor, connectGemini, cursorPathFor, disconnectCodex, disconnectCursor, disconnectGemini, geminiPathFor } from "./connect-harnesses.js";
+import { agyPathFor, codexPathFor, connectAgy, connectCodex, connectCursor, connectGemini, cursorPathFor, disconnectAgy, disconnectCodex, disconnectCursor, disconnectGemini, geminiPathFor } from "./connect-harnesses.js";
 import { runDoctor } from "./doctor.js";
 import { flush } from "./flush.js";
 import { describeGuard, runGuardCommand, runPause, runResume } from "./guard.js";
@@ -18,11 +18,11 @@ const HELP = `agenttracking: see what your agents did while you slept
 
   agenttracking login                 connect this machine to your account
   agenttracking connect <target> [--project]
-                                      track claude | cursor | codex | gemini | all
+                                      track claude | agy | cursor | codex | gemini | all
   agenttracking disconnect <target> [--project]
-                                      remove hooks for claude | cursor | codex | gemini | all
+                                      remove hooks for claude | agy | cursor | codex | gemini | all
   agenttracking doctor                check hooks, crontab jobs and local MCP count
-  agenttracking wrap --name <n> [--kind cron|codex|...] [--every 24h] [--tail 20] -- <cmd...>
+  agenttracking wrap --name <n> [--kind cron|agy|codex|...] [--every 24h] [--tail 20] -- <cmd...>
                                       run a cron/CI command and report start, end, exit code
   agenttracking wrap --name eval --check booking --version v1 -- ./check.sh
                                       record a named task check, using its exit code
@@ -43,7 +43,7 @@ Optional Linux observation sends operation types only. No prompts, tool payloads
 or file contents. Cron --tail explicitly adds masked stderr. https://agenttracking.co/docs
 `;
 
-const TARGETS = ["claude", "cursor", "codex", "gemini"] as const;
+const TARGETS = ["claude", "agy", "cursor", "codex", "gemini"] as const;
 type Target = typeof TARGETS[number];
 
 function connectOne(target: Target, scope: "user" | "project", cliPath: string): number {
@@ -53,6 +53,13 @@ function connectOne(target: Target, scope: "user" | "project", cliPath: string):
     const r = connectClaude({ settingsPath: p, command });
     if (r === "invalid_json") { console.log(`${p} is not valid JSON. Nothing was changed.`); return 1; }
     console.log(r === "already" ? `Claude Code: already connected (${p}).` : `Claude Code: connected (${p}; backup saved next to it).`);
+    return 0;
+  }
+  if (target === "agy") {
+    const p = agyPathFor(scope);
+    const r = connectAgy({ settingsPath: p, command });
+    if (r === "invalid_json") { console.log(`${p} is not valid JSON. Nothing was changed.`); return 1; }
+    console.log(r === "already" ? `Antigravity (agy): already connected (${p}).` : `Antigravity (agy): connected (${p}; backup saved next to it).`);
     return 0;
   }
   if (target === "cursor") {
@@ -83,6 +90,13 @@ function disconnectOne(target: Target, scope: "user" | "project"): number {
   if (target === "claude") {
     const p = process.env.AGENTTRACKING_CLAUDE_SETTINGS ?? settingsPathFor(scope);
     const r = disconnectClaude({ settingsPath: p });
+    if (r === "invalid_json") { console.log(`${p} is not valid JSON. Nothing was changed.`); return 1; }
+    console.log(r === "disconnected" ? `Removed agenttracking hooks from ${p}.` : `No agenttracking hooks in ${p}.`);
+    return 0;
+  }
+  if (target === "agy") {
+    const p = agyPathFor(scope);
+    const r = disconnectAgy({ settingsPath: p });
     if (r === "invalid_json") { console.log(`${p} is not valid JSON. Nothing was changed.`); return 1; }
     console.log(r === "disconnected" ? `Removed agenttracking hooks from ${p}.` : `No agenttracking hooks in ${p}.`);
     return 0;
@@ -125,7 +139,7 @@ const commands: Record<string, Command> = {
   async connect(args) {
     const target = args[0] as Target | "all" | undefined;
     if (!target || (target !== "all" && !TARGETS.includes(target))) {
-      console.log("Usage: agenttracking connect <claude|cursor|codex|gemini|all> [--project]");
+      console.log("Usage: agenttracking connect <claude|agy|cursor|codex|gemini|all> [--project]");
       return 1;
     }
     if (!readConfig() && (await login()) !== "ok") return 1;
@@ -139,7 +153,7 @@ const commands: Record<string, Command> = {
   async disconnect(args) {
     const target = args[0] as Target | "all" | undefined;
     if (!target || (target !== "all" && !TARGETS.includes(target))) {
-      console.log("Usage: agenttracking disconnect <claude|cursor|codex|gemini|all> [--project]");
+      console.log("Usage: agenttracking disconnect <claude|agy|cursor|codex|gemini|all> [--project]");
       return 1;
     }
     const scope = args.includes("--project") ? "project" : "user";

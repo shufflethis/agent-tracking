@@ -20,14 +20,14 @@ const agents = () => (db().prepare("select count(*) as n from agents").get() as 
 test("during the beta everyone has the Pro limits", () => {
   assert.equal(pricingActive(NOW, null), false);
   assert.equal(pricingActive(NOW, LATER), false);
-  assert.equal(effectiveAgentPlan("free", NOW, null).agents, 50);
+  assert.equal(effectiveAgentPlan("free", NOW, null).agents, 500);
   assert.equal(effectiveAgentPlan("free", NOW, LATER).webhooks, true);
 });
 
 test("after the start the stored plan applies", () => {
   const free = effectiveAgentPlan("free", NOW, STARTED);
   assert.deepEqual([free.agents, free.webhooks, free.otlp, free.checks], [5, false, false, false]);
-  assert.equal(effectiveAgentPlan("pro", NOW, STARTED).agents, 50);
+  assert.equal(effectiveAgentPlan("pro", NOW, STARTED).agents, 500);
   assert.equal(effectiveAgentPlan(null, NOW, STARTED).agents, 5);
   assert.equal(effectiveAgentPlan("agency", NOW, STARTED).agents, 5, "unknown values fall back to free");
 });
