@@ -38,16 +38,19 @@ export function every(ms: number): string {
 export const HEALTH_CHIP: Record<string, string> = { problem: "chip fail", running: "chip accent", ok: "chip pass", idle: "chip na" };
 export const STATUS_CHIP: Record<string, string> = { failed: "chip fail", hung: "chip fail", missed: "chip fail", running: "chip accent", ok: "chip pass" };
 
-export const CLI_FILE = "agenttracking-0.5.0.tgz";
+export const CLI_VERSION = "0.5.0";
+export const CLI_FILE = `agenttracking-${CLI_VERSION}.tgz`;
 export const CLI_URL = `https://agenttracking.co/downloads/${CLI_FILE}`;
+export const INSTALL_URL = "https://agenttracking.co/install.sh";
 /** SHA-256 of public/downloads/<CLI_FILE>. lib/agents/cli-checksum.test.ts fails when the file and this value drift apart. */
 export const CLI_SHA256 = "16ae3088c1bc70da8cd19865f07de145117c518cda3983d3dae8a5beeb53b188";
-export const CLI_COMMAND = `npx --yes ${CLI_URL}`;
+export const CLI_INSTALL = `curl -fsSL ${INSTALL_URL} | sh`;
+export const CLI_COMMAND = "agenttracking";
 /** Download, check the hash, then run from the checked file. */
 export const CLI_VERIFY = `curl -fsSLO ${CLI_URL}
 echo "${CLI_SHA256}  ${CLI_FILE}" | sha256sum -c -
 tar -tzf ${CLI_FILE}            # list what is inside
-npx --yes ./${CLI_FILE} connect claude`;
-export const CONNECT_CLAUDE = `${CLI_COMMAND} connect claude`;
+npx --yes ./${CLI_FILE} connect all`;
+export const CONNECT_CLAUDE = `curl -fsSL ${INSTALL_URL} | sh -s -- connect all`;
 export const DOCTOR_COMMAND = `${CLI_COMMAND} doctor`;
 export const WRAP_EXAMPLE = `${CLI_COMMAND} wrap --name backup --every 24h --tail 20 -- ./backup.sh`;

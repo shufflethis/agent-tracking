@@ -1,4 +1,4 @@
-import { CLI_COMMAND, CLI_SHA256, CLI_VERIFY, DOCTOR_COMMAND } from "@/lib/agents/format";
+import { CLI_COMMAND, CLI_INSTALL, CLI_SHA256, CLI_VERIFY, DOCTOR_COMMAND } from "@/lib/agents/format";
 import AgentConnectionScope from "@/components/AgentConnectionScope";
 import { AGENT_PLANS, AGENT_PRO_PRICE, pricingActive } from "@/lib/agents/plans";
 import { SITE_ORIGIN } from "@/lib/site";
@@ -7,7 +7,8 @@ import { AGENT_EVENT_RETENTION_DAYS, AGENT_TAIL_RETENTION_DAYS, RAW_RETENTION_DA
 /** Docs section "Monitor your own agents", EN and DE. Field list matches lib/agents/ingest.ts. */
 
 const CMD = {
-  login: `${CLI_COMMAND} login`,
+  login: `${CLI_INSTALL}
+${CLI_COMMAND} login`,
   claude: `${CLI_COMMAND} connect claude
 # Also supported on the same machine (Node >= 18):
 ${CLI_COMMAND} connect cursor
