@@ -184,7 +184,7 @@ export function inspectMachine(opts: { home?: string; userHome?: string; cwd?: s
   };
 }
 
-const DOWNLOAD_CLI = "npx --yes https://agenttracking.co/downloads/agenttracking-0.5.0.tgz";
+const DOWNLOAD_CLI = "agenttracking";
 
 export function formatDoctorReport(r: DoctorReport): string {
   const lines: string[] = ["agenttracking doctor (local check only, nothing sent)", ""];

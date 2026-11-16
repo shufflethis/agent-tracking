@@ -43,9 +43,10 @@ export async function flush(home?: string): Promise<{ sent: number; kept: number
         status = res.status;
         if (status >= 200 && status < 300) {
           const receipt = await res.json().catch(() => null) as { dropped?: number; agentLimit?: boolean } | null;
-          if (receipt?.dropped || receipt?.agentLimit) writeFileSync(join(ensureDir(home), "telemetry-loss"), `Server rejected some events at ${new Date().toISOString()}\n`, { mode: 0o600 });
-          // Retry partial agent-limit batches; accepted IDs are idempotent on the server.
-          if (receipt?.agentLimit) return { sent, kept: remaining(home) };
+          if (receipt?.dropped || receipt?.agentLimit) {
+            const detail = receipt?.agentLimit ? " (agent limit reached)" : "";
+            writeFileSync(join(ensureDir(home), "telemetry-loss"), `Server rejected some events${detail} at ${new Date().toISOString()}\n`, { mode: 0o600 });
+          }
         }
       } catch {
         status = 0;

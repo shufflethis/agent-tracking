@@ -91,3 +91,22 @@ test("an empty or truncated inflight file cannot strand the remaining queue", as
   assert.deepEqual(await withFetch(200,()=>flush(home)),{sent:1,kept:0});
  }
 });
+
+test("agentLimit receipt records warning without head-of-line blocking later batches", async () => {
+  const home = mkdtempSync(join(tmpdir(), "at-limit-"));
+  writeConfig({ origin: "https://agenttracking.example", token: "atk_x", secret: "s".repeat(64), host: "h" }, home);
+  for (let i = 0; i < 150; i++) appendEvent(ev(i), home);
+  const original = globalThis.fetch;
+  let calls = 0;
+  globalThis.fetch = (async () => {
+    calls++;
+    return new Response(JSON.stringify(calls === 1 ? { ok: true, accepted: 99, agentLimit: true } : { ok: true, accepted: 50 }), { status: 200 });
+  }) as typeof fetch;
+  try {
+    assert.deepEqual(await flush(home), { sent: 150, kept: 0 });
+    assert.equal(calls, 2);
+    assert.match(readFileSync(join(home, "telemetry-loss"), "utf8"), /agent limit reached/);
+  } finally {
+    globalThis.fetch = original;
+  }
+});
