@@ -552,27 +552,119 @@ export default function MonitoringHome({ lang }: { lang: "en" | "de" }) {
 
       <HarnessStrip lang={lang} />
 
-      <section className="shell hsec" id="autofix">
+      <section className="shell hsec" id="icp">
         <Head
-          kick={de ? "1 Befehl · Vorher → Nachher" : "1 command · Before → After"}
-          title={de ? "Von 40/100 (Grade D) auf 100/100 (Grade A) in 3 Sekunden" : "From 40/100 (Grade D) to 100/100 (Grade A) in 3 seconds"}
+          kick={de ? "Für wen genau? (ICP)" : "Who this is built for"}
+          title={de ? "Drei Gruppen, für die Agent Tracking sofort Geld & Nerven spart" : "Three teams that get immediate value on day one"}
           dek={de
-            ? "Kein JSON von Hand editieren: `agenttracking fix` schaltet deine lokale Schutzbremse scharf, pinnt alle ungepinnten npx-MCP-Pakete auf exakte Versionen und lagert Klartext-Secrets sicher mit chmod 600 aus — immer mit automatischem Backup."
-            : "Zero manual JSON editing: `agenttracking fix` arms your local loop & rm-rf fuse, pins every unpinned npx MCP server to its exact version, and safely moves inline secrets to chmod-600 storage — with automatic backups."}
+            ? "Klar abgegrenzt: Was wir exakt lösen, für wen es gebaut ist — und wann ein anderes Tool besser passt."
+            : "Zero fluff: exactly who this is built for, what concrete problem it kills, and when to pick another tool."}
         />
-        <figure className="hba-figure">
-          <Image
-            src="/img/agents/audit-before-after.png"
-            alt={de ? "Vorher/Nachher Terminal-Scorecard: 40/100 Grade D auf 100/100 Grade A" : "Before and after terminal scorecard: 40/100 Grade D to 100/100 Grade A"}
-            width={1600}
-            height={900}
-            unoptimized
-          />
-        </figure>
-        <div className="hba-cmd">
-          <CopyBlock kind="terminal" label={de ? "Prüfen & mit einem Befehl härten ([Y/n])" : "Audit & auto-harden in one command ([Y/n])"} text={`${AUDIT_COMMAND}\n${FIX_COMMAND}`} lang={lang} />
+        <div className="grid3 hcards">
+          {(de
+            ? [
+                {
+                  k: "01 · Solo-Dev & Power-User",
+                  icon: "fuse" as FeatureIconKind,
+                  t: "Claude Code, Cursor & Cron über Nacht",
+                  d: "Nie wieder morgens bei einer 120-$-Retry-Schleife oder einer seit 5 Stunden auf „Ja“ wartenden Session aufwachen. Lokale Bremse + Telegram/Slack gratis (bis 5 Agents).",
+                },
+                {
+                  k: "02 · CTO, VP Eng & Security (10–200 Devs)",
+                  icon: "gdpr" as FeatureIconKind,
+                  t: "Shadow-MCP-Kontrolle ohne DSGVO-Blocker",
+                  d: "Ungepinnte npx-MCPs, Klartext-API-Keys & Bash(*)-Regeln über alle Entwickler-Laptops erkennen und absichern — 0 Prompts verlassen das Gerät, EU-Server in Deutschland.",
+                },
+                {
+                  k: "03 · DevOps, Agentur & Multi-Server",
+                  icon: "team" as FeatureIconKind,
+                  t: "Alle Runner, Server & Crons auf einem Schirm",
+                  d: "Claude Code, Cursor, Codex, Gemini, Antigravity, GitHub Actions & Crontabs (`--every 24h`, maskiertes `--tail`) gebündelt plus MCP-Abfrage (`get_fleet_status`).",
+                },
+              ]
+            : [
+                {
+                  k: "01 · Solo Builder & Power User",
+                  icon: "fuse" as FeatureIconKind,
+                  t: "Running Claude Code, Cursor & cron overnight",
+                  d: "Never wake up to a $120 retry spiral or a session stuck on “Allow?” for 5 hours. Local <2 ms circuit breaker + instant Telegram & Slack alerts free for 5 agents.",
+                },
+                {
+                  k: "02 · CTO, VP Eng & Security (10–200 Devs)",
+                  icon: "gdpr" as FeatureIconKind,
+                  t: "Shadow MCP governance with zero prompt leakage",
+                  d: "Catch unpinned npx MCP servers, inline JSON secrets, and wildcard permissions across every laptop — zero prompts or code leave devices, EU servers in Germany.",
+                },
+                {
+                  k: "03 · DevOps, Agencies & Multi-Server Ops",
+                  icon: "team" as FeatureIconKind,
+                  t: "Every coding harness, CI runner & cron in one list",
+                  d: "Unify Claude Code, Cursor, Codex, Gemini, Antigravity, GitHub Actions, and cron (`--every 24h`, masked `--tail`) with one morning briefing and MCP fleet queries.",
+                },
+              ]
+          ).map((item) => (
+            <article className="card hcard" key={item.t}>
+              <div className="hcard-top">
+                <span className="hcard-ico"><FeatureIcon kind={item.icon} /></span>
+                <p className="smallcaps">{item.k}</p>
+              </div>
+              <h3>{item.t}</h3>
+              <p>{item.d}</p>
+            </article>
+          ))}
+        </div>
+        <div className="callout mid hicp-not">
+          <span className="tag">{de ? "Nicht für dich, wenn…" : "Not for you if…"}</span>
+          <p style={{ margin: 0 }}>
+            {de
+              ? "Du Prompt-Texte, LLM-Antworten oder Token-Spans innerhalb deiner eigenen KI-App debuggen willst → dafür sind Langfuse oder LangSmith gebaut. Agent Tracking sieht Prompts absichtlich nie."
+              : "You want to debug prompt wording, evaluate model answers, or trace tokens inside an AI app you sell → use Langfuse or LangSmith. Agent Tracking deliberately never sees prompts."}
+          </p>
         </div>
       </section>
+
+      <div className="hband">
+        <section className="shell hsec" id="autofix">
+          <Head
+            kick={de ? "Echter MacBook-Lauf · Vorher → Nachher" : "Real MacBook run · Before → After"}
+            title={de ? "Von 40/100 (Grade D) auf 100/100 (Grade A) in 2 Minuten" : "From 40/100 (Grade D) to 100/100 (Grade A) in 2 minutes"}
+            dek={de
+              ? "Echte Terminal-Screenshots ohne Fake-Mockup: Erst 100 % offline prüfen (`audit`), dann mit `agenttracking fix` Schutzbremse, MCP-Version-Pinning & chmod-600-Secrets vollautomatisch mit Backup härten."
+              : "Unedited macOS terminal screenshots — no fake mockup. Audit 100% offline first, then run `agenttracking fix` to arm guardrails, pin every npx MCP version, and move inline secrets safely with automatic backups."}
+          />
+          <div className="hreal-grid">
+            <figure className="card hreal-card">
+              <div className="hreal-head">
+                <span className="chip fail">1 · BEFORE · 40/100 GRADE D</span>
+                <span>{de ? "Typischer Entwickler-Mac: 9 ungepinnte MCPs, 3 Klartext-Keys, keine Loop-Bremse" : "Typical dev MacBook: 9 unpinned MCPs, 3 inline secret keys, no loop fuse"}</span>
+              </div>
+              <Image src="/img/agents/real-audit-40.webp" alt={de ? "Echter Terminal-Screenshot: 40/100 Grade D vor der Härtung" : "Real terminal screenshot: 40/100 Grade D before hardening"} width={1400} height={1160} unoptimized />
+            </figure>
+            <figure className="card hreal-card">
+              <div className="hreal-head">
+                <span className="chip warn">2 · AFTER GUARD · 80/100 GRADE B</span>
+                <span>{de ? "1 Sekunde nach `guard` + `connect all`: 4 Harnesses + Schutzbremse aktiv" : "1 second after `guard` + `connect all`: 4 harnesses + local fuse active"}</span>
+              </div>
+              <Image src="/img/agents/real-audit-80.webp" alt={de ? "Echter Terminal-Screenshot: 80/100 Grade B nach lokalem Guard" : "Real terminal screenshot: 80/100 Grade B after enabling local guard"} width={1400} height={1120} unoptimized />
+            </figure>
+          </div>
+          <figure className="card hreal-win">
+            <div className="hreal-head">
+              <span className="chip pass">3 · AFTER `agenttracking fix` · 100/100 GRADE A</span>
+              <span>{de ? "Alle 9 npx-MCP-Server exakt gepinnt, 3 Keys sicher in chmod-600 secrets.env ausgelagert" : "All 9 npx MCP servers version-pinned, 3 secret keys safely moved to chmod-600 secrets.env"}</span>
+            </div>
+            <Image src="/img/agents/real-fix-100.webp" alt={de ? "Echter Terminal-Screenshot: Already hardened! Score 100/100 Grade A" : "Real terminal screenshot: Already hardened! Score 100/100 Grade A"} width={1320} height={212} unoptimized />
+          </figure>
+          <div className="hba-cmd">
+            <CopyBlock
+              kind="terminal"
+              label={de ? "Welchen Score hat dein Rechner? (100 % offline · teilbare Scorecard)" : "What's your laptop's Agent Safety Score? (100% offline · shareable)"}
+              text={`brew install shufflethis/tap/agenttracking\n${AUDIT_COMMAND} --share\n${FIX_COMMAND}`}
+              lang={lang}
+            />
+          </div>
+        </section>
+      </div>
 
       <section className="shell hsec" id="architecture">
         <Head kick={c.kick.motion} title={c.motionTitle} dek={c.motionDek} />
