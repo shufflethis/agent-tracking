@@ -11,14 +11,18 @@ Stop runaway overnight retry loops, catch shadow MCP servers & config drift, and
 ## Try it 100% offline in 10 seconds (no account required)
 
 ```sh
-# 1. Local MCP, permission, cron & guardrail audit (zero network calls)
+# 1. Install via Homebrew (macOS / Linux) and run 100% offline audit (zero network calls)
+brew install shufflethis/tap/agenttracking
+agenttracking audit
+
+# Or without Homebrew (SHA-256 verified installer):
 curl -fsSL https://agenttracking.co/install.sh | sh -s -- audit
 
 # 2. Enable the local loop & destructive shell circuit breaker (<2 ms on-device)
 agenttracking guard --max-failures 5 --max-calls 80 --max-minutes 45 --block-destructive on
 
 # 3. Connect hooks across Claude Code, Cursor, Codex, Gemini & Antigravity
-curl -fsSL https://agenttracking.co/install.sh | sh -s -- connect all
+agenttracking connect all
 ```
 
 Want to inspect the UI first? Click through the [interactive live fleet demo](https://agenttracking.co/demo/fleet) with zero login.
