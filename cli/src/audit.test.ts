@@ -21,14 +21,14 @@ function withSandbox(fn: (dirs: { home: string; userHome: string; cwd: string })
   }
 }
 
-test("audit flags unpinned npx MCPs, cleartext http MCPs, inline secrets, broad permissions and missing guard without leaking secret values", () => {
+test("audit flags exact MCP server names, files and env key names without EVER leaking secret values", () => {
   withSandbox(({ home, userHome, cwd }) => {
     mkdirSync(join(userHome, ".claude"), { recursive: true });
     writeFileSync(join(userHome, ".claude", "settings.json"), JSON.stringify({
       permissions: { allow: ["Bash(*)", "Read"] },
       mcpServers: {
-        unpinned: { command: "npx", args: ["-y", "@example/mcp-server"], env: { API_TOKEN: "super-secret-value-99999" } },
-        cleartext: { url: "http://mcp.remote.example.com/sse" },
+        playwright: { command: "npx", args: ["-y", "@playwright/mcp"], env: { API_TOKEN: "super-secret-value-99999" } },
+        cleartextSrv: { url: "http://mcp.remote.example.com/sse" },
         localOk: { url: "http://127.0.0.1:8787/mcp" },
       },
     }));
@@ -43,10 +43,17 @@ test("audit flags unpinned npx MCPs, cleartext http MCPs, inline secrets, broad 
     assert.equal(r.guardActive, false);
     assert.ok(r.score < 50, `expected low score, got ${r.score}`);
 
-    const text = formatAuditReport(r);
+    const text = formatAuditReport(r, { color: false });
     assert.ok(!text.includes("super-secret-value-99999"), "secret values must never appear in audit output");
-    assert.ok(text.includes("[HIGH]"));
-    assert.ok(text.includes("unpinned npx"));
+    assert.ok(text.includes("playwright"), "must name the specific unpinned MCP server");
+    assert.ok(text.includes("@playwright/mcp"), "must name the unpinned npx package");
+    assert.ok(text.includes("API_TOKEN"), "must name the flagged env key");
+    assert.ok(text.includes("~/.claude/settings.json"), "must show which config file to edit");
+    assert.ok(text.includes("NEXT STEPS TO REACH GRADE A"), "must include concrete step-by-step plan");
+
+    const shared = formatAuditReport(r, { color: false, share: true });
+    assert.ok(!shared.includes("~/.claude/settings.json"), "share mode must hide local file paths");
+    assert.ok(!shared.includes("super-secret-value-99999"), "share mode must never leak secret values");
   });
 });
 
@@ -71,5 +78,8 @@ test("audit gives grade A when guard, hooks, pinned MCPs and wrapped crons are c
     assert.equal(r.cleartextHttpMcps, 0);
     assert.equal(r.mcpInlineSecretsCount, 0);
     assert.equal(r.unwrappedCronCount, 0);
+
+    const text = formatAuditReport(r, { color: false });
+    assert.ok(text.includes("Grade A!"));
   });
 });

@@ -22,7 +22,7 @@ const HELP = `agenttracking: see what your agents did while you slept
                                       track claude | agy | cursor | codex | gemini | all
   agenttracking disconnect <target> [--project]
                                       remove hooks for claude | agy | cursor | codex | gemini | all
-  agenttracking audit [--json]        100% offline security, MCP & cost-readiness audit (no login)
+  agenttracking audit [--share|--json] 100% offline security, MCP & cost-readiness audit (no login)
   agenttracking doctor                check hooks, crontab jobs and local MCP count
   agenttracking wrap --name <n> [--kind cron|agy|codex|...] [--every 24h] [--tail 20] -- <cmd...>
                                       run a cron/CI command and report start, end, exit code
