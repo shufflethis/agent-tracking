@@ -299,6 +299,7 @@ export const COPY_JA: MonitoringHomeCopy = {
     { q: "どのコーディングエージェントに対応していますか？", a: "Claude Code、Cursor、Codex CLI、Gemini CLI、Google Antigravity (agy) に非破壊ネイティブフック（`connect all`）で対応。さらに任意のCron・GitHub Actionsは `wrap`、独自エージェントはOpenTelemetry (OTLP) で監視できます。" },
     { q: "厳格なセキュリティ審査やGDPR要件のチームでも使えますか？", a: "はい。ソースコードも顧客データもプロンプトも端末外に出さないゼロプロンプト設計で、ドイツ(EU)サーバー運用、DPA対応、さらにAGPL-3.0での完全セルフホストも可能です。" },
     { q: "既存のClaude CodeやCursorのフックは上書きされますか？", a: "上書きされません。`connect` は自社エントリのみを安全にマージし、タイムスタンプ付きバックアップを保存します。`disconnect` も自社エントリだけを綺麗に削除します。" },
+    { q: "Agent Tracking を完全にアンインストールして元の状態に戻せますか？", a: "はい、綺麗に元へ戻せます。`agenttracking disconnect all`（独自フックを残したまま当社フックのみ削除）を実行し、`brew uninstall agenttracking`（または `~/.local/bin/agenttracking` を削除）と `rm -rf ~/.agenttracking` を行うだけです。`agenttracking fix` でMCPシークレットを `~/.agenttracking/secrets.env` へ移している場合は、削除前に自動作成された `*.bak-agenttracking-*` バックアップを戻してください。" },
     { q: "Agent Tracking が向かない用途は？", a: "自社LLMアプリのプロンプト調整、出力評価、トークンスパンの詳細デバッグが目的なら Langfuse・LangSmith・AgentOps をお使いください。Agent Trackingは意図的にプロンプトを見ません。" },
     { q: "無料のWebサイトAI分析ツールはどこにありますか？", a: "AIリファラル・検証済みクローラー・WebMCP計測を行うクッキーレス無料ツールは、フッターのリンク (/websites) から引き続き無料でご利用いただけます。" },
   ],

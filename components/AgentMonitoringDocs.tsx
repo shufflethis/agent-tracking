@@ -31,7 +31,17 @@ ${CLI_COMMAND} wrap --kind codex --name nightly-review --tail 20 -- codex exec "
   guard: `${CLI_COMMAND} guard --max-failures 5 --max-calls 80 --max-minutes 45 --block-destructive on
 ${CLI_COMMAND} pause --reason "deploy freeze"
 ${CLI_COMMAND} resume`,
-  off: `${CLI_COMMAND} disconnect all`,
+  off: `# 1. Remove Agent Tracking hooks cleanly (keeps your own hooks intact)
+${CLI_COMMAND} disconnect all
+# If you also added project-scoped hooks, run inside that repo:
+${CLI_COMMAND} disconnect all --project
+
+# 2. Optional: if you ran 'agenttracking fix', restore *.bak-agenttracking-*
+#    backups before removing ~/.agenttracking/secrets.env
+
+# 3. Uninstall the CLI binary and local state (~/.agenttracking)
+brew uninstall agenttracking          # or: rm -f ~/.local/bin/agenttracking
+rm -rf ~/.agenttracking`,
 };
 
 const LIVE = () => pricingActive();
@@ -125,7 +135,10 @@ export default function AgentMonitoringDocs({ lang }: { lang: "en" | "de" }) {
       <p>{lang === "de" ? "Mit bpftrace und passenden Kernel-Rechten kannst du einen ausgewählten Prozess und neue Unterprozesse zeitlich begrenzt beobachten. Gesendet werden Programmstarts, Dateiöffnungs- und Verbindungsversuche mit gehashten Prozess-IDs. Keine Dateinamen, Adressen, Befehlsargumente oder Inhalte. Ersetze die PID durch deinen Agent-Prozess:" : "With bpftrace and appropriate kernel privileges, observe one selected process and new descendants for a bounded period. Sends process execs, file-open and connection attempts with hashed process IDs. No filenames, addresses, command arguments or contents. Replace the PID with your agent process:"}</p>
       <pre className="code">{`${CLI_COMMAND} observe --pid 12345 --name linux-agent --seconds 60 --max-events 1000`}</pre>
       <p>{lang === "de" ? "--print-program zeigt die Probe ohne Start. Das Modul setzt keine Sperrregeln durch. Es erfasst nicht alle möglichen Datei- oder Netzwerkzugriffe und beweist keine Datenübertragung. Bereits laufende Unterprozesse sind nicht automatisch eingeschlossen." : "--print-program previews the probe without starting it. This module does not enforce blocking rules. It does not capture every possible file/network operation or prove data transfer. Already-running child processes are not automatically included."}</p>
-      <h3 style={{ fontSize: 18 }}>{c.offTitle}</h3>
+      <h3 style={{ fontSize: 18 }} id="uninstall">{lang === "de" ? "Abschalten & vollständig deinstallieren" : "Switch off & clean uninstall"}</h3>
+      <p>{lang === "de"
+        ? "Jede Konfigurationsänderung legt vorher ein zeitgestempeltes Backup neben der Originaldatei an (*.agenttracking-backup-* bzw. *.bak-agenttracking-*). So entfernst du Agent Tracking rückstandslos und stellst den Urzustand wieder her:"
+        : "Every config change writes a timestamped backup next to the original file (*.agenttracking-backup-* / *.bak-agenttracking-*). To remove Agent Tracking cleanly and restore your original setup:"}</p>
       <pre className="code">{CMD.off}</pre>
     </section>
   );
