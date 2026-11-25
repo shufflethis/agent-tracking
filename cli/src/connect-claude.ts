@@ -80,6 +80,13 @@ function save(file: string, raw: string | null, settings: Json): void {
   writeFileSync(file, JSON.stringify(settings, null, 2) + "\n");
 }
 
+export function hasClaudeHooks(settingsPath: string): boolean {
+  const loaded = load(settingsPath);
+  if (loaded === "invalid_json" || loaded.raw === null) return false;
+  const hooks = loaded.settings.hooks as Record<string, HookEntry[]> | undefined;
+  return Boolean(hooks && Object.values(hooks).some((list) => Array.isArray(list) && list.some((e) => isOurs(e))));
+}
+
 export function connectClaude(opts: { settingsPath: string; command: (event: string) => string }): Result {
   const loaded = load(opts.settingsPath);
   if (loaded === "invalid_json") return "invalid_json";

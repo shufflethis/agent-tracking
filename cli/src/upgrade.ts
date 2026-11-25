@@ -1,10 +1,72 @@
 import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
+import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import { createInterface } from "node:readline/promises";
 import { fileURLToPath } from "node:url";
+import { connectClaude, defaultCommand, hasClaudeHooks, installRuntime } from "./connect-claude.js";
+import {
+  agyPathFor, codexPathFor, connectAgy, connectCodex, connectCursor, connectGemini,
+  cursorPathFor, geminiPathFor, hasAgyHooks, hasCodexHooks, hasCursorHooks, hasGeminiHooks,
+} from "./connect-harnesses.js";
 
 const DEFAULT_INSTALL_URL = "https://agenttracking.co/install.sh";
+
+export type RefreshResult = { updated: string[]; already: string[] };
+
+/**
+ * Re-installs the hook runtime for this CLI version and updates hook paths ONLY
+ * for harnesses that already have Agent Tracking connected. Never connects new
+ * harnesses or modifies foreign hooks.
+ */
+export function refreshConnectedHooks(opts: {
+  userHome?: string;
+  home?: string;
+  claudeSettingsPath?: string;
+  cliPath?: string;
+} = {}): RefreshResult {
+  const userHome = opts.userHome ?? homedir();
+  const claudePath = opts.claudeSettingsPath ?? process.env.AGENTTRACKING_CLAUDE_SETTINGS ?? join(userHome, ".claude", "settings.json");
+  const agyPath = agyPathFor("user", userHome);
+  const cursorPath = cursorPathFor("user", userHome);
+  const geminiPath = geminiPathFor("user", userHome);
+  const codexPath = codexPathFor(userHome);
+
+  const targets: { name: string; refresh: (cliPath: string) => string }[] = [];
+  if (hasClaudeHooks(claudePath)) targets.push({ name: "Claude Code", refresh: (c) => connectClaude({ settingsPath: claudePath, command: defaultCommand(c) }) });
+  if (hasAgyHooks(agyPath)) targets.push({ name: "Antigravity (agy)", refresh: (c) => connectAgy({ settingsPath: agyPath, command: defaultCommand(c) }) });
+  if (hasCursorHooks(cursorPath)) targets.push({ name: "Cursor", refresh: (c) => connectCursor({ settingsPath: cursorPath, command: defaultCommand(c) }) });
+  if (hasGeminiHooks(geminiPath)) targets.push({ name: "Gemini CLI", refresh: (c) => connectGemini({ settingsPath: geminiPath, command: defaultCommand(c) }) });
+  if (hasCodexHooks(codexPath)) targets.push({ name: "Codex CLI", refresh: (c) => connectCodex({ configPath: codexPath, cliPath: c }) });
+
+  if (targets.length === 0) return { updated: [], already: [] };
+
+  const cliPath = opts.cliPath ?? installRuntime(opts.home);
+  const updated: string[] = [];
+  const already: string[] = [];
+  for (const t of targets) {
+    const res = t.refresh(cliPath);
+    if (res === "connected") updated.push(t.name);
+    else if (res === "already") already.push(t.name);
+  }
+  return { updated, already };
+}
+
+function logRefreshResult(res: RefreshResult, version: string): void {
+  if (res.updated.length > 0) {
+    console.log(`Updated hook runtime (v${version}) for: ${res.updated.join(", ")}.`);
+  }
+}
+
+function triggerPostUpgradeHookRefresh(): void {
+  const r = spawnSync("agenttracking", ["upgrade", "--refresh-hooks"], {
+    stdio: "inherit",
+    env: process.env,
+  });
+  if (r.error) {
+    console.log("Tip: run 'agenttracking upgrade --refresh-hooks' (or 'agenttracking connect all') to update installed hook runtimes.");
+  }
+}
 
 export function currentCliVersion(): string {
   try {
@@ -40,8 +102,14 @@ export function isHomebrewInstall(scriptPath = fileURLToPath(import.meta.url)): 
 }
 
 export async function runUpgrade(args: string[]): Promise<number> {
-  const autoYes = args.includes("--yes") || args.includes("-y");
   const current = currentCliVersion();
+  if (args.includes("--refresh-hooks")) {
+    const res = refreshConnectedHooks();
+    logRefreshResult(res, current);
+    return 0;
+  }
+
+  const autoYes = args.includes("--yes") || args.includes("-y");
   const origin = (process.env.AGENTTRACKING_ORIGIN ?? "https://agenttracking.co").replace(/\/+$/, "");
   const installUrl = `${origin}/install.sh`;
 
@@ -55,6 +123,7 @@ export async function runUpgrade(args: string[]): Promise<number> {
 
   if (latest && compareSemver(current, latest) >= 0) {
     console.log(`agenttracking v${current} is already up to date.`);
+    logRefreshResult(refreshConnectedHooks(), current);
     return 0;
   }
 
@@ -85,6 +154,7 @@ export async function runUpgrade(args: string[]): Promise<number> {
       stdio: "inherit",
       env: { ...process.env, HOMEBREW_NO_ENV_HINTS: "1" },
     });
+    if ((r.status ?? 1) === 0) triggerPostUpgradeHookRefresh();
     return r.status ?? 1;
   }
 
@@ -92,5 +162,6 @@ export async function runUpgrade(args: string[]): Promise<number> {
   const r = spawnSync("sh", ["-c", `curl -fsSL "${installUrl || DEFAULT_INSTALL_URL}" | sh`], {
     stdio: "inherit",
   });
+  if ((r.status ?? 1) === 0) triggerPostUpgradeHookRefresh();
   return r.status ?? 1;
 }

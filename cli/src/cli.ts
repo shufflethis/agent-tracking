@@ -40,7 +40,8 @@ const HELP = `agenttracking: see what your agents did while you slept
   agenttracking snapshot              preview sanitized configuration metadata
   agenttracking observe --pid <PID> --name <agent> [--seconds 60]
                                       optional Linux eBPF observation (requires bpftrace)
-  agenttracking upgrade [--yes]       upgrade CLI to latest version ([Y/n], Enter = Yes)
+  agenttracking upgrade [--yes|--refresh-hooks]
+                                      upgrade CLI & refresh connected hook runtimes ([Y/n], Enter = Yes)
   agenttracking status                show this machine's connection
   agenttracking flush                 send queued events now
 

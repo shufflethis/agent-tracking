@@ -50,6 +50,13 @@ export const cursorPathFor = (scope: "user" | "project", userHome = homedir(), c
 
 type CursorHookEntry = { command?: string };
 
+export function hasCursorHooks(settingsPath: string): boolean {
+  const loaded = loadJson(settingsPath);
+  if (loaded === "invalid_json" || loaded.raw === null) return false;
+  const hooks = loaded.data.hooks as Record<string, CursorHookEntry[]> | undefined;
+  return Boolean(hooks && Object.values(hooks).some((list) => Array.isArray(list) && list.some((e) => isOurCmd(e?.command))));
+}
+
 export function connectCursor(opts: { settingsPath: string; command: (event: string) => string }): ConnectResult {
   const loaded = loadJson(opts.settingsPath);
   if (loaded === "invalid_json") return "invalid_json";
@@ -103,6 +110,13 @@ export const geminiPathFor = (scope: "user" | "project", userHome = homedir(), c
 type GeminiEntry = { matcher?: string; hooks?: { type?: string; command?: string; timeout?: number }[] };
 const isOursGemini = (e: GeminiEntry) => (e.hooks ?? []).some((h) => isOurCmd(h?.command));
 
+export function hasGeminiHooks(settingsPath: string): boolean {
+  const loaded = loadJson(settingsPath);
+  if (loaded === "invalid_json" || loaded.raw === null) return false;
+  const hooks = loaded.data.hooks as Record<string, GeminiEntry[]> | undefined;
+  return Boolean(hooks && Object.values(hooks).some((list) => Array.isArray(list) && list.some((e) => isOursGemini(e))));
+}
+
 export function connectGemini(opts: { settingsPath: string; command: (event: string) => string }): ConnectResult {
   const loaded = loadJson(opts.settingsPath);
   if (loaded === "invalid_json") return "invalid_json";
@@ -151,6 +165,18 @@ const CODEX_COMMENT = "# agenttracking";
 export function buildCodexNotifyLine(execPath: string, cliPath: string): string {
   const esc = (s: string) => JSON.stringify(s);
   return `notify = [${esc(execPath)}, ${esc(cliPath)}, "hook", "CodexNotify", "${MARKER}"] ${CODEX_COMMENT}`;
+}
+
+export function hasCodexHooks(configPath: string): boolean {
+  if (!existsSync(configPath)) return false;
+  const lines = readFileSync(configPath, "utf8").split(/\r?\n/);
+  const firstTable = lines.findIndex((l) => /^\s*\[/.test(l));
+  const topEnd = firstTable === -1 ? lines.length : firstTable;
+  for (let i = 0; i < topEnd; i++) {
+    const trimmed = lines[i].trim();
+    if (/^notify\s*=/.test(trimmed) && (lines[i].includes(CODEX_COMMENT) || lines[i].includes("agenttracking"))) return true;
+  }
+  return false;
 }
 
 export function connectCodex(opts: { configPath: string; execPath?: string; cliPath: string }): ConnectResult {
@@ -205,6 +231,11 @@ export function disconnectCodex(opts: { configPath: string }): ConnectResult {
 export function agyPathFor(scope: "user" | "project", userHome = homedir(), cwd = process.cwd()): string {
   if (scope === "user") return join(userHome, ".gemini", "config", "hooks.json");
   return existsSync(join(cwd, ".agent", "hooks.json")) ? join(cwd, ".agent", "hooks.json") : join(cwd, ".agents", "hooks.json");
+}
+
+export function hasAgyHooks(settingsPath: string): boolean {
+  const loaded = loadJson(settingsPath);
+  return loaded !== "invalid_json" && loaded.raw !== null && "agenttracking" in loaded.data;
 }
 
 export function connectAgy(opts: { settingsPath: string; command: (event: string) => string }): ConnectResult {
