@@ -26,7 +26,7 @@ test("during the beta everyone has the Pro limits", () => {
 
 test("after the start the stored plan applies", () => {
   const free = effectiveAgentPlan("free", NOW, STARTED);
-  assert.deepEqual([free.agents, free.webhooks, free.otlp, free.checks], [5, false, false, false]);
+  assert.deepEqual([free.agents, free.webhooks, free.otlp, free.checks], [5, true, false, false]);
   assert.equal(effectiveAgentPlan("pro", NOW, STARTED).agents, 500);
   assert.equal(effectiveAgentPlan(null, NOW, STARTED).agents, 5);
   assert.equal(effectiveAgentPlan("agency", NOW, STARTED).agents, 5, "unknown values fall back to free");

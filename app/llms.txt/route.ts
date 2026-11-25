@@ -1,42 +1,56 @@
 import { CONNECT_CLAUDE } from "@/lib/agents/format";
+import { AUDIT_ONE_LINER, GUARD_EXAMPLE } from "@/lib/agents/setup";
 import { GITHUB_URL, SITE_HOST, SITE_ORIGIN } from "@/lib/site";
 import { guides } from "@/lib/guides";
 
 export const revalidate = 3600;
 
+const agentGuides = guides("en").filter((g) => g.category === "agents");
+
 const BODY = `# ${SITE_HOST}
 
-> Agent Tracking shows what AI agents are doing, on two sides. Your own agents: Claude Code sessions, cron jobs and OpenTelemetry traces on one list, with stuck, missing, failed and looping runs, session timelines, a morning briefing in your local time zone and alerts; no prompts or tool output are sent. Agents on your website: recognized assistant referrals, supported browser WebMCP observations, optional origin-log crawler evidence and site-server outcome receipts; the snippet sets no cookies. Open source (AGPL-3.0), hosted in Germany, self-hostable.
+> Agent Tracking is an open-source (AGPL-3.0) zero-prompt circuit breaker, MCP security auditor, and fleet monitor for Claude Code, Cursor, Codex CLI, Gemini CLI, Google Antigravity (agy), and cron jobs. It blocks runaway tool loops and destructive shell commands locally in under 2 ms, audits local MCP configs for unpinned npx packages, cleartext http:// endpoints and wildcard permissions, and sends instant Telegram, Slack, Discord, webhook and email alerts (free for up to 5 agents) without ever transmitting prompts, source code, or secrets. Hosted on servers in Germany (EU) and self-hostable as a single Node.js + SQLite process.
 
-Connect a machine: \`${CONNECT_CLAUDE}\`
+## Quick start (zero account required for audit & guard)
+
+- 100% offline MCP & cost-readiness audit: \`${AUDIT_ONE_LINER}\`
+- Local loop & destructive shell fuse: \`${GUARD_EXAMPLE}\`
+- Connect hooks across all supported coding agents: \`${CONNECT_CLAUDE}\`
+- Interactive live fleet demo (no login): ${SITE_ORIGIN}/demo/fleet
+
+## Pricing
+
+- Free ($0 forever): up to 5 agents, unlimited offline \`audit\` and local \`guard\`, instant Telegram, Slack, Discord, webhook & email alerts, daily morning briefing, read-only API & MCP (\`get_fleet_status\`), 30 days history.
+- Pro ($9/mo or $90/yr): unlimited agents (up to 500), MCP & config drift alerts (\`CLAUDE.md\`, permissions, plugins), first-time tool & runaway loop server signals, OpenTelemetry OTLP ingest, named task checks.
+- Team & Governance (from $99/mo): shared engineering fleet, shadow-MCP inventory across laptops, centralized guardrail policies, GDPR-ready EU hosting, audit export, invoice billing.
+- Self-hosted ($0, AGPL-3.0): complete source code at ${GITHUB_URL}.
 
 ## Not to be confused with
 
-The name is shared with other things. Agent Tracking is not an LLM tracing platform for prompts, spans and token cost (AgentOps, LangSmith, Langfuse), not call-centre or support-agent workforce tracking, not field-sales or GPS tracking, not parcel or air-waybill tracking, and not a bot blocker. It is also unrelated to the similarly named Agent Track (agenttrack.io, a CRM for real-estate agents), AgencyTrack (agencytrack.app, insurance agency management), AgenTrak (employee monitoring) and agent-KPI automation services. Category: agent monitoring for your own agents, and AI agent analytics for websites. agenttracking.co is operated by FINAL MASTER LLC and the software is open source at ${GITHUB_URL}.
+Agent Tracking is not an LLM prompt-tracing platform (Langfuse, LangSmith, AgentOps — which log prompts and tokens inside custom LLM apps), not call-centre or workforce tracking, not GPS/sales tracking, and not a bot blocker. Category: coding-agent guardrails, MCP security & drift monitoring, and operational fleet monitoring.
 
-## Read first
+## Flagship engineering guides
 
-- [Everything on one page](${SITE_ORIGIN}/llms-full.txt): what it does, what it sees, how it differs from analytics and bot managers, plans, API, FAQ, as Markdown.
+${agentGuides.map((g) => `- [${g.question}](${SITE_ORIGIN}/guides/${g.slug}): ${g.summary}`).join("\n")}
 
-- [How it works and how to install it](${SITE_ORIGIN}/docs): agent monitoring setup, the snippet, verification, the four views, the stats API and the MCP tool.
-- [Changelog](${SITE_ORIGIN}/changelog): what is new, with a copy-paste command or Claude Code prompt for each change.
-- [AI agents on your website](${SITE_ORIGIN}/websites): the website analytics side.
-- [Demo page](${SITE_ORIGIN}/demo): two WebMCP tools you can call and watch appear in a dashboard.
-- [Source code](${GITHUB_URL}): the whole product, including the ingest, the dashboard and the cron jobs.
+## Key pages
 
-## Guides, one question each
+- [Interactive live fleet demo (no login)](${SITE_ORIGIN}/demo/fleet)
+- [Documentation](${SITE_ORIGIN}/docs)
+- [Changelog](${SITE_ORIGIN}/changelog)
+- [Everything on one page (Markdown)](${SITE_ORIGIN}/llms-full.txt)
+- [Source code on GitHub (AGPL-3.0)](${GITHUB_URL})
+- [Free bonus tool: Website AI analytics](${SITE_ORIGIN}/websites)
 
-${guides("en").map((g) => `- [${g.question}](${SITE_ORIGIN}/guides/${g.slug}): ${g.summary}`).join("\n")}
+## API & MCP
 
-## For agents with an API token
-
-- Fleet API (your own monitored agents): GET ${SITE_ORIGIN}/api/agents/fleet with Authorization: Bearer <token>.
-- Website Stats API: GET ${SITE_ORIGIN}/api/stats/{domain}?days=30 with Authorization: Bearer <token>.
-- MCP endpoint: POST ${SITE_ORIGIN}/api/mcp (streamable HTTP, tools: get_fleet_status, get_agent_stats).
+- Fleet API: GET ${SITE_ORIGIN}/api/agents/fleet (Authorization: Bearer <token>)
+- OTLP/HTTP JSON ingest: POST ${SITE_ORIGIN}/api/agents/otlp
+- MCP endpoint: POST ${SITE_ORIGIN}/api/mcp (streamable HTTP, tool: \`get_fleet_status\`)
 
 ## Legal
 
-- [Privacy](${SITE_ORIGIN}/privacy), [Terms](${SITE_ORIGIN}/terms), [Data processing agreement](${SITE_ORIGIN}/dpa), [Imprint](${SITE_ORIGIN}/imprint).
+- [Privacy](${SITE_ORIGIN}/privacy), [Terms](${SITE_ORIGIN}/terms), [DPA](${SITE_ORIGIN}/dpa), [Imprint](${SITE_ORIGIN}/imprint).
 `;
 
 export function GET() {

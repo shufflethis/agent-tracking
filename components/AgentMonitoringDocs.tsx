@@ -1,4 +1,5 @@
 import { CLI_COMMAND, CLI_INSTALL, CLI_SHA256, CLI_VERIFY, DOCTOR_COMMAND } from "@/lib/agents/format";
+import { AUDIT_ONE_LINER } from "@/lib/agents/setup";
 import AgentConnectionScope from "@/components/AgentConnectionScope";
 import { AGENT_PLANS, AGENT_PRO_PRICE, pricingActive } from "@/lib/agents/plans";
 import { SITE_ORIGIN } from "@/lib/site";
@@ -7,6 +8,8 @@ import { AGENT_EVENT_RETENTION_DAYS, AGENT_TAIL_RETENTION_DAYS, RAW_RETENTION_DA
 /** Docs section "Monitor your own agents", EN and DE. Field list matches lib/agents/ingest.ts. */
 
 const CMD = {
+  audit: `${AUDIT_ONE_LINER}
+${CLI_COMMAND} audit --json`,
   login: `${CLI_INSTALL}
 ${CLI_COMMAND} login`,
   claude: `${CLI_COMMAND} connect claude
@@ -33,10 +36,10 @@ ${CLI_COMMAND} resume`,
 
 const LIVE = () => pricingActive();
 const PRICE_EN = () => LIVE()
-  ? `Free: ${AGENT_PLANS.free.agents} agents with local-timezone morning briefing, email alerts and read-only API/MCP. Pro: unlimited agents, every channel, alerts on configuration changes, first-time tools and runaway error loops, OpenTelemetry and task checks, $${AGENT_PRO_PRICE.month}/month or $${AGENT_PRO_PRICE.year}/year.`
+  ? `Free: ${AGENT_PLANS.free.agents} agents with local offline audit & guardrails, local-timezone morning briefing, instant Telegram, Slack, Discord, webhook & email alerts, and read-only API/MCP. Pro: unlimited agents, alerts on MCP & config drift, first-time tools and runaway error loops, OpenTelemetry and task checks, $${AGENT_PRO_PRICE.month}/month or $${AGENT_PRO_PRICE.year}/year.`
   : `Free during the beta, up to ${AGENT_PLANS.pro.agents} agents and 50,000 events a month.`;
 const PRICE_DE = () => LIVE()
-  ? `Free: ${AGENT_PLANS.free.agents} Agents mit Morgen-Briefing in deiner Zeitzone, E-Mail-Meldungen sowie Lese-API und MCP. Pro: unbegrenzte Agents, alle Kanäle, Meldungen bei Konfigurationsänderungen, neuen Tools und Fehlerschleifen, OpenTelemetry und Task-Checks, ${AGENT_PRO_PRICE.month} $/Monat oder ${AGENT_PRO_PRICE.year} $/Jahr.`
+  ? `Free: ${AGENT_PLANS.free.agents} Agents mit 100 % Offline-Audit & Guardrails, Morgen-Briefing in deiner Zeitzone, Sofort-Meldungen an Telegram, Slack, Discord, Webhook & E-Mail sowie Lese-API und MCP. Pro: unbegrenzte Agents, Meldungen bei MCP- & Konfigurations-Drift, neuen Tools und Fehlerschleifen, OpenTelemetry und Task-Checks, ${AGENT_PRO_PRICE.month} $/Monat oder ${AGENT_PRO_PRICE.year} $/Jahr.`
   : `Kostenlos während der Beta, bis ${AGENT_PLANS.pro.agents} Agents und 50.000 Events im Monat.`;
 
 const COPY = {
@@ -44,6 +47,7 @@ const COPY = {
     title: "Monitor your own agents",
     get intro() { return `The other side of agent traffic: what your own Claude Code loops and cron jobs did while you were away. ${PRICE_EN()}`; },
     steps: [
+      ["0. Optional 100% offline MCP & guardrail audit (no account)", "Scans local Claude Code, Cursor, Codex, Gemini & Antigravity hooks, unpinned npx MCP servers, cleartext http:// endpoints, wildcard permissions, unwrapped crons and missing loop guardrails without sending a single byte.", CMD.audit],
       ["1. Connect this machine", "Shows a code and opens the browser; confirm it while signed in. Each machine gets its own token you can revoke in the settings.", CMD.login],
       ["2. Track Claude Code, Cursor, Codex CLI or Gemini CLI", "Adds non-destructive hooks to ~/.claude/settings.json, ~/.cursor/hooks.json, ~/.codex/config.toml or ~/.gemini/settings.json (a backup is written next to each file, your own hooks stay). Add --project for project-scoped hooks.", CMD.claude],
       ["3. Inspect local hooks and cron jobs", "Scans connection state, Claude hooks, local MCP server counts and unwrapped crontab schedules on this machine without sending data.", CMD.doctor],
@@ -60,6 +64,7 @@ const COPY = {
     title: "Eigene Agents überwachen",
     get intro() { return `Die andere Seite von Agent-Traffic: was deine eigenen Claude-Code-Loops und Cron-Jobs gemacht haben, während du weg warst. ${PRICE_DE()}`; },
     steps: [
+      ["0. Optionales 100 % Offline-MCP- & Sicherheits-Audit (kein Konto)", "Prüft lokal Claude Code, Cursor, Codex, Gemini & Antigravity, ungepinnte npx-MCPs, Klartext-http://-Endpunkte, Wildcard-Permissions, ungesicherte Crons und fehlende Loop-Guardrails ohne ein Byte zu senden.", CMD.audit],
       ["1. Maschine verbinden", "Zeigt einen Code und öffnet den Browser; bestätige ihn, während du angemeldet bist. Jede Maschine bekommt ein eigenes Token, das du in den Einstellungen widerrufen kannst.", CMD.login],
       ["2. Claude Code, Cursor, Codex CLI oder Gemini CLI verbinden", "Trägt schonend Hooks in ~/.claude/settings.json, ~/.cursor/hooks.json, ~/.codex/config.toml oder ~/.gemini/settings.json ein (daneben entsteht jeweils ein Backup, eigene Hooks bleiben). Mit --project projektbezogen im aktuellen Ordner.", CMD.claude],
       ["3. Lokale Hooks und Cron-Jobs prüfen", "Prüft Verbindungsstatus, Claude-Hooks, lokale MCP-Anzahl und noch nicht umschlossene Crontab-Einträge rein lokal, ohne Daten zu senden.", CMD.doctor],

@@ -21,7 +21,6 @@ export default function SiteChrome({ locale, children }: { locale: Locale; child
     { href: `${L("/")}#plans`, label: d.nav.pricing },
     { href: L("/docs"), label: d.nav.docs },
     { href: L("/changelog"), label: d.nav.changelog },
-    { href: L("/websites"), label: d.nav.websites },
     { href: L("/guides"), label: d.nav.guides },
   ];
 

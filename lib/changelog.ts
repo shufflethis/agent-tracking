@@ -1,5 +1,5 @@
 import { CLI_COMMAND, CONNECT_CLAUDE, DOCTOR_COMMAND } from "@/lib/agents/format";
-import { claudeSetupPrompt, GUARD_EXAMPLE } from "@/lib/agents/setup";
+import { AUDIT_ONE_LINER, claudeSetupPrompt, GUARD_EXAMPLE } from "@/lib/agents/setup";
 import { SITE_ORIGIN } from "@/lib/site";
 import { snippetFor } from "@/lib/tracking/snippet";
 
@@ -29,6 +29,33 @@ const SNIPPET_PROMPT: L = {
 };
 
 export const ENTRIES: Entry[] = [
+  {
+    date: "2026-11-25",
+    tag: "agents",
+    title: {
+      en: "CLI 0.6.1: 100% offline `audit` scanner, Telegram/Slack/Discord unlocked on Free, and interactive `/demo/fleet` sandbox",
+      de: "CLI 0.6.1: 100 % Offline-`audit`-Scanner, Telegram/Slack/Discord im Free-Plan freigeschaltet & interaktive `/demo/fleet`-Sandbox",
+    },
+    body: {
+      en: "Run `agenttracking audit` completely offline with zero account to score your machine (0–100) for unpinned npx MCP servers, cleartext http:// remote MCPs, inline JSON secret keys, blanket Bash(*) permissions, unwrapped cron jobs, and missing loop guardrails. Instant Telegram, Slack, Discord and generic webhook alerts are now included in the Free plan (up to 5 agents), and anyone can explore blocked loops, MCP drift and zero-prompt timelines in the browser at `/demo/fleet` with no login.",
+      de: "Führe `agenttracking audit` komplett offline und ohne Account aus, um deine Maschine (0–100 Punkte) auf ungepinnte npx-MCP-Server, Klartext-http://-Remote-MCPs, Inline-Secret-Keys, Wildcard-Permissions, ungesicherte Crons und fehlende Loop-Guardrails zu prüfen. Sofort-Alerts an Telegram, Slack, Discord und Webhooks sind ab sofort im Free-Plan (bis 5 Agents) enthalten, und unter `/demo/fleet` lässt sich das Dashboard ohne Login live ausprobieren.",
+    },
+    points: {
+      en: [
+        "100% offline security & cost audit: `agenttracking audit` and `agenttracking audit --json`",
+        "Telegram, Slack, Discord & webhook alerts unlocked in the Free plan (5 agents)",
+        "Zero-login interactive fleet sandbox at `/demo/fleet` + 5 new engineering guides (Hooks, Cost Loops, MCP Security, Stuck Sessions, Cron)",
+      ],
+      de: [
+        "100 % Offline-Sicherheits- & Kosten-Audit: `agenttracking audit` und `agenttracking audit --json`",
+        "Telegram-, Slack-, Discord- & Webhook-Alerts im Free-Plan (5 Agents) freigeschaltet",
+        "Interaktive Live-Demo ohne Login unter `/demo/fleet` + 5 neue Praxis-Guides (Hooks, Kosten-Loops, MCP-Sicherheit, Hänger, Cron)",
+      ],
+    },
+    how: {
+      terminal: `${AUDIT_ONE_LINER}\n${GUARD_EXAMPLE}`,
+    },
+  },
   {
     date: "2026-11-16",
     tag: "agents",

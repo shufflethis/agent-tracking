@@ -1,4 +1,6 @@
 import type { DashLang } from "@/lib/tracking/copy";
+import type { DiagramKind } from "@/components/GuideDiagram";
+import { AGENT_GUIDES_DE, AGENT_GUIDES_EN } from "./agent-guides";
 import { WORKFLOW_GUIDES_DE, WORKFLOW_GUIDES_EN } from "./workflow-guides";
 import { SEO_GUIDES_DE, SEO_GUIDES_EN } from "@/lib/seo-guides";
 
@@ -9,14 +11,25 @@ import { SEO_GUIDES_DE, SEO_GUIDES_EN } from "@/lib/seo-guides";
  * llms.txt, with Article and FAQ schema on each page.
  */
 
-export type GuideSection = { h: string; p: string[]; code?: string; codeLang?: string };
+export type GuideSection = {
+  h: string;
+  p: string[];
+  code?: string;
+  codeLang?: string;
+  table?: { headers: string[]; rows: string[][] };
+  callout?: { tag: string; text: string };
+  diagram?: DiagramKind;
+};
 export type Guide = {
   slug: string;
+  category?: "agents" | "websites";
   question: string;
   title: string;
   summary: string;
+  heroImage?: { src: string; alt: string; caption: string };
   sections: GuideSection[];
   faq: { q: string; a: string }[];
+  sources?: { label: string; url: string }[];
   related: string[];
   /** Original publication date when the article has since been revised. */
   published?: string;
@@ -838,7 +851,9 @@ const DE: Guide[] = [
 ];
 
 export function guides(lang: DashLang): Guide[] {
-  return lang === "de" ? [...DE, ...SEO_GUIDES_DE, ...WORKFLOW_GUIDES_DE] : [...EN, ...SEO_GUIDES_EN, ...WORKFLOW_GUIDES_EN];
+  return lang === "de"
+    ? [...AGENT_GUIDES_DE, ...DE, ...SEO_GUIDES_DE, ...WORKFLOW_GUIDES_DE]
+    : [...AGENT_GUIDES_EN, ...EN, ...SEO_GUIDES_EN, ...WORKFLOW_GUIDES_EN];
 }
 
 export function guideBySlug(lang: DashLang, slug: string): Guide | undefined {

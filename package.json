@@ -1,7 +1,7 @@
 {
   "name": "agent-tracking",
   "version": "0.1.0",
-  "description": "Measure what AI agents do on your website: referrals, fetches, WebMCP tool calls and conversions. One line of script, no cookies, no personal data.",
+  "description": "Zero-prompt guardrails, MCP security audits & fleet monitoring for Claude Code, Cursor, Codex CLI, Gemini CLI, Antigravity and cron jobs. Open source (AGPL-3.0).",
   "license": "AGPL-3.0-only",
   "repository": {
     "type": "git",

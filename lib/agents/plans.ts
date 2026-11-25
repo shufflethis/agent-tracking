@@ -30,7 +30,7 @@ export type AgentPlan = {
 };
 
 export const AGENT_PLANS: Record<AgentPlanId, AgentPlan> = {
-  free: { id: "free", agents: 5, webhooks: false, otlp: false, checks: false, signals: false },
+  free: { id: "free", agents: 5, webhooks: true, otlp: false, checks: false, signals: false },
   pro: { id: "pro", agents: 500, webhooks: true, otlp: true, checks: true, signals: true },
 };
 

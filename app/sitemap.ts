@@ -9,7 +9,7 @@ export const revalidate = 3600;
 const NOT_LISTED = new Set(["/login", "/demo"]);
 
 /** Content dates per page; everything else follows the legal revision date. */
-const MODIFIED: Record<string, string> = { "/": "2026-11-03", "/websites": "2026-11-03", "/changelog": "2026-11-03", "/docs": "2026-11-03", "/guides": "2026-09-25" };
+const MODIFIED: Record<string, string> = { "/": "2026-11-25", "/demo/fleet": "2026-11-25", "/websites": "2026-11-25", "/changelog": "2026-11-25", "/docs": "2026-11-25", "/guides": "2026-11-25" };
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const out: MetadataRoute.Sitemap = [];
@@ -25,7 +25,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     const otherUrl = other ? `${SITE_ORIGIN}${lang === "de" ? "" : "/de"}/guides/${other.slug}` : null;
     out.push({ url, lastModified: new Date(g.updated), alternates: { languages: { [lang]: url, ...(otherUrl ? { [lang === "de" ? "en" : "de"]: otherUrl } : {}), "x-default": lang === "en" ? url : otherUrl ?? url } } });
   }
-  // This installation's own public stats page, the live demo. Other sites' stats pages are private unless their owner publishes them, and are not listed.
+  // This installation's own public stats page. Other sites' stats pages are private unless published.
   out.push({ url: `${SITE_ORIGIN}/stats/${SITE_HOST}` });
   return out;
 }

@@ -59,6 +59,7 @@ export const PATH_LOCALES: Record<string, readonly Locale[]> = {
   // The dashboard, the demo and the public stats page are English routes;
   // the dashboard translates itself from the account's language setting.
   "/demo": ["en"],
+  "/demo/fleet": ["en", "de"],
   "/login": ["en"],
 };
 
@@ -147,7 +148,7 @@ export const DICT: Record<Locale, Dict> = {
       check: "Agent readiness check by webmcp-tool.com",
       tagline: "Know which of your agents needs you: Claude Code sessions, cron jobs and your own agents on one list.",
       monitoring: "Agent monitoring",
-      sitesTitle: "Websites",
+      sitesTitle: "Free website tool",
       builtBy: "Built by",
       operated: "Servers in Germany (EU)",
     },
@@ -178,7 +179,7 @@ export const DICT: Record<Locale, Dict> = {
       check: "Agent Readiness Check von webmcp-tool.com",
       tagline: "Wisse, welcher deiner Agents dich braucht: Claude-Code-Sessions, Cron-Jobs und eigene Agents in einer Liste.",
       monitoring: "Agent-Monitoring",
-      sitesTitle: "Websites",
+      sitesTitle: "Kostenloses Website-Tool",
       builtBy: "Gebaut von",
       operated: "Server in Deutschland (EU)",
     },

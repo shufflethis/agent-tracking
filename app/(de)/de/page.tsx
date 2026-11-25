@@ -3,36 +3,58 @@ import MonitoringHome from "@/components/MonitoringHome";
 import { alternatesForLocale } from "@/lib/i18n";
 import { SITE_ORIGIN } from "@/lib/site";
 
-// Eine Stunde gecacht, danach aus der Umgebung des laufenden Servers neu gerendert.
 export const revalidate = 3600;
 
-const TITLE = "Agent Tracking: Claude Code, Cron-Jobs und eigene KI-Agents überwachen";
+const TITLE = "Agent Tracking: Guardrails, MCP-Sicherheit & Monitoring für Claude Code, Cursor & Cron";
 const DESCRIPTION =
-  "Sieh, welcher Agent-Lauf hängt, fehlt oder gescheitert ist. Claude-Code-Sessions, Cron-Jobs und OpenTelemetry-Traces in einer Liste, mit Morgen-Briefing und Meldungen. Open Source, keine Prompts.";
+  "Stoppe Endlosschleifen & Token-Burn lokal, erkenne Shadow-MCP- & Config-Drift und überwache Claude Code, Cursor, Codex, Gemini, Antigravity und Cron-Jobs. Zero-Prompt, Server in Deutschland, Open Source.";
 
 export const metadata: Metadata = {
   title: { absolute: TITLE },
   description: DESCRIPTION,
   alternates: alternatesForLocale("/", "de"),
   robots: { index: true, follow: true, "max-image-preview": "large", "max-snippet": -1 },
-  openGraph: { title: "Was macht dein Agent gerade?", description: DESCRIPTION, url: "/de", type: "website" },
-  twitter: { card: "summary_large_image" },
+  openGraph: {
+    title: "Stoppe Agent-Endlosschleifen, Shadow-MCP-Drift & stumme Hänger",
+    description: DESCRIPTION,
+    url: "/de",
+    type: "website",
+    images: [{ url: "/img/agents/guard-architecture.jpg", width: 1200, height: 675, alt: "Agent Tracking lokale Zero-Prompt-Schutzbremse" }],
+  },
+  twitter: { card: "summary_large_image", images: ["/img/agents/guard-architecture.jpg"] },
 };
 
-const PAGE_LD = {
-  "@context": "https://schema.org",
-  "@type": "WebPage",
-  "@id": `${SITE_ORIGIN}/de#webpage`,
-  url: `${SITE_ORIGIN}/de`,
-  name: TITLE,
-  description: DESCRIPTION,
-  inLanguage: "de",
-  dateModified: "2026-11-11",
-  isPartOf: { "@id": `${SITE_ORIGIN}/#site` },
-  about: { "@id": `${SITE_ORIGIN}/#app` },
-};
+const PAGE_LD = [
+  {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "@id": `${SITE_ORIGIN}/de#webpage`,
+    url: `${SITE_ORIGIN}/de`,
+    name: TITLE,
+    description: DESCRIPTION,
+    inLanguage: "de",
+    dateModified: "2026-11-25",
+    isPartOf: { "@id": `${SITE_ORIGIN}/#site` },
+    about: { "@id": `${SITE_ORIGIN}/#app` },
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "@id": `${SITE_ORIGIN}/de#software`,
+    name: "Agent Tracking",
+    applicationCategory: "DeveloperApplication",
+    operatingSystem: "macOS, Linux",
+    url: `${SITE_ORIGIN}/de`,
+    description: DESCRIPTION,
+    license: "https://www.gnu.org/licenses/agpl-3.0.en.html",
+    offers: [
+      { "@type": "Offer", name: "Free", price: "0", priceCurrency: "USD" },
+      { "@type": "Offer", name: "Pro", price: "9", priceCurrency: "USD" },
+      { "@type": "Offer", name: "Team & Governance", price: "99", priceCurrency: "USD" },
+    ],
+  },
+];
 
-/** Deutsche Startseite: eigene Agents überwachen. Website-Analytics liegen unter /de/websites. */
 export default function Page() {
   return (
     <>
