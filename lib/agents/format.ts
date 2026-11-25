@@ -38,12 +38,12 @@ export function every(ms: number): string {
 export const HEALTH_CHIP: Record<string, string> = { problem: "chip fail", running: "chip accent", ok: "chip pass", idle: "chip na" };
 export const STATUS_CHIP: Record<string, string> = { failed: "chip fail", hung: "chip fail", missed: "chip fail", running: "chip accent", ok: "chip pass" };
 
-export const CLI_VERSION = "0.6.2";
+export const CLI_VERSION = "0.6.3";
 export const CLI_FILE = `agenttracking-${CLI_VERSION}.tgz`;
 export const CLI_URL = `https://agenttracking.co/downloads/${CLI_FILE}`;
 export const INSTALL_URL = "https://agenttracking.co/install.sh";
 /** SHA-256 of public/downloads/<CLI_FILE>. lib/agents/cli-checksum.test.ts fails when the file and this value drift apart. */
-export const CLI_SHA256 = "9114148319f10180d8d79f88c6dcdbecbfead6e5434d4d337e35f3bf5b135e19";
+export const CLI_SHA256 = "d8fc80d17e691847b8e6971ad0276ba028e5ef5ebec3b8430869213d29e22be4";
 export const CLI_INSTALL = `curl -fsSL ${INSTALL_URL} | sh`;
 export const CLI_COMMAND = "agenttracking";
 /** Download, check the hash, then run from the checked file. */

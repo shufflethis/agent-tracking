@@ -13,6 +13,7 @@ import { runHook } from "./hook.js";
 import { spoolSize } from "./spool.js";
 import { observe } from "./observe.js";
 import { captureSnapshot } from "./snapshot.js";
+import { runUpgrade } from "./upgrade.js";
 import { wrap } from "./wrap.js";
 
 const HELP = `agenttracking: see what your agents did while you slept
@@ -37,6 +38,7 @@ const HELP = `agenttracking: see what your agents did while you slept
   agenttracking snapshot              preview sanitized configuration metadata
   agenttracking observe --pid <PID> --name <agent> [--seconds 60]
                                       optional Linux eBPF observation (requires bpftrace)
+  agenttracking upgrade [--yes]       upgrade CLI to latest version ([Y/n], Enter = Yes)
   agenttracking status                show this machine's connection
   agenttracking flush                 send queued events now
 
@@ -129,6 +131,7 @@ const commands: Record<string, Command> = {
   async flush() { await flush(); return 0; },
   audit: (args) => runAudit(args),
   doctor: (args) => runDoctor(args),
+  upgrade: (args) => runUpgrade(args),
   pause: (args) => runPause(args),
   resume: (args) => runResume(args),
   guard: (args) => runGuardCommand(args),

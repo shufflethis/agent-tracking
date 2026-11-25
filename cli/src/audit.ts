@@ -82,7 +82,7 @@ function readJson(file: string): Record<string, unknown> | null {
 }
 
 function shortPath(file: string, userHome: string, cwd: string): string {
-  if (file.startsWith(cwd + "/")) return "./" + file.slice(cwd.length + 1);
+  if (cwd !== userHome && file.startsWith(cwd + "/")) return "./" + file.slice(cwd.length + 1);
   if (file.startsWith(userHome + "/")) return "~/" + file.slice(userHome.length + 1);
   return file;
 }
