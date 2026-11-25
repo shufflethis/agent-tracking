@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 import { counterpart, guides } from "@/lib/guides";
-import { href, LOCALES, pathsIn, alternatesFor } from "@/lib/i18n";
+import { GUIDE_LOCALES, href, LOCALES, pathsIn, alternatesFor } from "@/lib/i18n";
 import { LEGAL, SITE_HOST, SITE_ORIGIN } from "@/lib/site";
 
 export const revalidate = 3600;
@@ -19,7 +19,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
       out.push({ url: `${SITE_ORIGIN}${href(path, locale)}`, lastModified: new Date(MODIFIED[path] ?? LEGAL.revised), alternates: { languages: Object.fromEntries(Object.entries(alternatesFor(path).languages ?? {}).map(([lang, url]) => [lang, `${SITE_ORIGIN}${url}`])) } });
     }
   }
-  for (const lang of LOCALES) for (const g of guides(lang)) {
+  for (const lang of GUIDE_LOCALES) for (const g of guides(lang)) {
     const other = counterpart(lang, g.slug);
     const url = `${SITE_ORIGIN}${lang === "de" ? "/de" : ""}/guides/${g.slug}`;
     const otherUrl = other ? `${SITE_ORIGIN}${lang === "de" ? "" : "/de"}/guides/${other.slug}` : null;

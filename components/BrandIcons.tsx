@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import type { Locale } from "@/lib/i18n";
 
 /**
  * Crisp custom monochrome/accent SVG emblems & icons for coding-agent harnesses,
@@ -248,13 +249,21 @@ const CHANNELS: LogoItem[] = [
   },
 ];
 
-export function HarnessStrip({ lang }: { lang: "en" | "de" }) {
-  const de = lang === "de";
+const STRIP_COPY: Record<Locale, { aria: string; label: string; chLabel: string }> = {
+  en: { aria: "Supported coding agents and alert channels", label: "Works out of the box with your entire agent stack", chLabel: "Free instant alerts & install:" },
+  de: { aria: "Unterstützte Coding-Agents und Alert-Kanäle", label: "Funktioniert direkt mit deinem gesamten Agent-Stack", chLabel: "Kostenlose Sofort-Alerts & Install:" },
+  es: { aria: "Agentes de código y canales de alerta compatibles", label: "Funciona al instante con todo tu stack de agentes", chLabel: "Alertas instantáneas gratis e instalación:" },
+  pt: { aria: "Agentes de código e canais de alerta suportados", label: "Funciona imediatamente com toda a sua stack de agentes", chLabel: "Alertas instantâneos grátis e instalação:" },
+  fr: { aria: "Agents de code et canaux d’alerte pris en charge", label: "Fonctionne immédiatement avec toute votre stack d’agents", chLabel: "Alertes instantanées gratuites & install :" },
+  pl: { aria: "Obsługiwane agenty kodujące i kanały alertów", label: "Działa od ręki z całym Twoim stackiem agentów", chLabel: "Darmowe alerty na żywo i instalacja:" },
+  ja: { aria: "対応コーディングエージェントと通知チャネル", label: "お使いのエージェント環境全体にそのまま対応", chLabel: "無料即時通知 & インストール:" },
+};
+
+export function HarnessStrip({ lang }: { lang: Locale }) {
+  const s = STRIP_COPY[lang] ?? STRIP_COPY.en;
   return (
-    <section className="shell hstrip" aria-label={de ? "Unterstützte Coding-Agents und Alert-Kanäle" : "Supported coding agents and alert channels"}>
-      <p className="hstrip-label">
-        {de ? "Funktioniert direkt mit deinem gesamten Agent-Stack" : "Works out of the box with your entire agent stack"}
-      </p>
+    <section className="shell hstrip" aria-label={s.aria}>
+      <p className="hstrip-label">{s.label}</p>
       <ul className="hstrip-grid">
         {HARNESSES.map((item) => (
           <li key={item.name} className="hstrip-pill">
@@ -265,7 +274,7 @@ export function HarnessStrip({ lang }: { lang: "en" | "de" }) {
         ))}
       </ul>
       <div className="hstrip-channels">
-        <span className="hstrip-ch-label">{de ? "Kostenlose Sofort-Alerts & Install:" : "Free instant alerts & install:"}</span>
+        <span className="hstrip-ch-label">{s.chLabel}</span>
         {CHANNELS.map((ch) => (
           <span key={ch.name} className="hstrip-ch">
             {ch.icon}

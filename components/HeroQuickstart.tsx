@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import CopyButton from "@/components/CopyButton";
+import { t, type Locale } from "@/lib/i18n";
 
 export type QuickstartTab = {
   id: string;
@@ -12,15 +13,25 @@ export type QuickstartTab = {
   hint: string;
 };
 
+const TABLIST_LABEL: Record<Locale, string> = {
+  en: "Quickstart options",
+  de: "Schnellstart-Optionen",
+  es: "Opciones de inicio rápido",
+  pt: "Opções de início rápido",
+  fr: "Options de démarrage rapide",
+  pl: "Opcje szybkiego startu",
+  ja: "クイックスタートの選択",
+};
+
 /**
  * Compact tabbed quickstart window for the hero section: keeps Offline Audit,
  * Connect All, and the Claude Code setup prompt one click away without stacking
  * three tall terminal blocks above the fold.
  */
-export default function HeroQuickstart({ tabs, lang }: { tabs: QuickstartTab[]; lang: "en" | "de" }) {
+export default function HeroQuickstart({ tabs, lang }: { tabs: QuickstartTab[]; lang: Locale }) {
   const [activeId, setActiveId] = useState(tabs[0]?.id ?? "audit");
-  const de = lang === "de";
-  const current = tabs.find((t) => t.id === activeId) ?? tabs[0];
+  const d = t(lang);
+  const current = tabs.find((tItem) => tItem.id === activeId) ?? tabs[0];
   if (!current) return null;
 
   const oneCommand = current.kind === "terminal" && !current.text.includes("\n");
@@ -29,7 +40,7 @@ export default function HeroQuickstart({ tabs, lang }: { tabs: QuickstartTab[]; 
     <div className={`hq copyblock copyblock--${current.kind}`}>
       <div className="copyblock-win hq-win">
         <div className="hq-bar">
-          <div className="hq-tabs" role="tablist" aria-label={de ? "Schnellstart-Optionen" : "Quickstart options"}>
+          <div className="hq-tabs" role="tablist" aria-label={TABLIST_LABEL[lang]}>
             {tabs.map((tab) => {
               const selected = tab.id === current.id;
               return (
@@ -50,12 +61,7 @@ export default function HeroQuickstart({ tabs, lang }: { tabs: QuickstartTab[]; 
               );
             })}
           </div>
-          <CopyButton
-            className="copyblock-btn"
-            text={current.text}
-            label={de ? "Kopieren" : "Copy"}
-            copiedLabel={de ? "Kopiert ✓" : "Copied ✓"}
-          />
+          <CopyButton className="copyblock-btn" text={current.text} label={d.copy} copiedLabel={d.copied} />
         </div>
         <pre className={`copyblock-body hq-body${oneCommand ? " is-cmd" : ""}`}>{current.text}</pre>
       </div>

@@ -88,7 +88,7 @@ export default function SiteChrome({ locale, children }: { locale: Locale; child
               <p className="foot-tagline">{d.foot.tagline}</p>
               <a className="foot-by" href={BUILDER.url} target="_blank" rel="noopener">
                 <Image src={BUILDER.avatar} alt="" width={28} height={28} unoptimized />
-                <span>{d.foot.builtBy} <strong>{BUILDER.name}</strong> · @{BUILDER.handle} {locale === "de" ? "auf X" : "on X"}</span>
+                <span>{d.foot.builtBy} <strong>{BUILDER.name}</strong> · @{BUILDER.handle} {d.foot.onX}</span>
               </a>
             </div>
             <nav className="foot-grid" aria-label="Footer">

@@ -1,6 +1,6 @@
 import { DM_Mono, Jost, Open_Sans } from "next/font/google";
 import SiteChrome from "@/components/SiteChrome";
-import { HTML_LANG, type Locale } from "@/lib/i18n";
+import { HTML_LANG, LOCALES, type Locale } from "@/lib/i18n";
 import { AUTHOR, CHECK_ORIGIN, GITHUB_URL, LEGAL, LEGAL_ADDRESS_SCHEMA, LINKEDIN_URL, PLAUSIBLE_SCRIPT, SITE_HOST, SITE_NAME, SITE_ORIGIN, VERIFY, X_URL } from "@/lib/site";
 import "@/app/globals.css";
 
@@ -66,7 +66,7 @@ const SITE_LD = {
       url: SITE_ORIGIN,
       name: SITE_NAME,
       publisher: { "@id": `${SITE_ORIGIN}/#org` },
-      inLanguage: ["en", "de"],
+      inLanguage: [...LOCALES],
     },
     {
       "@type": "SoftwareApplication",
@@ -91,7 +91,7 @@ const SITE_LD = {
       ],
       publisher: { "@id": `${SITE_ORIGIN}/#org` },
       sameAs: APP_SAME_AS,
-      inLanguage: ["en", "de"],
+      inLanguage: [...LOCALES],
     },
   ],
 };

@@ -1,4 +1,5 @@
 import CopyButton from "@/components/CopyButton";
+import { t, type Locale } from "@/lib/i18n";
 
 /**
  * A terminal command or a prompt to paste into Claude Code, drawn as a small
@@ -7,8 +8,8 @@ import CopyButton from "@/components/CopyButton";
  * and it stays selectable without script. The "$" in front of a command is a
  * pseudo-element, so it is never copied.
  */
-export default function CopyBlock({ label, text, lang, hint, kind }: { label: string; text: string; lang: "en" | "de"; hint?: string; kind?: "terminal" | "prompt" }) {
-  const de = lang === "de";
+export default function CopyBlock({ label, text, lang, hint, kind }: { label: string; text: string; lang: Locale; hint?: string; kind?: "terminal" | "prompt" }) {
+  const d = t(lang);
   const k = kind ?? (/claude/i.test(label) ? "prompt" : "terminal");
   const oneCommand = k === "terminal" && !text.includes("\n");
   return (
@@ -19,7 +20,7 @@ export default function CopyBlock({ label, text, lang, hint, kind }: { label: st
             <span className="copyblock-icon" aria-hidden="true">{k === "terminal" ? ">_" : "✳"}</span>
             {label}
           </span>
-          <CopyButton className="copyblock-btn" text={text} label={de ? "Kopieren" : "Copy"} copiedLabel={de ? "Kopiert ✓" : "Copied ✓"} />
+          <CopyButton className="copyblock-btn" text={text} label={d.copy} copiedLabel={d.copied} />
         </div>
         <pre className={`copyblock-body${oneCommand ? " is-cmd" : ""}`}>{text}</pre>
       </div>
