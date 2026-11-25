@@ -1,6 +1,6 @@
 import { CONNECT_CLAUDE } from "@/lib/agents/format";
 import { AUDIT_ONE_LINER, GUARD_EXAMPLE } from "@/lib/agents/setup";
-import { GITHUB_URL, SITE_HOST, SITE_ORIGIN } from "@/lib/site";
+import { GITHUB_URL, LINKEDIN_URL, SITE_HOST, SITE_ORIGIN, X_URL } from "@/lib/site";
 import { guides } from "@/lib/guides";
 
 export const revalidate = 3600;
@@ -39,7 +39,7 @@ ${agentGuides.map((g) => `- [${g.question}](${SITE_ORIGIN}/guides/${g.slug}): ${
 - [Documentation](${SITE_ORIGIN}/docs)
 - [Changelog](${SITE_ORIGIN}/changelog)
 - [Everything on one page (Markdown)](${SITE_ORIGIN}/llms-full.txt)
-- [Source code on GitHub (AGPL-3.0)](${GITHUB_URL})
+- [Source code on GitHub (AGPL-3.0)](${GITHUB_URL})${LINKEDIN_URL ? `\n- [Agent Tracking on LinkedIn](${LINKEDIN_URL})` : ""}${X_URL ? `\n- [Agent Tracking on X](${X_URL})` : ""}
 - [Free bonus tool: Website AI analytics](${SITE_ORIGIN}/websites)
 
 ## API & MCP

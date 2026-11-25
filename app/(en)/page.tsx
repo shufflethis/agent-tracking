@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import MonitoringHome from "@/components/MonitoringHome";
 import { alternatesFor } from "@/lib/i18n";
-import { SITE_ORIGIN } from "@/lib/site";
+import { AUTHOR, BUILDER, SITE_ORIGIN } from "@/lib/site";
 
 export const revalidate = 3600;
 
@@ -21,7 +21,11 @@ export const metadata: Metadata = {
     type: "website",
     images: [{ url: "/img/agents/guard-architecture.jpg", width: 1200, height: 675, alt: "Agent Tracking local zero-prompt circuit breaker architecture" }],
   },
-  twitter: { card: "summary_large_image", images: ["/img/agents/guard-architecture.jpg"] },
+  twitter: {
+    card: "summary_large_image",
+    ...(AUTHOR.name && BUILDER.handle ? { creator: `@${BUILDER.handle}` } : {}),
+    images: ["/img/agents/guard-architecture.jpg"],
+  },
 };
 
 const PAGE_LD = [

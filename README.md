@@ -2,7 +2,7 @@
 
 **Local circuit breaker, MCP security audit, and zero-prompt fleet monitoring for Claude Code, Cursor, Codex CLI, Gemini CLI, Google Antigravity (`agy`), and cron jobs.**
 
-[Website](https://agenttracking.co) · [Live Fleet Demo (no login)](https://agenttracking.co/demo/fleet) · [Documentation](https://agenttracking.co/docs) · [Guides](https://agenttracking.co/guides) · [Deutsch](https://agenttracking.co/de)
+[Website](https://agenttracking.co) · [Live Fleet Demo (no login)](https://agenttracking.co/demo/fleet) · [Documentation](https://agenttracking.co/docs) · [Guides](https://agenttracking.co/guides) · [LinkedIn](https://www.linkedin.com/company/agenttracking/) · [Deutsch](https://agenttracking.co/de)
 
 Stop runaway overnight retry loops, catch shadow MCP servers & config drift, and get instant Telegram, Slack, or Discord alerts when an agent stalls, waits for approval, or misses a cron schedule — **without ever sending prompts, source code, or secret values off your machine.**
 

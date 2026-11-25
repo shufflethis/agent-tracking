@@ -101,13 +101,25 @@ function structuredAddress(lines: string[]) {
 export const LEGAL_ADDRESS_SCHEMA = structuredAddress(LEGAL.addressLines);
 
 /** The person behind the installation, for bylines and Article authorship. Empty means the organisation is the author. */
-const cloudAuthor = cloudEntity || LEGAL.name === "FINAL MASTER LLC";
+const cloudBrand = cloudEntity || LEGAL.name === "FINAL MASTER LLC";
+
+/** Public LinkedIn company page for the brand. Empty disables the footer link and schema sameAs entry. */
+export const LINKEDIN_URL =
+  process.env.LINKEDIN_URL === undefined
+    ? cloudBrand
+      ? "https://www.linkedin.com/company/agenttracking/"
+      : ""
+    : trim(process.env.LINKEDIN_URL);
+
+/** Optional public X/Twitter profile for the organisation/product (distinct from the founder's personal handle). */
+export const X_URL = trim(process.env.X_URL);
+
 export const AUTHOR = {
-  name: trim(process.env.AUTHOR_NAME) || (cloudAuthor ? "Gorden Wuebbe" : ""),
-  url: trim(process.env.AUTHOR_URL) || (cloudAuthor ? "https://x.com/wuebbe" : ""),
+  name: trim(process.env.AUTHOR_NAME) || (cloudBrand ? "Gorden Wuebbe" : ""),
+  url: trim(process.env.AUTHOR_URL) || (cloudBrand ? "https://x.com/wuebbe" : ""),
   sameAs: trim(process.env.AUTHOR_SAMEAS)
     ? trim(process.env.AUTHOR_SAMEAS).split(",").map((s) => s.trim()).filter(Boolean)
-    : cloudAuthor ? ["https://x.com/wuebbe", GITHUB_URL] : [],
+    : cloudBrand ? ["https://x.com/wuebbe", GITHUB_URL] : [],
 };
 
 /** Site verification codes for the search consoles, printed as meta tags when set. Bing also gets /BingSiteAuth.xml. */

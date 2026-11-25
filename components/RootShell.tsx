@@ -1,7 +1,7 @@
 import { DM_Mono, Jost, Open_Sans } from "next/font/google";
 import SiteChrome from "@/components/SiteChrome";
 import { HTML_LANG, type Locale } from "@/lib/i18n";
-import { AUTHOR, CHECK_ORIGIN, GITHUB_URL, LEGAL, LEGAL_ADDRESS_SCHEMA, PLAUSIBLE_SCRIPT, SITE_HOST, SITE_NAME, SITE_ORIGIN, VERIFY } from "@/lib/site";
+import { AUTHOR, CHECK_ORIGIN, GITHUB_URL, LEGAL, LEGAL_ADDRESS_SCHEMA, LINKEDIN_URL, PLAUSIBLE_SCRIPT, SITE_HOST, SITE_NAME, SITE_ORIGIN, VERIFY, X_URL } from "@/lib/site";
 import "@/app/globals.css";
 
 /*
@@ -17,20 +17,35 @@ const dmMono = DM_Mono({ subsets: ["latin"], weight: ["400", "500"], variable: "
 const OG_IMAGE = `${SITE_ORIGIN}/og/home.png`;
 const LOGO = `${SITE_ORIGIN}/icons/icon-512.png`;
 
+const ORG_SAME_AS = Array.from(
+  new Set([
+    GITHUB_URL,
+    ...(LINKEDIN_URL ? [LINKEDIN_URL] : []),
+    ...(X_URL ? [X_URL] : []),
+    ...(LEGAL.website && LEGAL.website !== SITE_ORIGIN ? [LEGAL.website] : []),
+    ...(CHECK_ORIGIN ? [CHECK_ORIGIN] : []),
+  ]),
+);
+
+const APP_SAME_AS = Array.from(
+  new Set([GITHUB_URL, ...(LINKEDIN_URL ? [LINKEDIN_URL] : []), ...(X_URL ? [X_URL] : [])]),
+);
+
 const SITE_LD = {
   "@context": "https://schema.org",
   "@graph": [
     {
       "@type": "Organization",
       "@id": `${SITE_ORIGIN}/#org`,
-      name: LEGAL.name,
+      name: SITE_NAME,
       legalName: LEGAL.name,
-      url: LEGAL.website,
+      alternateName: LEGAL.name && LEGAL.name !== SITE_NAME ? [LEGAL.name, SITE_HOST] : [SITE_HOST],
+      url: SITE_ORIGIN,
       email: LEGAL.email,
       address: LEGAL_ADDRESS_SCHEMA,
       logo: { "@type": "ImageObject", url: LOGO, width: 512, height: 512 },
       image: OG_IMAGE,
-      sameAs: [GITHUB_URL, ...(CHECK_ORIGIN ? [CHECK_ORIGIN] : [])],
+      sameAs: ORG_SAME_AS,
       ...(AUTHOR.name ? { founder: { "@id": `${SITE_ORIGIN}/#author` } } : {}),
     },
     ...(AUTHOR.name
@@ -75,7 +90,7 @@ const SITE_LD = {
         { "@type": "Offer", name: "Pro", price: "9", priceCurrency: "USD", description: "Up to 50 monitored agents, Slack/Discord/Telegram/webhook alerts, OpenTelemetry traces, loop/drift signals and task checks ($9/month or $90/year)." },
       ],
       publisher: { "@id": `${SITE_ORIGIN}/#org` },
-      sameAs: [GITHUB_URL],
+      sameAs: APP_SAME_AS,
       inLanguage: ["en", "de"],
     },
   ],

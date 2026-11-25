@@ -1946,6 +1946,7 @@ td.num {
 @media (min-width: 760px) { .foot-top .foot-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 .foot-top .foot-grid ul { gap: 11px; }
 .foot-note p a { color: var(--muted); }
+.foot-note p a:hover { color: var(--cyan); }
 .hwebsites .btn { max-width: 100%; white-space: normal; text-align: center; }
 @media (max-width: 620px) { .hbuilder { grid-template-columns: 1fr; } .hwebsites { padding: 24px; } }
 .hhero-fit { margin: 18px auto 0; max-width: 60ch; font-size: 15px; color: var(--muted); }

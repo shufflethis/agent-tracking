@@ -4,7 +4,7 @@ import { guideTranslations } from "@/lib/guide-links";
 import Image from "next/image";
 import Wordmark from "@/components/Wordmark";
 import { href, t, type Locale } from "@/lib/i18n";
-import { BUILDER, CHECK_ORIGIN, GITHUB_URL, LEGAL, SITE_HOST } from "@/lib/site";
+import { BUILDER, CHECK_ORIGIN, GITHUB_URL, LEGAL, LINKEDIN_URL, SITE_HOST, X_URL } from "@/lib/site";
 
 /**
  * Header and footer for one locale, rendered on the server. The mobile menu
@@ -135,7 +135,11 @@ export default function SiteChrome({ locale, children }: { locale: Locale; child
 
           <div className="foot-note">
             <p>© {new Date().getFullYear()} {LEGAL.name} · {d.foot.operated} · AGPL-3.0</p>
-            <p><a href="/llms.txt">llms.txt</a></p>
+            <p>
+              {LINKEDIN_URL ? <a href={LINKEDIN_URL} target="_blank" rel="noopener noreferrer">LinkedIn</a> : null}
+              {X_URL ? <a href={X_URL} target="_blank" rel="noopener noreferrer">X</a> : null}
+              <a href="/llms.txt">llms.txt</a>
+            </p>
           </div>
         </div>
       </footer>
