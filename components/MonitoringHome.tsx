@@ -3,6 +3,7 @@ import Image from "next/image";
 import AgentGuardMotion from "@/components/AgentGuardMotion";
 import { FeatureIcon, HarnessStrip, type FeatureIconKind } from "@/components/BrandIcons";
 import CopyBlock from "@/components/CopyBlock";
+import HeroQuickstart, { type QuickstartTab } from "@/components/HeroQuickstart";
 import { CONNECT_CLAUDE } from "@/lib/agents/format";
 import { AUDIT_COMMAND, AUDIT_ONE_LINER, claudeSetupPrompt, DISCONNECT_CLAUDE, DOCTOR_COMMAND, FIX_COMMAND, GUARD_EXAMPLE, WRAP_CRON } from "@/lib/agents/setup";
 import { AGENT_PLANS, AGENT_PRO_PRICE } from "@/lib/agents/plans";
@@ -20,19 +21,42 @@ function copy(lang: "en" | "de") {
 
   if (lang === "de") {
     return {
-      eyebrow: `Zero-Prompt Guardrails & Fleet-Monitoring · Free inkl. Telegram & Slack`,
-      h1: "Stoppe Endlosschleifen, Shadow-MCP-Drift & stumme Agent-Hänger.",
-      sub: "Die lokale Schutzbremse und Flotten-Überwachung für Claude Code, Cursor, Codex CLI, Gemini CLI, Antigravity und Cron-Jobs. Blockt teure Fehler-Loops und destruktive Befehle auf deinem Gerät — ohne jemals Prompts, Code oder Secrets hochzuladen.",
-      fit: "Gebaut für Entwickler und Engineering-Teams, die Coding-Agents über Nacht, auf Servern oder teamweit im Einsatz haben.",
-      demoCta: "Interaktive Live-Demo (ohne Login)",
-      dashboard: "Kostenloses Dashboard starten",
-      pick: "In 10 Sekunden starten — erst 100 % offline prüfen oder direkt verbinden.",
-      auditLabel: "100 % Offline-Audit & 1-Befehl-Auto-Fix (kein Login)",
-      auditHint: "Prüft lokal MCP-Server, Secrets, Permissions & Guardrails — agenttracking fix hebt dich mit automatischen Backups in 3 Sekunden auf Grade A.",
-      terminal: "Oder direkt alle Agents verbinden",
-      terminalHint: "SHA-256-geprüft. Verbindet Claude Code, Cursor, Codex, Gemini & Antigravity mit Backup bestehender Hooks.",
-      claude: "Oder in Claude Code einfügen",
-      claudeHint: "Claude führt den Setup-Ablauf aus, wartet auf deine Bestätigung und fragt vor jeder Crontab-Änderung.",
+      eyebrow: `Zero-Prompt Guardrails & Fleet-Monitoring · Open Source (AGPL-3.0)`,
+      h1Lead: "Stoppe Agent-Endlosschleifen,",
+      h1Accent: "Shadow-MCP-Drift & stumme Hänger.",
+      sub: "Die lokale Schutzbremse und Flotten-Überwachung für Claude Code, Cursor, Codex CLI, Gemini CLI, Antigravity und Cron-Jobs — blockt teure Fehler-Loops und destruktive Befehle auf deinem Gerät, ohne jemals Prompts oder Code zu senden.",
+      demoCta: "Live-Demo testen (ohne Login)",
+      dashboard: "Kostenlos starten",
+      metrics: [
+        { v: "< 2 ms", l: "Lokale Schutzbremse" },
+        { v: "0", l: "Prompts & Code gesendet" },
+        { v: "40 → 100", l: "Auto-Fix in 3 Sek. ↓", href: "#autofix" },
+        { v: "Free", l: "Telegram, Slack & Discord" },
+      ],
+      quickTabs: [
+        {
+          id: "audit",
+          tabLabel: "100 % Offline-Audit",
+          badge: "Kein Login",
+          kind: "terminal",
+          text: AUDIT_ONE_LINER,
+          hint: "Prüft lokal MCP-Server, Secrets, Permissions & Guardrails — agenttracking fix hebt dich mit automatischen Backups in 3 Sekunden auf Grade A.",
+        },
+        {
+          id: "connect",
+          tabLabel: "Alle Agents verbinden",
+          kind: "terminal",
+          text: CONNECT_CLAUDE,
+          hint: "SHA-256-geprüft. Verbindet Claude Code, Cursor, Codex, Gemini & Antigravity mit automatischem Backup bestehender Hooks.",
+        },
+        {
+          id: "claude",
+          tabLabel: "Claude-Code-Prompt",
+          kind: "prompt",
+          text: claudeSetupPrompt("de"),
+          hint: "Direkt in Claude Code einfügen — führt das Setup aus, wartet auf deine Bestätigung und fragt vor jeder Crontab-Änderung.",
+        },
+      ] as QuickstartTab[],
       trust: [
         "Keine Prompts, kein Code, keine Secrets gesendet",
         `Free: ${freeN} Agents inkl. Telegram, Slack & Discord`,
@@ -243,19 +267,42 @@ function copy(lang: "en" | "de") {
   }
 
   return {
-    eyebrow: `Zero-Prompt Guardrails & Fleet Monitoring · Free incl. Telegram & Slack`,
-    h1: "Stop runaway agent loops, shadow MCP drift, and silent hangs.",
-    sub: "The local circuit breaker and fleet monitor for Claude Code, Cursor, Codex CLI, Gemini CLI, Antigravity, and cron jobs. Block overnight token burn and destructive shell commands on-device — without ever sending prompts, code, or secrets.",
-    fit: "Built for developers and engineering teams running coding agents overnight, across servers, or across every laptop.",
-    demoCta: "Try interactive live demo (no login)",
-    dashboard: "Open free dashboard",
-    pick: "Start in 10 seconds — audit 100% offline first, or connect your fleet right away.",
-    auditLabel: "100% offline audit & 1-command auto-fix (no login)",
-    auditHint: "Scans local MCPs, inline secrets, permissions & guardrails — agenttracking fix jumps you to Grade A in 3 seconds with automatic backups.",
-    terminal: "Or connect all harnesses immediately",
-    terminalHint: "SHA-256 verified. Safely adds hooks for Claude Code, Cursor, Codex, Gemini & Antigravity with automatic backups.",
-    claude: "Or paste into Claude Code",
-    claudeHint: "Claude runs setup step-by-step, waits for your browser confirmation, and asks before touching crontab.",
+    eyebrow: `Zero-Prompt Guardrails & Fleet Monitoring · Open Source (AGPL-3.0)`,
+    h1Lead: "Stop runaway agent loops,",
+    h1Accent: "shadow MCP drift & silent hangs.",
+    sub: "The local circuit breaker and fleet monitor for Claude Code, Cursor, Codex CLI, Gemini CLI, Antigravity, and cron jobs — block overnight token burn and destructive commands on-device, without ever sending prompts or code.",
+    demoCta: "Try live demo (no login)",
+    dashboard: "Start free",
+    metrics: [
+      { v: "< 2 ms", l: "Local circuit breaker" },
+      { v: "0", l: "Prompts or code sent" },
+      { v: "40 → 100", l: "Auto-fix in 3s ↓", href: "#autofix" },
+      { v: "Free", l: "Telegram, Slack & Discord" },
+    ],
+    quickTabs: [
+      {
+        id: "audit",
+        tabLabel: "100% Offline Audit",
+        badge: "No login",
+        kind: "terminal",
+        text: AUDIT_ONE_LINER,
+        hint: "Scans local MCPs, inline secrets, permissions & guardrails — agenttracking fix jumps you to Grade A in 3 seconds with automatic backups.",
+      },
+      {
+        id: "connect",
+        tabLabel: "Connect All Agents",
+        kind: "terminal",
+        text: CONNECT_CLAUDE,
+        hint: "SHA-256 verified. Safely hooks Claude Code, Cursor, Codex, Gemini & Antigravity with automatic backups.",
+      },
+      {
+        id: "claude",
+        tabLabel: "Claude Code Prompt",
+        kind: "prompt",
+        text: claudeSetupPrompt("en"),
+        hint: "Paste directly into Claude Code — runs setup step-by-step, waits for browser confirmation, and asks before touching crontab.",
+      },
+    ] as QuickstartTab[],
     trust: [
       "Zero prompts, code, or secrets ever leave your machine",
       `Free: ${freeN} agents incl. Telegram, Slack & Discord`,
@@ -524,43 +571,58 @@ export default function MonitoringHome({ lang }: { lang: "en" | "de" }) {
   const login = de ? "/login?lang=de&next=/app/fleet" : "/login?next=/app/fleet";
   const loginPro = de ? "/login?lang=de&next=/app/fleet/settings" : "/login?next=/app/fleet/settings";
   const teamMail = `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent("Agent Tracking Team & Governance Pilot")}`;
-  const prompt = claudeSetupPrompt(lang);
   const tierHref = (id: string) => (id === "team" ? teamMail : id === "pro" ? loginPro : login);
 
   return (
     <div className="home">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(monitoringFaqSchema(lang)) }} />
 
-      <section className="shell hhero">
-        <p className="eyebrow">{c.eyebrow}</p>
-        <h1>{c.h1}</h1>
-        <p className="hhero-sub">{c.sub}</p>
-        <p className="hhero-fit">{c.fit}</p>
-        <div className="hctas" style={{ marginTop: 26 }}>
-          <Link className="btn" href={demoHref}>{c.demoCta}</Link>
-          <Link className="btn ghost" href={login}>{c.dashboard}</Link>
-        </div>
-      </section>
+      <div className="hhero-stage">
+        <section className="shell hhero">
+          <p className="hhero-pill">
+            <span className="hhero-dot" aria-hidden="true" />
+            <span>{c.eyebrow}</span>
+          </p>
+          <h1>
+            {c.h1Lead} <span className="hhero-accent">{c.h1Accent}</span>
+          </h1>
+          <p className="hhero-sub">{c.sub}</p>
+          <div className="hctas">
+            <Link className="btn" href={demoHref}>{c.demoCta}</Link>
+            <Link className="btn ghost" href={login}>{c.dashboard}</Link>
+          </div>
 
-      <section className="shell hconnect" id="connect">
-        <p className="hpick">{c.pick}</p>
-        <div className="hconnect-stack">
-          <CopyBlock kind="terminal" label={c.auditLabel} text={AUDIT_ONE_LINER} lang={lang} hint={c.auditHint} />
-          <p className="hor" aria-hidden="true"><span>{de ? "oder" : "or"}</span></p>
-          <CopyBlock kind="terminal" label={c.terminal} text={CONNECT_CLAUDE} lang={lang} hint={c.terminalHint} />
-          <p className="hor" aria-hidden="true"><span>{de ? "oder" : "or"}</span></p>
-          <CopyBlock kind="prompt" label={c.claude} text={prompt} lang={lang} hint={c.claudeHint} />
-        </div>
-        <ul className="htrust">
-          {c.trust.map((t) => <li key={t}>{t}</li>)}
-          <li className="htrust-by">
-            <a href={BUILDER.url} target="_blank" rel="noopener">
-              <Image src={BUILDER.avatar} alt="" width={22} height={22} unoptimized />
-              {c.builtBy} @{BUILDER.handle}
-            </a>
-          </li>
-        </ul>
-      </section>
+          <div className="hhero-metrics" aria-label={de ? "Kernfakten" : "Key facts"}>
+            {c.metrics.map((m) =>
+              m.href ? (
+                <a className="hhero-metric is-link" href={m.href} key={m.l}>
+                  <strong>{m.v}</strong>
+                  <span>{m.l}</span>
+                </a>
+              ) : (
+                <div className="hhero-metric" key={m.l}>
+                  <strong>{m.v}</strong>
+                  <span>{m.l}</span>
+                </div>
+              ),
+            )}
+          </div>
+
+          <div className="hhero-quick" id="connect">
+            <HeroQuickstart tabs={c.quickTabs} lang={lang} />
+          </div>
+
+          <ul className="htrust">
+            {c.trust.map((t) => <li key={t}>{t}</li>)}
+            <li className="htrust-by">
+              <a href={BUILDER.url} target="_blank" rel="noopener">
+                <Image src={BUILDER.avatar} alt="" width={22} height={22} unoptimized />
+                {c.builtBy} @{BUILDER.handle}
+              </a>
+            </li>
+          </ul>
+        </section>
+      </div>
 
       <HarnessStrip lang={lang} />
 
@@ -879,7 +941,12 @@ export default function MonitoringHome({ lang }: { lang: "en" | "de" }) {
         <div className="shell">
           <Head kick={c.kick.start} title={c.finalTitle} dek={c.finalDek} />
           <div className="hfinal-box">
-            <CopyBlock kind="terminal" label={c.auditLabel} text={AUDIT_ONE_LINER} lang={lang} />
+            <CopyBlock
+              kind="terminal"
+              label={de ? "100 % Offline-Audit & 1-Befehl-Auto-Fix (kein Login)" : "100% offline audit & 1-command auto-fix (no login)"}
+              text={AUDIT_ONE_LINER}
+              lang={lang}
+            />
           </div>
           <div className="hctas">
             <Link className="btn" href={demoHref}>{c.demoCta}</Link>

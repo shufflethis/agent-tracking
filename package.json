@@ -33,7 +33,7 @@
     "not dead"
   ],
   "dependencies": {
-    "next": "^16.4.2",
+    "next": "^16.4.6",
     "node-html-parser": "^9.0.4",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
