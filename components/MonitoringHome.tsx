@@ -28,7 +28,7 @@ function copy(lang: "en" | "de") {
       dashboard: "Kostenloses Dashboard starten",
       pick: "In 10 Sekunden starten — erst 100 % offline prüfen oder direkt verbinden.",
       auditLabel: "100 % Offline-Audit & 1-Befehl-Auto-Fix (kein Login)",
-      auditHint: "Prüft lokal MCP-Server, Secrets, Permissions & Guardrails — `agenttracking fix` hebt dich mit automatischen Backups in 3 Sekunden auf Grade A.",
+      auditHint: "Prüft lokal MCP-Server, Secrets, Permissions & Guardrails — agenttracking fix hebt dich mit automatischen Backups in 3 Sekunden auf Grade A.",
       terminal: "Oder direkt alle Agents verbinden",
       terminalHint: "SHA-256-geprüft. Verbindet Claude Code, Cursor, Codex, Gemini & Antigravity mit Backup bestehender Hooks.",
       claude: "Oder in Claude Code einfügen",
@@ -251,7 +251,7 @@ function copy(lang: "en" | "de") {
     dashboard: "Open free dashboard",
     pick: "Start in 10 seconds — audit 100% offline first, or connect your fleet right away.",
     auditLabel: "100% offline audit & 1-command auto-fix (no login)",
-    auditHint: "Scans local MCPs, inline secrets, permissions & guardrails — `agenttracking fix` jumps you to Grade A in 3 seconds with automatic backups.",
+    auditHint: "Scans local MCPs, inline secrets, permissions & guardrails — agenttracking fix jumps you to Grade A in 3 seconds with automatic backups.",
     terminal: "Or connect all harnesses immediately",
     terminalHint: "SHA-256 verified. Safely adds hooks for Claude Code, Cursor, Codex, Gemini & Antigravity with automatic backups.",
     claude: "Or paste into Claude Code",
@@ -465,11 +465,23 @@ function copy(lang: "en" | "de") {
   };
 }
 
+function inlineCode(text: string) {
+  const parts = text.split(/(`[^`]+`)/g);
+  return parts.map((part, i) => {
+    const m = /^`([^`]+)`$/.exec(part);
+    return m ? <code key={i}>{m[1]}</code> : part;
+  });
+}
+
 export function monitoringFaqSchema(lang: "en" | "de") {
   return {
     "@context": "https://schema.org",
     "@type": "FAQPage",
-    mainEntity: copy(lang).faq.map((f) => ({ "@type": "Question", name: f.q, acceptedAnswer: { "@type": "Answer", text: f.a } })),
+    mainEntity: copy(lang).faq.map((f) => ({
+      "@type": "Question",
+      name: f.q.replace(/`/g, ""),
+      acceptedAnswer: { "@type": "Answer", text: f.a.replace(/`/g, "") },
+    })),
   };
 }
 
@@ -487,7 +499,7 @@ function Cards({ rows, cols }: { rows: Card[]; cols: 2 | 3 | 4 }) {
             <p className="smallcaps">{r.k}</p>
           </div>
           <h3>{r.t}</h3>
-          <p>{r.d}</p>
+          <p>{inlineCode(r.d)}</p>
         </article>
       ))}
     </div>
@@ -499,7 +511,7 @@ function Head({ kick, title, dek }: { kick: string; title: string; dek?: string 
     <header className="hhead">
       <p className="hkick">{kick}</p>
       <h2>{title}</h2>
-      {dek ? <p className="hdek">{dek}</p> : null}
+      {dek ? <p className="hdek">{inlineCode(dek)}</p> : null}
     </header>
   );
 }
@@ -609,7 +621,7 @@ export default function MonitoringHome({ lang }: { lang: "en" | "de" }) {
                 <p className="smallcaps">{item.k}</p>
               </div>
               <h3>{item.t}</h3>
-              <p>{item.d}</p>
+              <p>{inlineCode(item.d)}</p>
             </article>
           ))}
         </div>
@@ -643,14 +655,14 @@ export default function MonitoringHome({ lang }: { lang: "en" | "de" }) {
             <figure className="card hreal-card">
               <div className="hreal-head">
                 <span className="chip warn">2 · AFTER GUARD · 80/100 GRADE B</span>
-                <span>{de ? "1 Sekunde nach `guard` + `connect all`: 4 Harnesses + Schutzbremse aktiv" : "1 second after `guard` + `connect all`: 4 harnesses + local fuse active"}</span>
+                <span>{inlineCode(de ? "1 Sekunde nach `guard` + `connect all`: 4 Harnesses + Schutzbremse aktiv" : "1 second after `guard` + `connect all`: 4 harnesses + local fuse active")}</span>
               </div>
               <Image src="/img/agents/real-audit-80.webp" alt={de ? "Echter Terminal-Screenshot: 80/100 Grade B nach lokalem Guard" : "Real terminal screenshot: 80/100 Grade B after enabling local guard"} width={1400} height={1120} unoptimized />
             </figure>
           </div>
           <figure className="card hreal-win">
             <div className="hreal-head">
-              <span className="chip pass">3 · AFTER `agenttracking fix` · 100/100 GRADE A</span>
+              <span className="chip pass">3 · AFTER agenttracking fix · 100/100 GRADE A</span>
               <span>{de ? "Alle 9 npx-MCP-Server exakt gepinnt, 3 Keys sicher in chmod-600 secrets.env ausgelagert" : "All 9 npx MCP servers version-pinned, 3 secret keys safely moved to chmod-600 secrets.env"}</span>
             </div>
             <Image src="/img/agents/real-fix-100.webp" alt={de ? "Echter Terminal-Screenshot: Already hardened! Score 100/100 Grade A" : "Real terminal screenshot: Already hardened! Score 100/100 Grade A"} width={1320} height={212} unoptimized />
@@ -715,7 +727,7 @@ export default function MonitoringHome({ lang }: { lang: "en" | "de" }) {
                 {c.compareRows.map((row) => (
                   <tr key={row.feature}>
                     <td><strong>{row.feature}</strong></td>
-                    <td className="is-hl">{row.at}</td>
+                    <td className="is-hl">{inlineCode(row.at)}</td>
                     <td>{row.diy}</td>
                     <td>{row.cron}</td>
                     <td>{row.llm}</td>
@@ -811,7 +823,7 @@ export default function MonitoringHome({ lang }: { lang: "en" | "de" }) {
                 <h3>{t.name}</h3>
                 <p className="htier-price"><strong>{t.price}</strong> <span>{t.per}</span></p>
                 <p className="htier-note">{t.note}</p>
-                <ul>{t.features.map((f) => <li key={f}>{f}</li>)}</ul>
+                <ul>{t.features.map((f) => <li key={f}>{inlineCode(f)}</li>)}</ul>
                 {t.id === "team"
                   ? <a className="btn" href={tierHref(t.id)}>{t.cta}</a>
                   : <Link className={t.id === "pro" ? "btn" : "btn ghost"} href={tierHref(t.id)}>{t.cta}</Link>}
@@ -856,8 +868,8 @@ export default function MonitoringHome({ lang }: { lang: "en" | "de" }) {
         <div className="faq hfaq">
           {c.faq.map((f) => (
             <details key={f.q}>
-              <summary><h3>{f.q}</h3></summary>
-              <p>{f.a}</p>
+              <summary><h3>{inlineCode(f.q)}</h3></summary>
+              <p>{inlineCode(f.a)}</p>
             </details>
           ))}
         </div>
