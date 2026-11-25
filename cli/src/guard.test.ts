@@ -121,3 +121,71 @@ test("blockDestructive stops dangerous commands locally without persisting or sp
   const spooled = readFileSync(join(home, "spool.jsonl"), "utf8");
   assert.doesNotMatch(spooled, /sk-ant-supersecret999|origin main/);
 });
+
+test("CursorStop clears turn call budget and timer so separate turns do not accumulate", async () => {
+  const home = mkdtempSync(join(tmpdir(), "at-guard-cursor-"));
+  writeConfig(cfg, home);
+  await runGuardCommand(["--max-calls", "5", "--max-minutes", "10"], home);
+
+  for (let i = 0; i < 4; i++) {
+    const out = captureStdout();
+    await runHook("CursorBeforeShell", Readable.from([JSON.stringify({
+      conversation_id: "cur-1", workspace_roots: ["/work/app"], command: "echo ok",
+    })]), { home, spawnFlush: false, stdout: out.stream });
+    assert.equal(out.output(), "");
+  }
+
+  // Turn completes via CursorStop -> clears counters/timer
+  await runHook("CursorStop", Readable.from([JSON.stringify({
+    conversation_id: "cur-1", workspace_roots: ["/work/app"], status: "completed",
+  })]), { home, spawnFlush: false });
+
+  // Next turn starts fresh: 4 more calls are allowed without hitting the 5-call limit
+  for (let i = 0; i < 4; i++) {
+    const out = captureStdout();
+    await runHook("CursorBeforeShell", Readable.from([JSON.stringify({
+      conversation_id: "cur-1", workspace_roots: ["/work/app"], command: "echo ok",
+    })]), { home, spawnFlush: false, stdout: out.stream });
+    assert.equal(out.output(), "");
+  }
+});
+
+test("Antigravity guard accumulates across mid-turn invocations, stops once tripped, and recovers on next prompt", async () => {
+  const home = mkdtempSync(join(tmpdir(), "at-guard-agy-"));
+  writeConfig(cfg, home);
+  await runGuardCommand(["--max-calls", "5", "--max-failures", "2"], home);
+
+  const send = async (hookEvent: string, payload: Record<string, unknown>) => {
+    const out = captureStdout();
+    await runHook(hookEvent, Readable.from([JSON.stringify(payload)]), { home, spawnFlush: false, stdout: out.stream });
+    return JSON.parse(out.output()) as Record<string, unknown>;
+  };
+
+  // Start turn + 3 tool calls across two mid-turn invocations
+  assert.deepEqual(await send("AgyPreInvocation", { conversationId: "agy-1", cwd: "/work/app" }), {});
+  for (let i = 0; i < 3; i++) {
+    assert.deepEqual(await send("AgyPostToolUse", { conversationId: "agy-1", cwd: "/work/app", toolCall: { id: `c${i}`, name: "read_file" } }), {});
+  }
+  // Mid-turn invocation must NOT wipe the call counter
+  assert.deepEqual(await send("AgyPreInvocation", { conversationId: "agy-1", cwd: "/work/app" }), {});
+  for (let i = 3; i < 5; i++) {
+    assert.deepEqual(await send("AgyPostToolUse", { conversationId: "agy-1", cwd: "/work/app", toolCall: { id: `c${i}`, name: "read_file" } }), {});
+  }
+
+  // Next invocation trips maxCallsPerTurn (5) and terminates the runaway turn cleanly
+  const blocked = await send("AgyPreInvocation", { conversationId: "agy-1", cwd: "/work/app" });
+  assert.equal(blocked.terminationBehavior, "terminate");
+
+  // Because the terminated turn's budget was cleared, the user's next prompt works without deadlocking
+  assert.deepEqual(await send("AgyPreInvocation", { conversationId: "agy-1", cwd: "/work/app" }), {});
+
+  // Manual pause, however, stays active across invocations until `agenttracking resume`
+  await runPause(["--reason", "deploy freeze"], home);
+  const paused = await send("AgyPreInvocation", { conversationId: "agy-1", cwd: "/work/app" });
+  assert.equal(paused.terminationBehavior, "terminate");
+  const stillPaused = await send("AgyPreInvocation", { conversationId: "agy-1", cwd: "/work/app" });
+  assert.equal(stillPaused.terminationBehavior, "terminate");
+
+  await runResume([], home);
+  assert.deepEqual(await send("AgyPreInvocation", { conversationId: "agy-1", cwd: "/work/app" }), {});
+});

@@ -202,6 +202,26 @@ export function recordGuardOutcome(
   const trackMinutes = Boolean(policy.maxTurnMinutes && policy.maxTurnMinutes > 0);
   if (!trackStreak && !trackCalls && !trackMinutes) return;
 
+  if (eventType === "turn_end" || eventType === "turn_error" || eventType === "session_end") {
+    const state = readState(home);
+    if (state[runKey]) {
+      delete state[runKey];
+      writeState(state, home);
+    }
+    return;
+  }
+
+  if (eventType === "invocation_start") {
+    if (trackMinutes) {
+      const state = readState(home);
+      if (!state[runKey]?.turnStartedAt) {
+        state[runKey] = { ...state[runKey], turnStartedAt: now, at: now };
+        writeState(state, home);
+      }
+    }
+    return;
+  }
+
   if (eventType === "turn_start" || eventType === "session_start") {
     const state = readState(home);
     if (trackMinutes) {

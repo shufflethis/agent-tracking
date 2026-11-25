@@ -214,6 +214,9 @@ export async function runHook(
       const verdict = checkPreToolGuard(event.run, event.agent.name, "invocation", opts.home, { now });
       if (verdict.block) {
         replyAgy(formatBlockReply(hookEvent, verdict.reason));
+        // Terminating this turn clears per-turn counters/timer so the next user prompt is not deadlocked;
+        // a manual `agenttracking pause` lives in guard.json and still blocks until `agenttracking resume`.
+        recordGuardOutcome(event.run, "turn_end", undefined, now, opts.home);
         if (cfg) {
           const waitingEvent: AgentEvent = { v: 1, id: event.id, type: "waiting", at: now, agent: event.agent, run: event.run };
           appendEvent(waitingEvent, opts.home);
@@ -243,7 +246,7 @@ export async function runHook(
       }
     }
     if (hookEvent === "AgyPostToolUse") recordGuardOutcome(event.run, "tool_start", undefined, now, opts.home);
-    recordGuardOutcome(event.run, event.type, event.ok, now, opts.home);
+    recordGuardOutcome(event.run, hookEvent === "AgyPreInvocation" ? "invocation_start" : event.type, event.ok, now, opts.home);
     replyAgy(defaultAgyReply(hookEvent));
     if (!cfg) return;
     if ((event.type === "session_start" || event.type === "config_snapshot") && event.agent.kind === "claude") {

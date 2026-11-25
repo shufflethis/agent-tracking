@@ -104,11 +104,14 @@ export default function AgentMonitoringDocs({ lang }: { lang: "en" | "de" }) {
       <ul>{c.sent.map((s) => <li key={s}>{s}</li>)}</ul>
       <p>{c.never}</p>
       <p>{c.retention}</p>
-      <h3>{lang === "de" ? "Lokale Sicherheits- & Kostenbremse (PreToolUse-Guard)" : "Local safety & spend fuse (PreToolUse guard)"}</h3>
+      <h3 id="guard">{lang === "de" ? "Lokale Sicherheits- & Kostenbremse (PreToolUse-Guard)" : "Local safety & spend fuse (PreToolUse guard)"}</h3>
       <p>{lang === "de"
         ? "Optional kannst du in ~/.agenttracking/guard.json rein lokale Schutzregeln setzen: maximale Fehlerserien, maximale Tool-Aufrufe oder Minuten pro autonomem Turn sowie eine lokale Sperre gegen destruktive Befehle (rm -rf, git push --force, git reset --hard, DROP TABLE). Der Check läuft in unter 1 ms im lokalen Arbeitsspeicher, ohne Netzwerkaufruf und ohne Befehle oder Prompts zu speichern oder hochzuladen:"
         : "Optionally configure purely local rules in ~/.agenttracking/guard.json: max consecutive failures, max tool calls or minutes per autonomous turn, and a local fuse against destructive shell commands (rm -rf, git push --force, git reset --hard, DROP TABLE). Checks run in under 1 ms in local RAM with no network round-trip and without storing or uploading commands or prompts:"}</p>
       <pre className="code">{CMD.guard}</pre>
+      <p>{lang === "de"
+        ? "Warum manchmal `agenttracking resume` nötig ist: Der Guard stoppt eine Session, sobald eine manuelle Pause aktiv ist oder ein Turn eines der konfigurierten Limits reißt (`agenttracking fix` setzt standardmäßig 5 Fehler in Folge, 80 Tool-Calls und 45 Min pro Turn). Mit `agenttracking resume` löschst du Pause und Turn-Zähler sofort; mit `agenttracking guard` siehst du die aktiven Regeln, kannst Limits anpassen (z. B. `--max-calls 200 --max-minutes off`) oder sie mit `agenttracking guard --reset` komplett abschalten."
+        : "When you need `agenttracking resume`: the local guard stops a session whenever a manual `pause` is active or a turn hits one of your configured limits (`agenttracking fix` enables 5 consecutive failures, 80 tool calls, and 45 minutes per turn by default). Run `agenttracking resume` to clear the pause and local counters immediately, `agenttracking guard` to inspect active rules, raise or turn off individual limits (for example `--max-calls 200 --max-minutes off`), or disable the guard with `agenttracking guard --reset`."}</p>
       <h3 id="fleet-api">{lang === "de" ? "Flotten-API und MCP (get_fleet_status)" : "Fleet API and MCP (get_fleet_status)"}</h3>
       <p>{lang === "de"
         ? "Mit einem Lese-Token (wmt_..., erstellbar unter Deine Agents -> Einstellungen) kannst du den Status deiner eigenen Agents per HTTP oder direkt über MCP in Claude Desktop, Claude Code oder Cursor abfragen:"

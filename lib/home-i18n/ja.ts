@@ -294,6 +294,7 @@ export const COPY_JA: MonitoringHomeCopy = {
     { q: "プロンプト・ソースコード・MCPシークレットは読み取られますか？", a: "いいえ、決して読み取りません。フックが送るのはライフサイクルイベント、ツール名、成否、ローカルハッシュ済みセッションID、設定のSHA-256フィンガープリントのみ。プロンプト・コード・シークレット値は技術的に端末外へ出ません。" },
     { q: "Telegram・Slack・Discord通知は本当に無料ですか？", a: "はい。Freeプラン（5エージェントまで）にTelegram、Slack、Discord、汎用Webhook、メール通知、毎朝ブリーフィング、無制限のオフライン `audit` およびローカル `guard` が含まれます。" },
     { q: "ローカル保護ブレーカーはどのように暴走や破壊コマンドを止めますか？", a: "PreToolUseフックが端末上で2ミリ秒未満で設定上限（`--max-failures 5`, `--max-calls 80`, `--max-minutes 45`, `--block-destructive on`）を判定し、超過時は次のツール実行をローカルで即遮断します。" },
+    { q: "なぜ `agenttracking resume` の実行を求められることがありますか？", a: "ローカルの guard（~/.agenttracking/guard.json）が安全ルールでセッションを停止したためです。手動の `agenttracking pause`、ツール連続失敗（`agenttracking fix` の既定は5回）、1ターン内の呼び出し上限（既定80回）、または経過時間上限（既定45分）のいずれかが該当します。`agenttracking resume` で即座に解除でき、`agenttracking guard` で設定確認・緩和（例: `--max-calls 200 --max-minutes 120`）、`agenttracking guard --reset` で無効化できます。" },
     { q: "MCPセキュリティ監査では何をチェックしますか？", a: "`agenttracking audit` はローカルのMCP設定（Claude Code, Cursor, Gemini, Antigravity, .mcp.json）を検査し、バージョン未固定のnpxパッケージ、平文http://リモートサーバー、JSON内の平文シークレット、Bash(*)などの過剰権限を検出します。" },
     { q: "どのコーディングエージェントに対応していますか？", a: "Claude Code、Cursor、Codex CLI、Gemini CLI、Google Antigravity (agy) に非破壊ネイティブフック（`connect all`）で対応。さらに任意のCron・GitHub Actionsは `wrap`、独自エージェントはOpenTelemetry (OTLP) で監視できます。" },
     { q: "厳格なセキュリティ審査やGDPR要件のチームでも使えますか？", a: "はい。ソースコードも顧客データもプロンプトも端末外に出さないゼロプロンプト設計で、ドイツ(EU)サーバー運用、DPA対応、さらにAGPL-3.0での完全セルフホストも可能です。" },
