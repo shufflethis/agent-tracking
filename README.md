@@ -15,11 +15,11 @@ Stop runaway overnight retry loops, catch shadow MCP servers & config drift, and
 brew install shufflethis/tap/agenttracking
 agenttracking audit
 
+# 2. 1-command auto-fix (40/100 Grade D -> 100/100 Grade A with automatic backups)
+agenttracking fix
+
 # Or without Homebrew (SHA-256 verified installer):
 curl -fsSL https://agenttracking.co/install.sh | sh -s -- audit
-
-# 2. Enable the local loop & destructive shell circuit breaker (<2 ms on-device)
-agenttracking guard --max-failures 5 --max-calls 80 --max-minutes 45 --block-destructive on
 
 # 3. Connect hooks across Claude Code, Cursor, Codex, Gemini & Antigravity
 agenttracking connect all

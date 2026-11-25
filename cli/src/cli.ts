@@ -6,6 +6,7 @@ import { connectClaude, defaultCommand, disconnectClaude, installRuntime, settin
 import { agyPathFor, codexPathFor, connectAgy, connectCodex, connectCursor, connectGemini, cursorPathFor, disconnectAgy, disconnectCodex, disconnectCursor, disconnectGemini, geminiPathFor } from "./connect-harnesses.js";
 import { runAudit } from "./audit.js";
 import { runDoctor } from "./doctor.js";
+import { runFix } from "./fix.js";
 import { flush } from "./flush.js";
 import { describeGuard, runGuardCommand, runPause, runResume } from "./guard.js";
 import { login } from "./login.js";
@@ -24,6 +25,7 @@ const HELP = `agenttracking: see what your agents did while you slept
   agenttracking disconnect <target> [--project]
                                       remove hooks for claude | agy | cursor | codex | gemini | all
   agenttracking audit [--share|--json] 100% offline security, MCP & cost-readiness audit (no login)
+  agenttracking fix [--yes|--dry-run] 1-command auto-fix (guardrails + pin MCPs + externalize secrets)
   agenttracking doctor                check hooks, crontab jobs and local MCP count
   agenttracking wrap --name <n> [--kind cron|agy|codex|...] [--every 24h] [--tail 20] -- <cmd...>
                                       run a cron/CI command and report start, end, exit code
@@ -130,6 +132,7 @@ const commands: Record<string, Command> = {
   async hook(args) { await runHook(args[0] ?? "", process.stdin, { extraArgs: args.slice(1) }); return 0; },
   async flush() { await flush(); return 0; },
   audit: (args) => runAudit(args),
+  fix: (args) => runFix(args),
   doctor: (args) => runDoctor(args),
   upgrade: (args) => runUpgrade(args),
   pause: (args) => runPause(args),

@@ -1,14 +1,15 @@
 import Link from "next/link";
 import Image from "next/image";
 import AgentGuardMotion from "@/components/AgentGuardMotion";
+import { FeatureIcon, HarnessStrip, type FeatureIconKind } from "@/components/BrandIcons";
 import CopyBlock from "@/components/CopyBlock";
 import { CONNECT_CLAUDE } from "@/lib/agents/format";
-import { AUDIT_COMMAND, AUDIT_ONE_LINER, claudeSetupPrompt, DISCONNECT_CLAUDE, DOCTOR_COMMAND, GUARD_EXAMPLE, WRAP_CRON } from "@/lib/agents/setup";
+import { AUDIT_COMMAND, AUDIT_ONE_LINER, claudeSetupPrompt, DISCONNECT_CLAUDE, DOCTOR_COMMAND, FIX_COMMAND, GUARD_EXAMPLE, WRAP_CRON } from "@/lib/agents/setup";
 import { AGENT_PLANS, AGENT_PRO_PRICE } from "@/lib/agents/plans";
 import { AGENT_EVENT_RETENTION_DAYS } from "@/lib/tracking/plans";
 import { BUILDER, CONTACT_EMAIL, GITHUB_URL, LEGAL } from "@/lib/site";
 
-type Card = { k: string; t: string; d: string };
+type Card = { k: string; t: string; d: string; icon?: FeatureIconKind };
 type VisualPillar = { k: string; t: string; d: string; stat: string; img: string; alt: string; href: string; cta: string };
 type CompRow = { feature: string; at: string; diy: string; cron: string; llm: string };
 
@@ -26,8 +27,8 @@ function copy(lang: "en" | "de") {
       demoCta: "Interaktive Live-Demo (ohne Login)",
       dashboard: "Kostenloses Dashboard starten",
       pick: "In 10 Sekunden starten — erst 100 % offline prüfen oder direkt verbinden.",
-      auditLabel: "100 % Offline-Audit (kein Account, kein Upload)",
-      auditHint: "Prüft lokal deine Hooks, ungepinnte MCP-Server, Wildcard-Permissions, ungesicherte Crons und Guardrails.",
+      auditLabel: "100 % Offline-Audit & 1-Befehl-Auto-Fix (kein Login)",
+      auditHint: "Prüft lokal MCP-Server, Secrets, Permissions & Guardrails — `agenttracking fix` hebt dich mit automatischen Backups in 3 Sekunden auf Grade A.",
       terminal: "Oder direkt alle Agents verbinden",
       terminalHint: "SHA-256-geprüft. Verbindet Claude Code, Cursor, Codex, Gemini & Antigravity mit Backup bestehender Hooks.",
       claude: "Oder in Claude Code einfügen",
@@ -90,12 +91,12 @@ function copy(lang: "en" | "de") {
       ] as VisualPillar[],
       catchTitle: "Sechs Ausfälle, die normales Monitoring übersieht",
       catches: [
-        { k: "Fehlerschleife", t: "Agent dreht sich im Kreis", d: "5 fehlgeschlagene Tool-Calls am Stück oder 8 Fehler desselben Tools: Der lokale Guard stoppt sofort und verhindert Token-Burn." },
-        { k: "Shadow MCP", t: "Ungepinnte oder neue MCP-Server", d: "audit erkennt unsichere MCP-Configs lokal; Pro meldet jeden neuen MCP-Server, geänderte CLAUDE.md oder unbekannte Tools." },
-        { k: "Wartet stumm", t: "Claude wartet seit Stunden auf dein Ja", d: "Interaktive Freigabe-Prompts werfen keinen Exit-Code. Der Notification-Hook schickt dir sofort eine Telegram- oder Slack-Nachricht." },
-        { k: "Hängt fest", t: "Session liefert keine Events mehr", d: "Stille API- oder Netzwerk-Hänger werden über die Silence-Schwelle als „hängt vermutlich“ markiert." },
-        { k: "Cron fehlt", t: "Geplanter Job startete nie", d: "Mit --every 24h kennt der Watchdog das Zeitfenster. Bleibt der Start aus, kommt der Alert — selbst ohne Absturz." },
-        { k: "Destruktiv", t: "Gefährlicher Shell-Befehl blockiert", d: "Der lokale PreToolUse-Schalter kappt destruktive Shell-Muster auf deiner Maschine, bevor Schaden entsteht." },
+        { k: "Fehlerschleife", icon: "loop", t: "Agent dreht sich im Kreis", d: "5 fehlgeschlagene Tool-Calls am Stück oder 8 Fehler desselben Tools: Der lokale Guard stoppt sofort und verhindert Token-Burn." },
+        { k: "Shadow MCP", icon: "mcp", t: "Ungepinnte oder neue MCP-Server", d: "audit erkennt unsichere MCP-Configs lokal; fix pinnt alle Versionen automatisch; Pro meldet jeden neuen MCP-Server oder Erst-Tools." },
+        { k: "Wartet stumm", icon: "wait", t: "Claude wartet seit Stunden auf dein Ja", d: "Interaktive Freigabe-Prompts werfen keinen Exit-Code. Der Notification-Hook schickt dir sofort eine Telegram- oder Slack-Nachricht." },
+        { k: "Hängt fest", icon: "hang", t: "Session liefert keine Events mehr", d: "Stille API- oder Netzwerk-Hänger werden über die Silence-Schwelle als „hängt vermutlich“ markiert." },
+        { k: "Cron fehlt", icon: "cron", t: "Geplanter Job startete nie", d: "Mit --every 24h kennt der Watchdog das Zeitfenster. Bleibt der Start aus, kommt der Alert — selbst ohne Absturz." },
+        { k: "Destruktiv", icon: "shell", t: "Gefährlicher Shell-Befehl blockiert", d: "Der lokale PreToolUse-Schalter kappt destruktive Shell-Muster auf deiner Maschine, bevor Schaden entsteht." },
       ] as Card[],
       alerts: "Telegram, Slack, Discord, Webhook und E-Mail sind schon im Free-Plan enthalten — plus ein tägliches Morgen-Briefing in deiner lokalen Zeitzone.",
       compareTitle: "Wo Agent Tracking passt — und wo ein anderes Tool besser ist",
@@ -114,10 +115,10 @@ function copy(lang: "en" | "de") {
       b2bTitle: "Für Engineering-Teams, die Claude Code & Cursor ohne Risiko ausrollen",
       b2bDek: "Sobald 10 bis 200 Entwickler lokale Coding-Agents und MCP-Server nutzen, entsteht ein blinder Fleck. Mit Agent Tracking erhalten CTOs, Teamleads und Security volle Kontrolle — ohne Betriebsrat- oder DSGVO-Blocker.",
       b2bCards: [
-        { k: "Zero-Prompt Compliance", t: "DSGVO- & Betriebsrat-tauglich ab Tag 1", d: "Keine Prompts, keine Code-Snippets, keine Tool-Outputs verlassen die Entwickler-Laptops. Nur Hashes, Tool-Namen, Status und Drift-Signale auf deutschen Servern." },
-        { k: "Shadow-MCP Kontrolle", t: "Alle MCP-Server & Berechtigungen im Blick", d: "Erkenne ungepinnte npx-Pakete, unverschlüsselte Remote-Endpunkte und Wildcard-Permissions über die gesamte Flotte." },
-        { k: "Einheitliche Guardrails", t: "Schutzbremse für 5 Harnesses zentral", d: "Ob dein Team Claude Code, Cursor, Codex CLI, Gemini CLI oder Antigravity nutzt — dieselben Loop-, Laufzeit- und Destruktiv-Grenzen greifen überall." },
-        { k: "Enterprise-Abrechnung", t: "Team-Flotte, Audit-Export & Rechnung", d: "Ab 99 $/Monat pro Team: geteilte Flotten-Ansicht, zentrales Policy-Rollout, Export-Audit-Log und Kauf auf Rechnung statt Kreditkarte." },
+        { k: "Zero-Prompt Compliance", icon: "gdpr", t: "DSGVO- & Betriebsrat-tauglich ab Tag 1", d: "Keine Prompts, keine Code-Snippets, keine Tool-Outputs verlassen die Entwickler-Laptops. Nur Hashes, Tool-Namen, Status und Drift-Signale auf deutschen Servern." },
+        { k: "Shadow-MCP Kontrolle", icon: "radar", t: "Alle MCP-Server & Berechtigungen im Blick", d: "Erkenne ungepinnte npx-Pakete, unverschlüsselte Remote-Endpunkte und Wildcard-Permissions über die gesamte Flotte." },
+        { k: "Einheitliche Guardrails", icon: "fuse", t: "Schutzbremse für 5 Harnesses zentral", d: "Ob dein Team Claude Code, Cursor, Codex CLI, Gemini CLI oder Antigravity nutzt — dieselben Loop-, Laufzeit- und Destruktiv-Grenzen greifen überall." },
+        { k: "Enterprise-Abrechnung", icon: "team", t: "Team-Flotte, Audit-Export & Rechnung", d: "Ab 99 $/Monat pro Team: geteilte Flotten-Ansicht, zentrales Policy-Rollout, Export-Audit-Log und Kauf auf Rechnung statt Kreditkarte." },
       ] as Card[],
       b2bCta: "Team-Pilot anfragen (ab 99 $/Mo)",
       b2bDemo: "Live-Flotten-Demo testen",
@@ -249,8 +250,8 @@ function copy(lang: "en" | "de") {
     demoCta: "Try interactive live demo (no login)",
     dashboard: "Open free dashboard",
     pick: "Start in 10 seconds — audit 100% offline first, or connect your fleet right away.",
-    auditLabel: "100% offline security & cost audit (no account, zero upload)",
-    auditHint: "Scans local hooks, unpinned npx MCP servers, wildcard permissions, unwrapped crons, and missing loop guardrails.",
+    auditLabel: "100% offline audit & 1-command auto-fix (no login)",
+    auditHint: "Scans local MCPs, inline secrets, permissions & guardrails — `agenttracking fix` jumps you to Grade A in 3 seconds with automatic backups.",
     terminal: "Or connect all harnesses immediately",
     terminalHint: "SHA-256 verified. Safely adds hooks for Claude Code, Cursor, Codex, Gemini & Antigravity with automatic backups.",
     claude: "Or paste into Claude Code",
@@ -313,12 +314,12 @@ function copy(lang: "en" | "de") {
     ] as VisualPillar[],
     catchTitle: "Six failure modes standard monitoring misses",
     catches: [
-      { k: "Runaway loop", t: "Agent spinning on failing tool calls", d: "5 failing tool calls in a row or 8 failures of the same tool: local guard stops execution immediately before burning your API budget." },
-      { k: "Shadow MCP", t: "Unpinned or newly added MCP servers", d: "`audit` catches risky local MCP configs offline; Pro flags added MCP servers, altered CLAUDE.md, and first-time tools." },
-      { k: "Waiting silently", t: "Claude waiting hours for your “yes”", d: "Interactive permission prompts never exit non-zero. The Notification hook pings your Telegram or Slack right away." },
-      { k: "Silent hang", t: "Session stops making progress", d: "Network stalls and silent API hangs are caught by the silence floor and flagged as suspected stuck." },
-      { k: "Missed cron", t: "Scheduled agent never started", d: "With --every 24h the monitor expects the next run. If it never starts, you get alerted — even with no exit code." },
-      { k: "Destructive", t: "Dangerous shell command blocked", d: "The local PreToolUse fuse blocks destructive shell patterns on your machine before damage happens." },
+      { k: "Runaway loop", icon: "loop", t: "Agent spinning on failing tool calls", d: "5 failing tool calls in a row or 8 failures of the same tool: local guard stops execution immediately before burning your API budget." },
+      { k: "Shadow MCP", icon: "mcp", t: "Unpinned or newly added MCP servers", d: "`audit` catches risky MCP configs offline; `fix` auto-pins every version with backups; Pro alerts on added MCPs or first-time tools." },
+      { k: "Waiting silently", icon: "wait", t: "Claude waiting hours for your “yes”", d: "Interactive permission prompts never exit non-zero. The Notification hook pings your Telegram or Slack right away." },
+      { k: "Silent hang", icon: "hang", t: "Session stops making progress", d: "Network stalls and silent API hangs are caught by the silence floor and flagged as suspected stuck." },
+      { k: "Missed cron", icon: "cron", t: "Scheduled agent never started", d: "With --every 24h the monitor expects the next run. If it never starts, you get alerted — even with no exit code." },
+      { k: "Destructive", icon: "shell", t: "Dangerous shell command blocked", d: "The local PreToolUse fuse blocks destructive shell patterns on your machine before damage happens." },
     ] as Card[],
     alerts: "Telegram, Slack, Discord, webhooks, and email alerts are all included on the Free plan — plus one morning briefing in your local time zone.",
     compareTitle: "Where Agent Tracking fits — and when to pick something else",
@@ -337,10 +338,10 @@ function copy(lang: "en" | "de") {
     b2bTitle: "Built for engineering teams scaling Claude Code, Cursor & MCP safely",
     b2bDek: "Once 10 to 200 engineers run local coding agents and custom MCP servers, security and leadership lose visibility. Agent Tracking gives CTOs and security leads hard guardrails and auditability — without touching a single prompt or line of source code.",
     b2bCards: [
-      { k: "Zero-Prompt Compliance", t: "Security & GDPR approval on day one", d: "Zero prompts, source code, or tool outputs leave developer laptops. Only hashes, tool names, lifecycle status, and drift signals touch EU servers in Germany." },
-      { k: "Shadow MCP Governance", t: "Inventory every MCP server & permission drift", d: "Flag unpinned npx MCP packages, cleartext http:// endpoints, and blanket Bash(*) permissions across every developer machine." },
-      { k: "Unified Multi-Harness Fuse", t: "One guardrail policy across 5 coding tools", d: "Whether engineers use Claude Code, Cursor, Codex CLI, Gemini CLI, or Antigravity — the same loop caps and destructive fuses protect them all." },
-      { k: "Team & Enterprise Ready", t: "Shared fleet, audit exports & invoicing", d: "Starting at $99/month per team: shared fleet console, centralized guardrail policies, exportable audit trail, and invoice billing." },
+      { k: "Zero-Prompt Compliance", icon: "gdpr", t: "Security & GDPR approval on day one", d: "Zero prompts, source code, or tool outputs leave developer laptops. Only hashes, tool names, lifecycle status, and drift signals touch EU servers in Germany." },
+      { k: "Shadow MCP Governance", icon: "radar", t: "Inventory every MCP server & permission drift", d: "Flag unpinned npx MCP packages, cleartext http:// endpoints, and blanket Bash(*) permissions across every developer machine." },
+      { k: "Unified Multi-Harness Fuse", icon: "fuse", t: "One guardrail policy across 5 coding tools", d: "Whether engineers use Claude Code, Cursor, Codex CLI, Gemini CLI, or Antigravity — the same loop caps and destructive fuses protect them all." },
+      { k: "Team & Enterprise Ready", icon: "team", t: "Shared fleet, audit exports & invoicing", d: "Starting at $99/month per team: shared fleet console, centralized guardrail policies, exportable audit trail, and invoice billing." },
     ] as Card[],
     b2bCta: "Book Team pilot (from $99/mo)",
     b2bDemo: "Explore interactive live demo",
@@ -477,7 +478,14 @@ function Cards({ rows, cols }: { rows: Card[]; cols: 2 | 3 | 4 }) {
     <div className={`grid${cols} hcards`}>
       {rows.map((r) => (
         <article className="card hcard" key={r.t}>
-          <p className="smallcaps">{r.k}</p>
+          <div className="hcard-top">
+            {r.icon ? (
+              <span className="hcard-ico">
+                <FeatureIcon kind={r.icon} />
+              </span>
+            ) : null}
+            <p className="smallcaps">{r.k}</p>
+          </div>
           <h3>{r.t}</h3>
           <p>{r.d}</p>
         </article>
@@ -540,6 +548,30 @@ export default function MonitoringHome({ lang }: { lang: "en" | "de" }) {
             </a>
           </li>
         </ul>
+      </section>
+
+      <HarnessStrip lang={lang} />
+
+      <section className="shell hsec" id="autofix">
+        <Head
+          kick={de ? "1 Befehl · Vorher → Nachher" : "1 command · Before → After"}
+          title={de ? "Von 40/100 (Grade D) auf 100/100 (Grade A) in 3 Sekunden" : "From 40/100 (Grade D) to 100/100 (Grade A) in 3 seconds"}
+          dek={de
+            ? "Kein JSON von Hand editieren: `agenttracking fix` schaltet deine lokale Schutzbremse scharf, pinnt alle ungepinnten npx-MCP-Pakete auf exakte Versionen und lagert Klartext-Secrets sicher mit chmod 600 aus — immer mit automatischem Backup."
+            : "Zero manual JSON editing: `agenttracking fix` arms your local loop & rm-rf fuse, pins every unpinned npx MCP server to its exact version, and safely moves inline secrets to chmod-600 storage — with automatic backups."}
+        />
+        <figure className="hba-figure">
+          <Image
+            src="/img/agents/audit-before-after.png"
+            alt={de ? "Vorher/Nachher Terminal-Scorecard: 40/100 Grade D auf 100/100 Grade A" : "Before and after terminal scorecard: 40/100 Grade D to 100/100 Grade A"}
+            width={1600}
+            height={900}
+            unoptimized
+          />
+        </figure>
+        <div className="hba-cmd">
+          <CopyBlock kind="terminal" label={de ? "Prüfen & mit einem Befehl härten ([Y/n])" : "Audit & auto-harden in one command ([Y/n])"} text={`${AUDIT_COMMAND}\n${FIX_COMMAND}`} lang={lang} />
+        </div>
       </section>
 
       <section className="shell hsec" id="architecture">

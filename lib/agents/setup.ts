@@ -9,10 +9,11 @@ import { CLI_COMMAND, CONNECT_CLAUDE, DOCTOR_COMMAND } from "@/lib/agents/format
 
 export { DOCTOR_COMMAND };
 export const AUDIT_COMMAND = `${CLI_COMMAND} audit`;
+export const FIX_COMMAND = `${CLI_COMMAND} fix`;
 export const BREW_INSTALL = `brew install shufflethis/tap/agenttracking`;
 export const AUDIT_ONE_LINER = `brew install shufflethis/tap/agenttracking && agenttracking audit
-# or without Homebrew (Linux / macOS, SHA-256 verified):
-curl -fsSL https://agenttracking.co/install.sh | sh -s -- audit`;
+# 1-command auto-fix (40/100 -> 100/100 with backups):
+agenttracking fix`;
 export const STATUS_COMMAND = `${CLI_COMMAND} status`;
 export const GUARD_EXAMPLE = `${CLI_COMMAND} guard --max-failures 5 --max-calls 80 --max-minutes 45 --block-destructive on`;
 export const PAUSE_COMMAND = `${CLI_COMMAND} pause --reason "maintenance"`;

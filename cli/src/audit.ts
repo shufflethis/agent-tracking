@@ -607,6 +607,8 @@ export function formatAuditReport(r: AuditReport, opts: { color?: boolean; share
     lines.push(`  ${rule}`);
     lines.push(`  ${c.bold(c.white("NEXT STEPS TO REACH GRADE A"))}`);
     lines.push("");
+    lines.push(`  ${c.green(c.bold("⚡ Auto-fix everything safely (with backups, [Y/n]):"))} ${c.cyan(c.bold("agenttracking fix"))}`);
+    lines.push("");
     steps.forEach((s, idx) => {
       lines.push(`  ${c.cyan(`${idx + 1}.`)} ${c.bold(s.title)} ${c.green(`[${s.gain}]`)}`);
       lines.push(`     ${c.cyan(s.cmd)}`);
