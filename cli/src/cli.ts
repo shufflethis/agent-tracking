@@ -5,6 +5,7 @@ import { configDir, readConfig } from "./config.js";
 import { connectClaude, defaultCommand, disconnectClaude, installRuntime, settingsPathFor } from "./connect-claude.js";
 import { agyPathFor, codexPathFor, connectAgy, connectCodex, connectCursor, connectGemini, cursorPathFor, disconnectAgy, disconnectCodex, disconnectCursor, disconnectGemini, geminiPathFor } from "./connect-harnesses.js";
 import { runAudit } from "./audit.js";
+import { formatBrandBanner } from "./brand.js";
 import { runDoctor } from "./doctor.js";
 import { runFix } from "./fix.js";
 import { flush } from "./flush.js";
@@ -14,7 +15,7 @@ import { runHook } from "./hook.js";
 import { spoolSize } from "./spool.js";
 import { observe } from "./observe.js";
 import { captureSnapshot } from "./snapshot.js";
-import { runUpgrade } from "./upgrade.js";
+import { currentCliVersion, runUpgrade } from "./upgrade.js";
 import { wrap } from "./wrap.js";
 
 const HELP = `agenttracking: see what your agents did while you slept
@@ -190,7 +191,10 @@ const commands: Record<string, Command> = {
 async function main(argv: string[]): Promise<number> {
   const [name, ...rest] = argv;
   const command = name ? commands[name] : undefined;
-  if (!command) { process.stdout.write(HELP); return name && name !== "help" && name !== "--help" ? 1 : 0; }
+  if (!command) {
+    process.stdout.write(`${formatBrandBanner({ version: currentCliVersion() })}\n\n${HELP}`);
+    return name && name !== "help" && name !== "--help" ? 1 : 0;
+  }
   return command(rest);
 }
 

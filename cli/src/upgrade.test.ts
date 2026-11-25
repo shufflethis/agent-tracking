@@ -5,7 +5,8 @@ import { join } from "node:path";
 import { test } from "node:test";
 import { connectClaude, defaultCommand } from "./connect-claude.js";
 import { agyPathFor, codexPathFor, connectAgy, cursorPathFor, geminiPathFor } from "./connect-harnesses.js";
-import { compareSemver, isConfirmedDefaultYes, isHomebrewInstall, parseVersionFromInstaller, refreshConnectedHooks } from "./upgrade.js";
+import { formatBrandBanner } from "./brand.js";
+import { buildBrewEnv, compareSemver, isConfirmedDefaultYes, isHomebrewInstall, parseVersionFromInstaller, refreshConnectedHooks } from "./upgrade.js";
 
 test("upgrade prompt defaults to Yes on empty Enter and accepts y/yes/j/ja", () => {
   assert.equal(isConfirmedDefaultYes(""), true);
@@ -74,4 +75,24 @@ test("refreshConnectedHooks updates only already-connected harnesses and leaves 
   const second = refreshConnectedHooks({ userHome, home: atHome, claudeSettingsPath: claudePath, cliPath: "/new/runtime/0.6.6/cli.js" });
   assert.deepEqual(second.updated, []);
   assert.deepEqual(second.already, ["Claude Code", "Antigravity (agy)"]);
+});
+
+test("buildBrewEnv strips HOMEBREW_ASK so brew upgrade does not double-prompt or need yes pipe", () => {
+  const env = buildBrewEnv({ PATH: "/usr/bin", HOMEBREW_ASK: "1" });
+  assert.equal("HOMEBREW_ASK" in env, false);
+  assert.equal(env.HOMEBREW_NO_ENV_HINTS, "1");
+});
+
+test("formatBrandBanner renders aligned < ● > ASCII logo box in plain and ANSI modes", () => {
+  const plain = formatBrandBanner({ version: "0.6.7", color: false });
+  const rows = plain.split("\n");
+  assert.equal(rows.length, 5);
+  assert.match(plain, /<   ●   >/);
+  assert.match(plain, /AGENT TRACKING  v0\.6\.7/);
+  const widths = new Set(rows.map((r) => [...r].length));
+  assert.equal(widths.size, 1, `all banner rows must have identical width: ${JSON.stringify(rows.map((r) => [...r].length))}`);
+
+  const colored = formatBrandBanner({ version: "0.6.7", color: true });
+  assert.match(colored, /\x1b\[38;5;80m/);
+  assert.match(colored, /\x1b\[38;5;141m/);
 });

@@ -4,6 +4,7 @@ import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import { createInterface } from "node:readline/promises";
 import { fileURLToPath } from "node:url";
+import { formatBrandBanner } from "./brand.js";
 import { connectClaude, defaultCommand, hasClaudeHooks, installRuntime } from "./connect-claude.js";
 import {
   agyPathFor, codexPathFor, connectAgy, connectCodex, connectCursor, connectGemini,
@@ -101,6 +102,12 @@ export function isHomebrewInstall(scriptPath = fileURLToPath(import.meta.url)): 
   return /\/(?:opt\/homebrew|usr\/local\/Cellar|home\/linuxbrew)\//i.test(scriptPath);
 }
 
+export function buildBrewEnv(baseEnv: Record<string, string | undefined> = process.env): NodeJS.ProcessEnv {
+  const env: Record<string, string | undefined> = { ...baseEnv, HOMEBREW_NO_ENV_HINTS: "1" };
+  delete env.HOMEBREW_ASK;
+  return env as NodeJS.ProcessEnv;
+}
+
 export async function runUpgrade(args: string[]): Promise<number> {
   const current = currentCliVersion();
   if (args.includes("--refresh-hooks")) {
@@ -108,6 +115,10 @@ export async function runUpgrade(args: string[]): Promise<number> {
     logRefreshResult(res, current);
     return 0;
   }
+
+  console.log("");
+  console.log(formatBrandBanner({ version: current }));
+  console.log("");
 
   const autoYes = args.includes("--yes") || args.includes("-y");
   const origin = (process.env.AGENTTRACKING_ORIGIN ?? "https://agenttracking.co").replace(/\/+$/, "");
@@ -150,9 +161,9 @@ export async function runUpgrade(args: string[]): Promise<number> {
 
   if (viaBrew) {
     console.log("Updating via Homebrew (shufflethis/tap/agenttracking)...");
-    const r = spawnSync("sh", ["-c", "brew update && yes | brew upgrade agenttracking"], {
+    const r = spawnSync("sh", ["-c", "brew update && brew upgrade agenttracking"], {
       stdio: "inherit",
-      env: { ...process.env, HOMEBREW_NO_ENV_HINTS: "1" },
+      env: buildBrewEnv(),
     });
     if ((r.status ?? 1) === 0) triggerPostUpgradeHookRefresh();
     return r.status ?? 1;
